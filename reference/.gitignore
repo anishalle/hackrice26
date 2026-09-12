@@ -1,0 +1,2 @@
+# Keep the folders tracked even before anything is captured.
+!.gitkeep
