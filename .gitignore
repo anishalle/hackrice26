@@ -9,6 +9,21 @@ build/
 .next/
 out/
 
+# Expo
+.expo/
+web-build/
+expo-env.d.ts
+/ios
+/android
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+.metro-health-check*
+
 # env
 .env
 .env.local
