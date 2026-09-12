@@ -86,6 +86,8 @@ export function Canyon({ className }: { className?: string }) {
     const uFilter = u("uFilter");
     const uSunY = u("uSunY");
     const uSteps = u("uSteps");
+    const uSamples = u("uSamples");
+    const uHorizon = u("uHorizon");
 
     /** Reads the ramp off CSS custom properties so the theme owns the colour. */
     function rampFromCss() {
@@ -116,13 +118,29 @@ export function Canyon({ className }: { className?: string }) {
     let frozenAt: number | null = null;
     let lastDraw = 0;
 
-    // Device pixel budget. The dither pattern makes upscaling read as grain
-    // rather than blur, so a sub-1.0 scale costs very little perceptually.
+    // Device pixel budget. The dither makes upscaling read as grain rather
+    // than blur, so a sub-1.0 buffer costs little; the sampling below is
+    // what actually buys clean silhouettes.
     function pixelScale() {
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       const wide = window.innerWidth > 1600;
-      return Math.min(dpr, wide ? 0.7 : 0.85);
+      return Math.min(dpr, wide ? 0.65 : 0.8);
     }
+
+    // Adaptive AA, after river.ai's AUTO AA governor: start supersampled and
+    // drop to one tap when the frame budget can't hold it. It never climbs
+    // back up — oscillating between AA modes looks worse than the lower one.
+    //
+    // Two paths, because they are different failures. A sustained overrun is
+    // averaged over a window so one hitch doesn't downgrade the session. A
+    // grossly slow frame is not an outlier to filter out: on a weak GPU or a
+    // software rasteriser every frame looks like that, and a governor that
+    // discards them as noise never fires on the machines that need it most.
+    let samples = 4;
+    let acc = 0;
+    let accFrames = 0;
+    let slowStreak = 0;
+    let last = performance.now();
 
     function resize() {
       const scale = pixelScale();
@@ -143,7 +161,26 @@ export function Canyon({ className }: { className?: string }) {
 
       // ~30fps is plenty for water this slow, and halves GPU cost.
       if (now - lastDraw < 32) return;
+      const frameMs = now - last;
+      last = now;
       lastDraw = now;
+
+      if (samples > 1) {
+        if (frameMs > 120) {
+          slowStreak += 1;
+          if (slowStreak >= 2) samples = 1;
+        } else {
+          slowStreak = 0;
+          acc += frameMs;
+          accFrames += 1;
+          if (accFrames >= 30) {
+            // 32ms is the cap; 46 leaves headroom before it truly stutters.
+            if (acc / accFrames > 46) samples = 1;
+            acc = 0;
+            accFrames = 0;
+          }
+        }
+      }
 
       // Reduced motion resolves one frame and holds it.
       if (reduceMotion) {
@@ -174,7 +211,12 @@ export function Canyon({ className }: { className?: string }) {
       gl!.uniform1f(uDotAmount, maxContrast ? 0.0 : 0.85);
       gl!.uniform1f(uFilter, maxContrast ? 0.45 : 1.0);
       gl!.uniform1f(uSunY, 0.1);
-      gl!.uniform1i(uSteps, window.innerWidth > 1200 ? 96 : 72);
+      gl!.uniform1i(uSteps, window.innerWidth > 1200 ? 104 : 76);
+      // One tap while frozen would alias the single held frame, so reduced
+      // motion always gets the supersampled resolve — it is paid once.
+      gl!.uniform1i(uSamples, reduceMotion && samples > 1 ? 4 : samples);
+      // river.ai places the horizon at 0.570 of the viewport.
+      gl!.uniform1f(uHorizon, 0.57);
 
       gl!.drawArrays(gl!.TRIANGLES, 0, 3);
     }

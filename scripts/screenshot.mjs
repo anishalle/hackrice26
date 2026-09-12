@@ -55,10 +55,10 @@ for (const vp of VIEWPORTS) {
       page.on("pageerror", (e) => errors.push(String(e)));
       page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
       await page.goto(BASE + shot.path, { waitUntil: "networkidle" });
-      await page.waitForTimeout(1600);
+      await page.waitForTimeout(2400);
       const suffix = theme === "light" ? "-light" : "";
       const file = `${OUT}/${vp.tag}-${shot.name}${suffix}.png`;
-      await page.screenshot({ path: file, fullPage: vp.tag === "desktop" });
+      await page.screenshot({ path: file, fullPage: vp.tag === "desktop", animations: "disabled", timeout: 90000 });
       // Cheap defect scan that a screenshot cannot show.
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
       console.log(`${file}  errors=${errors.length}${errors.length ? " :: " + errors.join(" | ").slice(0, 300) : ""}  hscroll=${overflow}`);

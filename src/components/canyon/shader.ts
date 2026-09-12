@@ -1,17 +1,18 @@
 /**
- * Duotone canyon — fragment shader source.
+ * Duotone canyon — shader source.
  *
  * Three stages, in this order:
  *
  *  1. RAYMARCH an SDF terrain. The canyon is a height field built from smooth-
  *     minimum'd blobs, which is what gives the walls their soft, rounded mass
  *     rather than the sharp ridges an fBm height field alone produces.
- *  2. SHADE it to a single luminance value. Colour is deliberately not decided
- *     here — the scene is resolved as light only.
+ *  2. RESOLVE it to a single luminance value, backlit. Colour is deliberately
+ *     not decided here — the scene comes out as light only, and that resolve
+ *     is what gets supersampled.
  *  3. DUOTONE that luminance through the brand ramp, with the strength of the
- *     mapping scaling with luminance, and an ordered-dither dot matrix gated on
- *     the same value. Brighter areas take more filter and more dots; the
- *     shadows stay clean.
+ *     mapping scaling with luminance, and an ordered-dither dot matrix gated
+ *     on the same value. Brighter areas take more filter and more dots; the
+ *     shadows stay clean. Both are per-pixel, after averaging.
  */
 
 export const VERT = /* glsl */ `
@@ -38,8 +39,8 @@ uniform float uDotAmount;  // 0 = no dots, 1 = full matrix
 uniform float uFilter;     // global duotone strength
 uniform float uSunY;       // sun height in the gap
 uniform int   uSteps;      // march budget
-
-const float PI = 3.14159265;
+uniform int   uSamples;    // SSAA taps per pixel (1 or 4)
+uniform float uHorizon;    // horizon height, fraction of viewport
 
 /* ---------------------------------------------------------------- noise -- */
 
@@ -139,16 +140,18 @@ float bayer2(vec2 a) {
 float bayer4(vec2 a) { return bayer2(0.5 * a) * 0.25 + bayer2(a); }
 float bayer8(vec2 a) { return bayer4(0.5 * a) * 0.25 + bayer2(a); }
 
-/* ----------------------------------------------------------------- main -- */
+/* ---------------------------------------------------------------- scene -- */
 
-void main() {
-  vec2 frag = gl_FragCoord.xy;
-  vec2 uv = (frag - 0.5 * uRes) / uRes.y;
-
+/**
+ * Resolves the scene to one luminance value for a single sample position.
+ * Colour is applied once per pixel afterwards, and the dither is a
+ * screen-space effect, so neither belongs in here.
+ */
+float scene(vec2 uv) {
   // Camera sits low in the channel, looking downstream toward the gap.
-  // Scroll pushes it forward and slightly down, so the walls open past you.
+  // Scroll pushes it forward, so the walls open past you.
   vec3 ro = vec3(0.0, 3.45 + uScroll * 1.1, -6.0 + uScroll * 16.0);
-  vec3 rd = normalize(vec3(uv.x * 0.92 - 0.17, uv.y * 0.92 + 0.045, 1.0));
+  vec3 rd = normalize(vec3(uv.x * 0.92 - 0.17, uv.y * 0.92 + (uHorizon - 0.5) * 0.5, 1.0));
 
   float lum;
   float t = 0.0;
@@ -168,17 +171,17 @@ void main() {
 
   // Bisect the last interval. The height field is not a true distance field,
   // so the march overshoots at grazing angles and leaves vertical streaks
-  // without this.
+  // without this. river.ai runs 14 refinement steps; 10 is indistinguishable
+  // here and cheaper.
   if (hit) {
     float lo = tPrev, hi = t;
-    for (int k = 0; k < 5; k++) {
+    for (int k = 0; k < 10; k++) {
       float mid = 0.5 * (lo + hi);
       if (mapT(ro + rd * mid) > 0.0) lo = mid; else hi = mid;
     }
     t = hi;
   }
 
-  // Sun sits in the gap between the walls, slightly above the horizon.
   vec3 sunDir = normalize(vec3(-0.155, uSunY, 1.0));
   float sunDot = max(dot(rd, sunDir), 0.0);
 
@@ -207,7 +210,6 @@ void main() {
       float ripple =
         sin(p.z * 0.55 - uTime * 0.35) * 0.5 +
         fbm(vec2(p.x * 0.7, p.z * 0.3 - uTime * 0.14)) * 0.9;
-      // A long specular smear down the channel, toward the sun.
       float smear = pow(max(0.0, 1.0 - abs(p.x) * 0.20), 2.4);
       float spec = smear * (0.30 + 0.26 * ripple) * smoothstep(2.0, 200.0, p.z);
       lum = mix(lum, 0.34 + spec, water * 0.92);
@@ -218,7 +220,6 @@ void main() {
     float haze = smoothstep(18.0, 175.0, t);
     lum = mix(lum, 0.52, haze * 0.72);
   } else {
-    // Sky: a vertical gradient with the sun disc and its bloom.
     float h = clamp(uv.y * 1.15 + 0.40, 0.0, 1.0);
     lum = mix(0.86, 0.16, h);
 
@@ -231,7 +232,34 @@ void main() {
     lum += smoothstep(0.55, 0.95, cl) * 0.08 * (1.0 - h);
   }
 
-  lum = clamp(lum, 0.0, 1.6);
+  return clamp(lum, 0.0, 1.6);
+}
+
+/* ----------------------------------------------------------------- main -- */
+
+void main() {
+  vec2 frag = gl_FragCoord.xy;
+
+  // Supersample on a rotated 2x2 grid. river.ai runs SSAA x8 at full
+  // resolution; 4 taps at a slightly reduced buffer lands in the same place
+  // visually for a fraction of the cost, and the silhouette edges are what
+  // the sampling is actually for.
+  float lum = 0.0;
+  if (uSamples > 1) {
+    vec2 o0 = vec2(-0.125, -0.375);
+    vec2 o1 = vec2( 0.375, -0.125);
+    vec2 o2 = vec2( 0.125,  0.375);
+    vec2 o3 = vec2(-0.375,  0.125);
+    lum += scene((frag + o0 - 0.5 * uRes) / uRes.y);
+    lum += scene((frag + o1 - 0.5 * uRes) / uRes.y);
+    lum += scene((frag + o2 - 0.5 * uRes) / uRes.y);
+    lum += scene((frag + o3 - 0.5 * uRes) / uRes.y);
+    lum *= 0.25;
+  } else {
+    lum = scene((frag - 0.5 * uRes) / uRes.y);
+  }
+
+  vec2 uv = (frag - 0.5 * uRes) / uRes.y;
 
   /* --- duotone, applied proportionally to luminance ---------------------- */
 
@@ -249,6 +277,8 @@ void main() {
   vec3 col = mix(uShadow, ramp, amount);
 
   /* --- ordered dither, gated on the same luminance ----------------------- */
+  /* Per pixel, after averaging: it is a screen-space pattern, and
+     supersampling it would dissolve the matrix into flat grey.              */
 
   float cell = max(uDotScale, 1.0);
   float thr  = bayer8(floor(frag / cell));

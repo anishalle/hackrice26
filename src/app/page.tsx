@@ -69,7 +69,7 @@ export default function Home() {
 
           <motion.p
             {...rise(0.24)}
-            className="mt-6 max-w-[44ch] text-[clamp(1rem,1.3vw,1.1875rem)] leading-[1.55] text-[var(--text-2)]"
+            className="cursor-block mt-6 max-w-[44ch] text-[clamp(1rem,1.3vw,1.1875rem)] leading-[1.55] text-[var(--text-2)]"
           >
             One profile decides two things most software decides for you: how
             you prove who you are, and what the interface becomes once
@@ -89,9 +89,10 @@ export default function Home() {
 
         <div
           aria-hidden
-          className="absolute inset-x-0 bottom-0 z-10 flex justify-center pb-8"
+          className="absolute inset-x-0 bottom-0 z-10 flex flex-col items-center pb-6"
         >
           <span className="eyebrow !text-[var(--text-2)]">Scroll</span>
+          <span className="scroll-cue-line" />
         </div>
       </section>
 

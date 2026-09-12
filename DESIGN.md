@@ -79,9 +79,24 @@ contrast is what stops the palette reading as generic tech-blue.
    on the same value, so the dots thicken toward the light and the darks stay
    clean.
 
-Budget: renders at 0.7–0.85 device pixels (the dither turns upscaling into
-grain), ~30fps, 72–96 march steps, and stops entirely when scrolled out of view
-or the tab is hidden. A CSS gradient sits underneath as the no-WebGL fallback
+Sampling follows river.ai's own debug values, read off the markup they
+published: `AA MODE SSAA ×8`, `R SCALE 1.00`, `REFINE 14 / bisect`,
+`POV HZN 0.570`. They buy clean silhouettes with supersampling at full
+resolution rather than with a bigger buffer. Here that is 4 taps on a rotated
+2×2 grid at a 0.65–0.8 buffer — the same trade at a fraction of the cost,
+since the edges are what the sampling is for. Refinement is 10 bisection
+steps and the horizon sits at 0.570.
+
+An adaptive governor mirrors their `AUTO AA` toggle: start supersampled, drop
+to one tap when the budget can't hold it, never climb back (oscillating
+between AA modes looks worse than the lower one). It watches two signals —
+a sustained overrun averaged over 30 frames, and any grossly slow frame,
+which is *not* treated as an outlier to discard: on a weak GPU every frame
+looks like that, and a governor that filters them never fires on the machines
+that need it.
+
+Budget: ~30fps, 76–104 march steps, and it stops entirely when scrolled out of
+view or the tab is hidden. A CSS gradient sits underneath as the no-WebGL fallback
 and as the colour the canvas resolves to anyway, so there is never a flash.
 
 **It is capability-aware, like everything else.** Reduced motion resolves one
