@@ -2,11 +2,11 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { LoginForm } from "@/components/login-form";
+import { SignupForm } from "@/components/signup-form";
 import { useAuth } from "@/lib/auth-context";
 import { Loader2 } from "lucide-react";
 
-export default function LoginPage() {
+export default function SignupPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
 
@@ -31,7 +31,7 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-svh flex-col items-center justify-center p-6 md:p-10 bg-background">
       <div className="w-full max-w-sm rounded-xl border bg-card p-6 shadow-sm">
-        <LoginForm />
+        <SignupForm />
       </div>
     </div>
   );

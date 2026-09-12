@@ -40,7 +40,7 @@ function HomeContent() {
           <div className="flex items-center gap-3">
             {user?.email && (
               <span className="text-sm font-medium text-muted-foreground hidden sm:inline-block">
-                {user.email}
+                {user.name ? `${user.name} (${user.email})` : user.email}
               </span>
             )}
             <Button

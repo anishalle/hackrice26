@@ -5,15 +5,18 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
 
-export function ProtectedRoute({ children }: { children: React.ReactNode }) {
+export function ProtectedRoute({ children, requirePersona = true }: { children: React.ReactNode; requirePersona?: boolean }) {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const needsPersona = requirePersona && process.env.NODE_ENV !== "development";
 
   useEffect(() => {
     if (!loading && !user) {
       router.replace("/login");
+    } else if (!loading && user && needsPersona && user.prefs.persona_verified !== true) {
+      router.replace("/settings");
     }
-  }, [user, loading, router]);
+  }, [user, loading, router, needsPersona]);
 
   if (loading) {
     return (
@@ -24,7 +27,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!user) {
+  if (!user || (needsPersona && user.prefs.persona_verified !== true)) {
     return null;
   }
 

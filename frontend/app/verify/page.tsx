@@ -11,6 +11,9 @@ function VerifyContent() {
   const searchParams = useSearchParams();
   const userId = searchParams.get("userId");
   const secret = searchParams.get("secret");
+  const fn = searchParams.get("fn");
+  const ln = searchParams.get("ln");
+  const ph = searchParams.get("ph");
   const router = useRouter();
   const { verifyMagicLink } = useAuth();
 
@@ -30,7 +33,11 @@ function VerifyContent() {
 
     const performVerification = async () => {
       try {
-        await verifyMagicLink(userId, secret);
+        await verifyMagicLink(userId, secret, {
+          firstName: fn || undefined,
+          lastName: ln || undefined,
+          phone: ph || undefined,
+        });
         setStatus("success");
         setTimeout(() => {
           router.replace("/home");
@@ -46,7 +53,7 @@ function VerifyContent() {
     };
 
     performVerification();
-  }, [isMissingParams, userId, secret, verifyMagicLink, router]);
+  }, [isMissingParams, userId, secret, fn, ln, ph, verifyMagicLink, router]);
 
   return (
     <div className="flex min-h-svh flex-col items-center justify-center gap-6 bg-background p-6 md:p-10">

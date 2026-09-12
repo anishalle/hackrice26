@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -13,6 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 import { AuthProvider } from "@/lib/auth-context";
+import { cn } from "@/lib/utils";
+
+const inter = Inter({subsets:['latin'],variable:'--font-sans'});
 
 export const metadata: Metadata = {
   title: "HackRice 26",
@@ -23,9 +26,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={cn("dark", "h-full", "antialiased", geistSans.variable, geistMono.variable, "font-sans", inter.variable)}
     >
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-full flex flex-col bg-background text-foreground selection:bg-primary/30 selection:text-white">
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
