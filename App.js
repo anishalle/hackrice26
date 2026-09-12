@@ -6,6 +6,7 @@ import { useFonts, Inter_300Light, Inter_400Regular, Inter_500Medium, Inter_600S
 import { colors, fonts } from './theme';
 import HomeScreen from './screens/HomeScreen';
 import AgentsScreen from './screens/AgentsScreen';
+import MarketplaceScreen from './screens/MarketplaceScreen';
 import TabBar from './components/TabBar';
 
 const Tab = createBottomTabNavigator();
@@ -40,7 +41,8 @@ export default function App() {
           tabBar={(props) => <TabBar {...props} />}
         >
           <Tab.Screen name="Home" component={HomeScreen} />
-          <Tab.Screen name="Agents" component={AgentsScreen} />
+          <Tab.Screen name="Agents" component={AgentsScreen} options={{ tabBarStyle: { display: 'none' } }} />
+          <Tab.Screen name="Marketplace" component={MarketplaceScreen} />
         </Tab.Navigator>
       </NavigationContainer>
       <StatusBar style="dark" />
