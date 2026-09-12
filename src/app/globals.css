@@ -32,6 +32,13 @@
 
   --warn: #ffb27a;
 
+  /* Maximum-contrast solid, for the primary pill. */
+  --solid: #f3f4ff;
+  --solid-ink: #010334;
+
+  --announce-bg: #2b3080;
+  --announce-ink: #dcdefb;
+
   /* Duotone ramp handed to the shader. */
   --duo-shadow: #010334;
   --duo-mid: #4a52c8;
@@ -43,19 +50,20 @@
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
   --r: 14px;
   --r-sm: 10px;
+  --r-pill: 999px;
 }
 
 [data-theme="light"] {
-  --bg: #fafaff;
-  --bg-deep: #f0f1fb;
+  --bg: #f4f4f2;
+  --bg-deep: #eceae5;
   --surface: #ffffff;
-  --surface-2: #f4f5ff;
-  --line: #dfe1f7;
-  --line-soft: #ebecfb;
+  --surface-2: #faf9f7;
+  --line: #dedcd6;
+  --line-soft: #eae8e3;
 
   --text: #010334;
-  --text-2: #4b5190;
-  --text-3: #5a6098;
+  --text-2: #4a4f6b;
+  --text-3: #6b6f85;
 
   --brand: #4a52e8;
   --brand-hover: #3a42d4;
@@ -68,6 +76,12 @@
   --accent-dim: #cdeef5;
 
   --warn: #a2521a;
+
+  --solid: #16171f;
+  --solid-ink: #ffffff;
+
+  --announce-bg: #c8cbfe;
+  --announce-ink: #1a1b3a;
 
   --duo-shadow: #0b1150;
   --duo-mid: #7379fd;
@@ -203,6 +217,14 @@ body {
   background:
     radial-gradient(70% 46% at 50% 46%, color-mix(in oklab, var(--duo-light) 28%, transparent) 0%, transparent 62%),
     linear-gradient(to bottom, var(--duo-shadow) 0%, var(--bg) 72%);
+}
+
+/* The announcement bar. Persona runs one across the top; here it carries the
+   honest disclosure, so the one thing a viewer must not miss is the one thing
+   that is impossible to scroll past. */
+.announce {
+  background-color: var(--announce-bg);
+  color: var(--announce-ink);
 }
 
 /* --- Browser surfaces, themed ---------------------------------------------- */

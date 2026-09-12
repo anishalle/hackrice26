@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { motion, useReducedMotion } from "motion/react";
+import { Announce } from "@/components/announce";
 import { Canyon } from "@/components/canyon";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { ButtonLink } from "@/components/ui";
@@ -22,8 +23,10 @@ export default function Home() {
 
   return (
     <main>
+      <Announce />
+
       {/* ------------------------------------------------------------ hero -- */}
-      <section className="relative min-h-dvh overflow-hidden">
+      <section className="relative min-h-[calc(100dvh-2.75rem)] overflow-hidden">
         <Canyon className="pointer-events-none absolute inset-0" />
 
         {/* Legibility floor under the text. The shader is beautiful but it is
@@ -52,7 +55,7 @@ export default function Home() {
           </div>
         </header>
 
-        <div className="relative z-10 mx-auto flex min-h-[calc(100dvh-5.5rem)] max-w-[82rem] flex-col justify-end px-6 pb-32 sm:px-10 sm:pb-28">
+        <div className="relative z-10 mx-auto flex min-h-[calc(100dvh-8.25rem)] max-w-[82rem] flex-col justify-end px-6 pb-32 sm:px-10 sm:pb-28">
           <motion.p {...rise(0.05)} className="eyebrow !text-[var(--text-2)]">
             Personal AI · Accessibility
           </motion.p>
@@ -130,9 +133,8 @@ export default function Home() {
               </ul>
             </div>
             <p className="max-w-[34ch] font-mono text-[0.75rem] leading-[1.6] text-[var(--text-3)]">
-              Prototype. Nothing here reaches a real identity service or a real
-              medical record — every profile, post and verification result is
-              fixture data.
+              Every profile, post and verification result below is fixture data.
+              Nothing reaches a real identity service or a real medical record.
             </p>
           </div>
         </div>

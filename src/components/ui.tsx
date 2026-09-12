@@ -8,12 +8,16 @@ function cx(...parts: Array<string | false | null | undefined>) {
 }
 
 const BASE =
-  "target inline-flex items-center justify-center gap-2 rounded-[var(--r-sm)] px-5 " +
+  "target inline-flex items-center justify-center gap-2 rounded-[var(--r-pill)] px-6 " +
   "text-[0.9375rem] font-medium transition-[background-color,color,border-color,opacity] " +
   "duration-150 disabled:opacity-45 disabled:pointer-events-none";
 
+// The primary is the maximum-contrast pill — near-black on light, near-white
+// on dark. Cornflower is reserved for the accent role, which keeps it meaning
+// something instead of becoming the colour of every button on the page.
 const VARIANTS = {
-  primary: "bg-[var(--brand)] text-[var(--brand-ink)] hover:bg-[var(--brand-hover)]",
+  primary: "bg-[var(--solid)] text-[var(--solid-ink)] hover:opacity-90",
+  brand: "bg-[var(--brand)] text-[var(--brand-ink)] hover:bg-[var(--brand-hover)]",
   secondary:
     "border border-[var(--line)] bg-[var(--surface)] text-[var(--text)] hover:border-[var(--text-3)]",
   quiet: "text-[var(--text-2)] hover:text-[var(--text)] hover:bg-[var(--surface-2)]",

@@ -88,6 +88,28 @@ and as the colour the canvas resolves to anyway, so there is never a flash.
 frame and freezes. A low-vision profile drops the dot matrix and cuts filter
 strength, so the ground stays flat enough for text contrast to hold.
 
+## Chrome, from Persona's site
+
+Read off a supplied screenshot of withpersona.com rather than its CSS:
+
+- **Primary action is a maximum-contrast pill** — near-black on light, near-
+  white on dark, with a trailing arrow. Cornflower is deliberately *not* the
+  button colour; keeping it out of the primary action is what lets it keep
+  meaning something where it does appear.
+- **An announcement bar across the top.** Persona uses the slot for a Gartner
+  placement; here it carries the prototype disclosure, so the one thing a
+  viewer must not miss is the one thing they cannot scroll past. Pale
+  periwinkle with dark ink in light, deep brand wash in dark — it has its own
+  token pair, since the AA-safe light-mode brand is far too saturated for it.
+- **A warm off-white ground in light mode** (`#F4F4F2`), not a cool one.
+- **Monoline icons**, ~1.5px stroke, rounded joins, 24px grid. The set already
+  built matches this, which is the one thing the screenshot confirmed rather
+  than changed.
+
+Persona's actual typeface could not be identified from a screenshot and is
+**not** DM Sans (that result belongs to an unrelated design system of the same
+name). Inter Tight stands in, on river.ai's authority.
+
 ## Composition
 
 The camera yaws left so the gap and sun sit right of centre, leaving the left
