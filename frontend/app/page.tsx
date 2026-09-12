@@ -1,11 +1,27 @@
-import { LoginForm } from "@/components/login-form";
+"use client";
 
-export default function Home() {
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/auth-context";
+import { Loader2 } from "lucide-react";
+
+export default function IndexPage() {
+  const { user, loading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading) {
+      if (user) {
+        router.replace("/home");
+      } else {
+        router.replace("/login");
+      }
+    }
+  }, [user, loading, router]);
+
   return (
-    <div className="flex min-h-svh flex-col items-center justify-center gap-6 bg-background p-6 md:p-10">
-      <div className="w-full max-w-sm">
-        <LoginForm />
-      </div>
+    <div className="flex min-h-svh items-center justify-center bg-background">
+      <Loader2 className="size-8 animate-spin text-primary" />
     </div>
   );
 }
