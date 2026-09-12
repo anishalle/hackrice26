@@ -1,106 +1,99 @@
-# Axis
+# HackRice 26 — Axis
 
 An interface that reads your capability profile.
 
-One profile — plotted by the person themselves — decides two things most
-software decides for you: **how you prove who you are**, and **what the
-interface becomes** once you're in.
+```
+backend/    FastAPI (uv, Python 3.12) — see BACKEND.md
+frontend/   Next.js 16 + React 19 + Tailwind v4 + shadcn
+reference/  Measured design tokens from the reference sites
+```
 
-> Prototype built for HackRice 26. Every profile, post, verification result and
-> medical record in it is fixture data. Nothing contacts a real identity service
-> or a real health system.
+## Run
+
+```sh
+# backend — http://localhost:8000, docs at /docs
+uv sync && uv run uvicorn app.main:app --reload
+
+# frontend — http://localhost:3000
+cd frontend && npm install && npm run dev
+```
+
+**Set `FRONTEND_HOST=http://localhost:3000` in the backend's `.env`.** It
+defaults to `:5173` (a Vite default), and the backend's CORS allows exactly one
+origin — browser calls from Next on `:3000` are rejected before reaching a
+route otherwise.
 
 ## The idea
 
 A **Persona ID** carries a machine-readable capability profile across five
 independent axes — vision, hearing, motor control, speech, pace. Two things
-read that profile at runtime:
+read it at runtime:
 
-1. **The verification router.** A standard liveness check asks you to turn your
-   head. If your profile says you can't, that check isn't offered — and the
-   screen names the exact demand that ruled it out rather than silently hiding
-   it. Provider attestation stays available to everyone as the universal route.
+1. **The verification router** (`/identity`). A standard liveness check asks
+   you to turn your head. If your profile says you can't, that check isn't
+   offered — and the screen names the exact demand that ruled it out rather
+   than hiding it.
 2. **The interface renderer.** Type scale, target size, contrast, density,
-   motion and the entire interaction model are derived from the profile. At
+   motion and the whole interaction model derive from the profile. At
    `vision: 0` the app doesn't get bigger text — it becomes a different
-   interface: one item at a time, announced aloud, advanced by two targets that
-   fill half the viewport.
+   interface: one item at a time, read aloud, advanced by two targets filling
+   half the viewport.
 
-A healthcare provider can corroborate the profile through a scoped consent
-flow, turning a self-asserted claim into a credential.
+## Routes
+
+| Route | What it is |
+|---|---|
+| `/` | Landing, with the WebGL duotone canyon |
+| `/login` → `/verify` | Appwrite magic-link sign-in and its callback |
+| `/profile` | Plot your capability profile; consequences annotate live |
+| `/identity` | Which identity checks you can finish, and why not the others |
+| `/consent` | Scoped provider authorization (fictional Meridian Health) |
+| `/feed` · `/agent` | The social half and the assistive half |
+
+`/verify` belongs to Appwrite's magic link. The capability-based identity
+check is `/identity` — they are different things and both are needed.
 
 ## Try the adaptation
 
-The whole point is that the same data renders differently. Start at `/profile`,
-move an axis, and watch the margin annotate what changed. Then visit `/feed`:
+Start at `/profile`, move an axis, watch the margin. Then visit `/feed`:
 
 | Set this | And the app does this |
 |---|---|
-| Vision → *I don't use sight to read a screen* | Voice-first surface, one post at a time, read aloud, full-width hold target |
-| Vision → *heavy magnification* | Type scale ×1.5, contrast pushed to maximum |
-| Motor → *can't turn my head or hold a device* | Selfie liveness and document scan drop out of verification; targets go to 56px |
-| Speech → *I don't speak aloud* | Voice passphrase drops out; nothing requires voice input |
-| Pace → *one thing at a time* | One post per screen, motion off, fine grid rules removed |
+| Vision → *I don't use sight to read a screen* | Voice-first surface, one post at a time, read aloud |
+| Vision → *heavy magnification* | Type ×1.5, contrast to max, display weight raised |
+| Motor → *can't turn my head or hold a device* | Selfie liveness and document scan drop out; targets 56px |
+| Speech → *I don't speak aloud* | Voice passphrase drops out; nothing requires voice |
+| Pace → *one thing at a time* | One post per screen, motion off |
 
-Hold anywhere on the page — or hold the **space bar** — to talk to the agent.
-
-## Running it
-
-```bash
-npm install
-npm run dev      # http://localhost:3000
-```
-
-```bash
-npm run build && npm run start
-node scripts/screenshot.mjs ./shots   # captures every screen × profile × viewport
-```
+Hold anywhere — or hold **space** — to talk to the agent.
 
 ## Where things live
 
 ```
-src/lib/capability.ts    the five axes, their stops, the Profile type
-src/lib/adaptation.ts    Profile → Adaptation. Every UI difference derives here
-src/lib/verification.ts  each modality's real requirements, and the router
-src/lib/meridian.ts      the fictional provider, its FHIR-shaped scopes
-src/lib/session.tsx      external store; writes adaptation to document tokens
-
-src/app/profile          plot your profile, consequences annotate live
-src/app/verify           which checks you can finish, and why not the others
-src/app/consent          scoped provider authorization
-src/app/(app)/feed       the social half
-src/app/(app)/agent      the assistive half
+frontend/lib/capability.ts    the five axes and the Profile type
+frontend/lib/adaptation.ts    Profile → Adaptation. Every UI difference derives here
+frontend/lib/verification.ts  each modality's real requirements, and the router
+frontend/lib/meridian.ts      the fictional provider and its FHIR-shaped scopes
+frontend/lib/session.tsx      capability profile store
+frontend/lib/auth-context.tsx Appwrite account (from the backend scaffold)
+frontend/lib/api.ts           FastAPI client
+frontend/components/canyon/   the WebGL duotone shader
 ```
 
 Components never branch on disability — they branch on `Adaptation`. Adding an
-axis means changing `adaptation.ts`, not fifty components.
+axis means editing one file.
 
 ## Simulated, deliberately
 
-- **Meridian Health is fictional.** It stands in for a real provider
-  integration. Its scopes mirror FHIR resource/field pairs so swapping in a real
-  one is mechanical. A pixel-copy of a real insurer's sign-in page that accepts
-  credentials is a phishing page regardless of intent, so we didn't build one.
-- **Verification is simulated.** No identity service is contacted.
-- **Speech synthesis is real** where the browser supports it. Speech
-  *recognition* is simulated and labelled as such on screen — the Web Speech
-  recognition API is Chromium-only and needs a live mic grant, which a demo
-  shouldn't depend on.
+- **Meridian Health is fictional**, standing in for a real provider
+  integration. Its scopes mirror FHIR resource/field pairs so swapping in a
+  real one is mechanical.
+- **Identity verification is simulated.** No identity service is contacted.
+- **Speech synthesis is real** where the browser supports it; recognition is
+  simulated and labelled as such on screen.
 
 ## Design
 
-The visual world is a **contre-jour canyon rendered as a luminance duotone**:
-two dark masses converging on a bright gap, resolved through Persona's brand
-ramp and broken into an ordered dot matrix that thickens toward the light.
-
-The hero (`src/components/canyon/`) is a WebGL fragment shader — an SDF height
-field raymarched with smin'd blobs for the walls, resolved to pure luminance,
-then duotone-mapped with the filter strength scaling by luminance and an 8×8
-Bayer dither gated on the same value. It renders at reduced device pixels
-(the dither hides it), caps at ~30fps, stops when off-screen, freezes under
-reduced motion, and drops its dot matrix for a low-vision profile so text
-contrast holds.
-
-Type is Inter Tight with Geist Mono for anything that is literally data. See
-[DESIGN.md](DESIGN.md) for the palette, the shader stages and the motion
-rules, and [PRODUCT.md](PRODUCT.md) for the product record.
+Light-first: warm cream paper with deep navy ink, on river.ai's measured
+palette, with Persona's `#3f48fd` carrying the primary action. See
+[DESIGN.md](DESIGN.md) and [reference/extracted-tokens.md](reference/extracted-tokens.md).
