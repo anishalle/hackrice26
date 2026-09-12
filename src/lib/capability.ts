@@ -71,7 +71,7 @@ export const AXIS_SPECS: Record<Axis, AxisSpec> = {
     axis: "speech",
     title: "Speech",
     question: "How do you speak aloud?",
-    unit: "intelligibility",
+    unit: "clarity",
     stops: [
       { level: 0, label: "I don't speak aloud", code: "NON-SPEAKING" },
       { level: 1, label: "Speech recognition rarely understands me", code: "LOW INTELLIG." },

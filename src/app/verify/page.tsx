@@ -48,12 +48,12 @@ export default function VerifyPage() {
   }
 
   return (
-    <main className="graph-paper min-h-dvh">
+    <main className="min-h-dvh bg-[var(--bg)]">
       <div className="mx-auto max-w-[54rem] px-6 py-6 sm:px-10">
         <header className="flex items-center justify-between">
           <Link
             href="/profile"
-            className="target -ml-3 inline-flex items-center gap-2 px-3 font-mono text-[0.8125rem] tracking-[0.18em] uppercase text-[var(--ink-2)] transition-colors hover:text-[var(--ink)]"
+            className="target -ml-3 inline-flex items-center gap-2 px-3 font-mono text-[0.8125rem] tracking-[0.18em] uppercase text-[var(--text-2)] transition-colors hover:text-[var(--text)]"
           >
             <IconArrowLeft width={16} height={16} />
             Profile
@@ -63,14 +63,14 @@ export default function VerifyPage() {
 
         <div className="mt-14 max-w-[36rem]">
           <PlotLabel>Step 2 of 3</PlotLabel>
-          <h1 className="mt-3 font-[family-name:var(--font-instrument-serif)] text-[clamp(2rem,4.5vw,3rem)] leading-[1.03] tracking-[-0.02em]">
+          <h1 className="mt-3 display-sm text-[clamp(2rem,4.5vw,3rem)]">
             Prove it&rsquo;s you, a way you can finish.
           </h1>
-          <p className="mt-4 text-[1rem] leading-[1.6] text-[var(--ink-2)]">
+          <p className="mt-4 text-[1rem] leading-[1.6] text-[var(--text-2)]">
             Five standard checks were evaluated against your profile.{" "}
             {hydrated && unavailable.length > 0 ? (
               <>
-                <span className="font-mono tabular-nums text-[var(--plot)]">{unavailable.length}</span>{" "}
+                <span className="font-mono tabular-nums text-[var(--brand)]">{unavailable.length}</span>{" "}
                 make a demand you told us you can&rsquo;t meet, so they&rsquo;re off the table — and
                 here&rsquo;s exactly which demand.
               </>
@@ -95,18 +95,18 @@ export default function VerifyPage() {
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2.5">
-                        <IconCheck width={17} height={17} className="shrink-0 text-[var(--attest)]" />
+                        <IconCheck width={17} height={17} className="shrink-0 text-[var(--accent)]" />
                         <h2 className="text-[1.0625rem] font-medium">{v.modality.name}</h2>
                         {pick?.modality.id === v.modality.id && (
-                          <span className="font-mono text-[0.6875rem] uppercase tracking-[0.1em] text-[var(--attest)]">
+                          <span className="font-mono text-[0.6875rem] uppercase tracking-[0.1em] text-[var(--accent)]">
                             Recommended
                           </span>
                         )}
                       </div>
-                      <p className="mt-2 text-[0.9375rem] leading-[1.55] text-[var(--ink-2)]">
+                      <p className="mt-2 text-[0.9375rem] leading-[1.55] text-[var(--text-2)]">
                         {v.modality.action}
                       </p>
-                      <p className="mt-2.5 font-mono text-[0.75rem] text-[var(--ink-2)]">
+                      <p className="mt-2.5 font-mono text-[0.75rem] text-[var(--text-2)]">
                         ~{v.modality.duration}s &middot; {v.modality.assurance} assurance
                       </p>
                     </div>
@@ -136,10 +136,10 @@ export default function VerifyPage() {
                   <IconBlocked
                     width={17}
                     height={17}
-                    className="mt-0.5 shrink-0 text-[var(--ink-2)] opacity-60"
+                    className="mt-0.5 shrink-0 text-[var(--text-2)] opacity-60"
                   />
                   <div className="min-w-0">
-                    <h3 className="text-[0.9375rem] text-[var(--ink-2)] line-through decoration-[var(--ink-2)]/50">
+                    <h3 className="text-[0.9375rem] text-[var(--text-2)] line-through decoration-[var(--text-2)]/50">
                       {v.modality.name}
                     </h3>
                     {v.blockers.map((b) => (
@@ -157,8 +157,8 @@ export default function VerifyPage() {
         <div className="mt-12">
           <Rule />
           <div className="mt-5 flex gap-3">
-            <IconShield width={18} height={18} className="mt-0.5 shrink-0 text-[var(--ink-2)]" />
-            <p className="max-w-[38rem] text-[0.875rem] leading-[1.6] text-[var(--ink-2)]">
+            <IconShield width={18} height={18} className="mt-0.5 shrink-0 text-[var(--text-2)]" />
+            <p className="max-w-[38rem] text-[0.875rem] leading-[1.6] text-[var(--text-2)]">
               Provider attestation always stays available. When every camera- and
               voice-based check is ruled out, a healthcare provider confirming
               your identity is the route that works for anyone &mdash; which is
@@ -166,7 +166,7 @@ export default function VerifyPage() {
             </p>
           </div>
           <div className="mt-5 flex items-center gap-2.5">
-            <IconLock width={14} height={14} className="text-[var(--ink-2)]" />
+            <IconLock width={14} height={14} className="text-[var(--text-2)]" />
             <SimulatedBadge>
               Simulated verification &middot; no identity service is contacted
             </SimulatedBadge>

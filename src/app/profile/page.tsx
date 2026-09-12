@@ -25,12 +25,12 @@ export default function ProfilePage() {
   const animate = !reduce && !adaptation.reduceMotion;
 
   return (
-    <main className="graph-paper min-h-dvh">
+    <main className="min-h-dvh bg-[var(--bg)]">
       <div className="mx-auto max-w-[72rem] px-6 py-6 sm:px-10">
         <header className="flex items-center justify-between">
           <Link
             href="/"
-            className="target -ml-3 inline-flex items-center gap-2 px-3 font-mono text-[0.8125rem] tracking-[0.18em] uppercase text-[var(--ink-2)] transition-colors hover:text-[var(--ink)]"
+            className="target -ml-3 inline-flex items-center gap-2 px-3 font-mono text-[0.8125rem] tracking-[0.18em] uppercase text-[var(--text-2)] transition-colors hover:text-[var(--text)]"
           >
             <IconArrowLeft width={16} height={16} />
             Axis
@@ -40,10 +40,10 @@ export default function ProfilePage() {
 
         <div className="mt-14 max-w-[34rem]">
           <PlotLabel>Step 1 of 3</PlotLabel>
-          <h1 className="mt-3 font-[family-name:var(--font-instrument-serif)] text-[clamp(2rem,4.5vw,3rem)] leading-[1.03] tracking-[-0.02em]">
+          <h1 className="mt-3 display-sm text-[clamp(2rem,4.5vw,3rem)]">
             Plot your profile.
           </h1>
-          <p className="mt-4 text-[1rem] leading-[1.6] text-[var(--ink-2)]">
+          <p className="mt-4 text-[1rem] leading-[1.6] text-[var(--text-2)]">
             Everything starts at full. Move only the axes that aren&rsquo;t true
             for you. Each change is answered in the margin with what the product
             will do differently.
@@ -55,7 +55,7 @@ export default function ProfilePage() {
           <Panel className="p-6 sm:p-8">
             <div className="flex items-baseline justify-between">
               <PlotLabel>Capability chart</PlotLabel>
-              <PlotLabel className="text-[var(--plot)]">{hydrated ? fingerprint(profile) : "—"}</PlotLabel>
+              <PlotLabel className="text-[var(--brand)]">{hydrated ? fingerprint(profile) : "—"}</PlotLabel>
             </div>
             <Rule className="mt-3" />
 
@@ -89,7 +89,7 @@ export default function ProfilePage() {
                       transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
                     >
                       <Annotation>
-                        <span className="text-[var(--ink-2)]">
+                        <span className="text-[var(--text-2)]">
                           {AXIS_SPECS[note.axis].title.toLowerCase()} &middot;{" "}
                           {stopFor(note.axis, profile[note.axis]).code}
                         </span>
@@ -104,7 +104,7 @@ export default function ProfilePage() {
                     initial={false}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="font-mono text-[0.75rem] leading-[1.6] text-[var(--ink-2)]"
+                    className="font-mono text-[0.75rem] leading-[1.6] text-[var(--text-2)]"
                   >
                     Nothing yet. At full on every axis the interface stays as it
                     is — which is the point: the profile only ever adds routes,
@@ -123,9 +123,9 @@ export default function ProfilePage() {
               >
                 <Rule />
                 <div className="mt-5 flex gap-2.5">
-                  <IconBlocked width={16} height={16} className="mt-0.5 shrink-0 text-[var(--plot)]" />
+                  <IconBlocked width={16} height={16} className="mt-0.5 shrink-0 text-[var(--brand)]" />
                   <p className="text-[0.875rem] leading-[1.55]">
-                    <span className="font-mono tabular-nums text-[var(--plot)]">{blocked}</span> of{" "}
+                    <span className="font-mono tabular-nums text-[var(--brand)]">{blocked}</span> of{" "}
                     <span className="font-mono tabular-nums">{verdicts.length}</span> standard identity
                     checks would lock you out. The next step routes around them.
                   </p>
@@ -140,7 +140,7 @@ export default function ProfilePage() {
             Continue to verification
             <IconArrowRight width={18} height={18} />
           </ButtonLink>
-          <p className="font-mono text-[0.75rem] text-[var(--ink-2)]">
+          <p className="font-mono text-[0.75rem] text-[var(--text-2)]">
             You can change any axis later without re-verifying.
           </p>
         </div>

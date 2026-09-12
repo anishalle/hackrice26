@@ -1,91 +1,170 @@
-import { ButtonLink, Annotation, PlotLabel, Rule, SimulatedBadge } from "@/components/ui";
-import { IconArrowRight } from "@/components/icons";
-import { AXIS_SPECS, AXES } from "@/lib/capability";
-import { ThemeToggle } from "@/components/theme-toggle";
+"use client";
 
-/**
- * The entry screen. It states the mechanism rather than selling it: this is the
- * first thing a person with a disability sees, and a marketing page that talks
- * about them in the third person would fail the product's own principles.
- */
+import Link from "next/link";
+import { motion, useReducedMotion } from "motion/react";
+import { Canyon } from "@/components/canyon";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { ButtonLink } from "@/components/ui";
+import { IconArrowRight } from "@/components/icons";
+import { AXES, AXIS_SPECS } from "@/lib/capability";
+import { useSession } from "@/lib/session";
+
 export default function Home() {
+  const { adaptation } = useSession();
+  const reduce = useReducedMotion();
+  const animate = !reduce && !adaptation.reduceMotion;
+
+  const rise = (delay: number) => ({
+    initial: animate ? { opacity: 0, y: 14 } : false,
+    animate: { opacity: 1, y: 0 },
+    transition: { duration: 0.9, delay, ease: [0.16, 1, 0.3, 1] as const },
+  });
+
   return (
-    <main className="graph-paper min-h-dvh">
-      <div className="mx-auto max-w-[68rem] px-6 py-6 sm:px-10">
-        <header className="flex items-center justify-between">
-          <p className="font-mono text-[0.8125rem] tracking-[0.18em] uppercase">Axis</p>
-          <ThemeToggle />
+    <main>
+      {/* ------------------------------------------------------------ hero -- */}
+      <section className="relative min-h-dvh overflow-hidden">
+        <Canyon className="pointer-events-none absolute inset-0" />
+
+        {/* Legibility floor under the text. The shader is beautiful but it is
+            not allowed to decide whether the headline is readable. */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(to top, color-mix(in oklab, var(--bg) 92%, transparent) 0%, color-mix(in oklab, var(--bg) 58%, transparent) 34%, transparent 66%), linear-gradient(100deg, color-mix(in oklab, var(--bg) 72%, transparent) 0%, transparent 46%)",
+          }}
+        />
+
+        <header className="relative z-20">
+          <div className="mx-auto flex max-w-[82rem] items-center justify-between px-6 py-5 sm:px-10">
+            <Wordmark />
+            <nav aria-label="Main" className="flex items-center gap-1">
+              <a
+                href="#how"
+                className="target inline-flex items-center rounded-full px-4 text-[0.9375rem] text-[var(--text-2)] transition-colors hover:text-[var(--text)]"
+              >
+                How it works
+              </a>
+              <ThemeToggle />
+            </nav>
+          </div>
         </header>
 
-        <div className="mt-16 max-w-[38rem] sm:mt-24">
-          <h1 className="font-[family-name:var(--font-instrument-serif)] text-[clamp(2.75rem,7vw,4.5rem)] leading-[0.98] tracking-[-0.02em] text-balance">
-            Your capabilities are the input, not a setting.
-          </h1>
+        <div className="relative z-10 mx-auto flex min-h-[calc(100dvh-5.5rem)] max-w-[82rem] flex-col justify-end px-6 pb-32 sm:px-10 sm:pb-28">
+          <motion.p {...rise(0.05)} className="eyebrow !text-[var(--text-2)]">
+            Personal AI · Accessibility
+          </motion.p>
 
-          <p className="mt-7 max-w-[34rem] text-[1.0625rem] leading-[1.6] text-[var(--ink-2)]">
-            One profile, plotted by you, decides two things most software decides
-            for you: how you prove who you are, and what the interface becomes
-            once you&rsquo;re in.
-          </p>
+          <motion.h1
+            {...rise(0.14)}
+            className="display mt-5 max-w-[16ch] text-[clamp(2.5rem,5.6vw,4.5rem)]"
+          >
+            An interface that reads your capability profile.
+          </motion.h1>
 
-          <div className="mt-9 flex flex-wrap items-center gap-4">
-            <ButtonLink href="/profile" className="h-12">
+          <motion.p
+            {...rise(0.24)}
+            className="mt-6 max-w-[44ch] text-[clamp(1rem,1.3vw,1.1875rem)] leading-[1.55] text-[var(--text-2)]"
+          >
+            One profile decides two things most software decides for you: how
+            you prove who you are, and what the interface becomes once
+            you&rsquo;re in.
+          </motion.p>
+
+          <motion.div {...rise(0.34)} className="mt-10 flex flex-wrap items-center gap-4">
+            <ButtonLink href="/profile" className="h-13 rounded-full px-7 text-[1rem]">
               Plot your profile
               <IconArrowRight width={18} height={18} />
             </ButtonLink>
-            <p className="font-mono text-[0.75rem] text-[var(--ink-2)]">5 axes &middot; about 90 seconds</p>
-          </div>
+            <p className="font-mono text-[0.8125rem] text-[var(--text-3)]">
+              5 axes &middot; about 90 seconds
+            </p>
+          </motion.div>
         </div>
 
-        <div className="mt-20 sm:mt-24">
-          <Rule major />
-          <div className="grid gap-x-10 gap-y-9 py-9 sm:grid-cols-3">
+        <div
+          aria-hidden
+          className="absolute inset-x-0 bottom-0 z-10 flex justify-center pb-8"
+        >
+          <span className="eyebrow !text-[var(--text-2)]">Scroll</span>
+        </div>
+      </section>
+
+      {/* ------------------------------------------------------ mechanism -- */}
+      <section id="how" className="relative z-10 bg-[var(--bg)]">
+        <div className="mx-auto max-w-[82rem] px-6 py-24 sm:px-10 sm:py-32">
+          <p className="eyebrow">The mechanism</p>
+          <h2 className="display-sm mt-5 max-w-[22ch] text-[clamp(1.875rem,3.6vw,3rem)]">
+            Accessibility as the input, not a compliance layer.
+          </h2>
+
+          <div className="mt-16 grid gap-px overflow-hidden rounded-[var(--r)] border border-[var(--line)] bg-[var(--line)] sm:grid-cols-3">
             <Mechanism
-              n="Verification"
-              body="A liveness check that asks you to turn your head isn't offered to someone who can't turn their head. The profile picks a modality you can actually finish."
+              n="01"
+              title="Verification that routes"
+              body="A liveness check that asks you to turn your head isn't offered to someone who can't. The ruled-out checks stay on screen, each naming the exact demand that ruled it out."
             />
             <Mechanism
-              n="Attestation"
-              body="Your provider can corroborate the profile over a consented, field-scoped query — so it's a credential, not a claim."
+              n="02"
+              title="Attestation, scoped"
+              body="A provider corroborates the profile over a consented, field-limited query. You see every record before it's read, and refuse any of them."
             />
             <Mechanism
-              n="Interface"
-              body="The UI is generated from the profile. Two people see genuinely different screens over the same data, and both finish the task."
+              n="03"
+              title="An interface that regenerates"
+              body="Type scale, target size, contrast, density and the interaction model all derive from the profile. Two people see different screens over the same data."
             />
           </div>
-          <Rule major />
-        </div>
 
-        <div className="mt-9 flex flex-wrap items-end justify-between gap-6">
-          <div>
-            <PlotLabel>Axes on file</PlotLabel>
-            <ul className="mt-2 flex flex-wrap gap-x-5 gap-y-1">
-              {AXES.map((axis) => (
-                <li key={axis} className="font-mono text-[0.8125rem]">
-                  {AXIS_SPECS[axis].title}
-                </li>
-              ))}
-            </ul>
+          <div className="mt-14 flex flex-wrap items-end justify-between gap-8 border-t border-[var(--line)] pt-8">
+            <div>
+              <p className="eyebrow">Axes on file</p>
+              <ul className="mt-3 flex flex-wrap gap-x-6 gap-y-2">
+                {AXES.map((axis) => (
+                  <li key={axis} className="font-mono text-[0.875rem] text-[var(--text-2)]">
+                    {AXIS_SPECS[axis].title}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <p className="max-w-[34ch] font-mono text-[0.75rem] leading-[1.6] text-[var(--text-3)]">
+              Prototype. Nothing here reaches a real identity service or a real
+              medical record — every profile, post and verification result is
+              fixture data.
+            </p>
           </div>
-          <SimulatedBadge>Prototype &middot; simulated data throughout</SimulatedBadge>
         </div>
-
-        <Annotation className="mt-6 max-w-[34rem]">
-          Nothing here reaches a real identity service or a real medical record.
-          Every profile, post and verification result is fixture data.
-        </Annotation>
-
-        <div className="h-16" />
-      </div>
+      </section>
     </main>
   );
 }
 
-function Mechanism({ n, body }: { n: string; body: string }) {
+function Mechanism({ n, title, body }: { n: string; title: string; body: string }) {
   return (
-    <div>
-      <h2 className="font-mono text-[0.75rem] uppercase tracking-[0.14em] text-[var(--plot)]">{n}</h2>
-      <p className="mt-2.5 text-[0.9375rem] leading-[1.55] text-[var(--ink-2)]">{body}</p>
+    <div className="bg-[var(--bg)] p-8 sm:p-9">
+      <span className="font-mono text-[0.75rem] text-[var(--brand)]">{n}</span>
+      <h3 className="mt-5 text-[1.125rem] font-medium tracking-[-0.01em]">{title}</h3>
+      <p className="mt-3 text-[0.9375rem] leading-[1.6] text-[var(--text-2)]">{body}</p>
     </div>
+  );
+}
+
+function Wordmark() {
+  return (
+    <Link href="/" className="group inline-flex items-center gap-2.5" aria-label="Axis, home">
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+        <path
+          d="M3 19 11 3l8 16"
+          stroke="var(--brand)"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path d="M6.6 13.4h8.8" stroke="var(--accent)" strokeWidth="1.6" strokeLinecap="round" />
+      </svg>
+      <span className="text-[1.0625rem] font-medium tracking-[-0.02em]">Axis</span>
+    </Link>
   );
 }

@@ -12,7 +12,7 @@ export interface SessionState {
   profileComplete: boolean;
   verifiedWith: ModalityId | null;
   attestation: Attestation | null;
-  theme: "light" | "dark";
+  theme: "dark" | "light";
   /** False until the stored session has been read, so SSR and client agree. */
   hydrated: boolean;
 }
@@ -22,7 +22,7 @@ const INITIAL: SessionState = {
   profileComplete: false,
   verifiedWith: null,
   attestation: null,
-  theme: "light",
+  theme: "dark",
   hydrated: false,
 };
 

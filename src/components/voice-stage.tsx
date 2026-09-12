@@ -120,11 +120,11 @@ export function VoiceStage({
   return (
     <section aria-label={label} className="flex min-h-[calc(100dvh-9rem)] flex-col">
       <div className="flex items-baseline justify-between">
-        <p className="font-mono text-[0.8125rem] uppercase tracking-[0.14em] text-[var(--ink-2)]">
+        <p className="font-mono text-[0.8125rem] uppercase tracking-[0.14em] text-[var(--text-2)]">
           {label}
         </p>
-        <p className="font-mono text-[0.8125rem] tabular-nums text-[var(--ink-2)]">
-          <span className="text-[var(--plot)]">{index + 1}</span> of {items.length}
+        <p className="font-mono text-[0.8125rem] tabular-nums text-[var(--text-2)]">
+          <span className="text-[var(--brand)]">{index + 1}</span> of {items.length}
         </p>
       </div>
 
@@ -138,11 +138,11 @@ export function VoiceStage({
       >
         <div aria-live="polite" aria-atomic="true">
           {item.meta && (
-            <p className="font-mono text-[0.875rem] uppercase tracking-[0.1em] text-[var(--ink-2)]">
+            <p className="font-mono text-[0.875rem] uppercase tracking-[0.1em] text-[var(--text-2)]">
               {item.meta}
             </p>
           )}
-          <h2 className="mt-5 font-[family-name:var(--font-instrument-serif)] text-[clamp(2.25rem,5.5vw,3.75rem)] leading-[1.08] tracking-[-0.02em] text-balance">
+          <h2 className="mt-5 display-sm text-[clamp(2.25rem,5.5vw,3.75rem)] text-balance">
             {item.title}
           </h2>
           <p className="mt-7 text-[clamp(1.125rem,2vw,1.5rem)] leading-[1.55]" style={{ maxWidth: "44ch" }}>
@@ -154,7 +154,7 @@ export function VoiceStage({
           <button
             type="button"
             onClick={() => (speaking ? stop() : speak(`${item.title}. ${item.body}`))}
-            className="hairline inline-flex h-16 items-center gap-3 border-[var(--rule-major)] px-6 text-[1.0625rem] font-medium transition-colors hover:border-[var(--ink-2)]"
+            className="border inline-flex h-16 items-center gap-3 border-[var(--line)] px-6 text-[1.0625rem] font-medium transition-colors hover:border-[var(--text-2)]"
           >
             <IconMic width={22} height={22} />
             {speaking ? "Stop reading" : "Read again"}
@@ -172,7 +172,7 @@ export function VoiceStage({
         onPointerUp={onHoldEnd}
         onPointerLeave={onHoldEnd}
         className="mb-3 flex h-24 w-full items-center justify-center gap-4 text-[1.25rem] font-medium transition-opacity active:opacity-90"
-        style={{ backgroundColor: "var(--plot)", color: "var(--paper-raised)" }}
+        style={{ backgroundColor: "var(--brand)", color: "var(--surface)" }}
       >
         <IconMic width={28} height={28} />
         Hold to talk
@@ -183,7 +183,7 @@ export function VoiceStage({
         <button
           type="button"
           onClick={() => go(-1)}
-          className="hairline flex h-24 items-center justify-center gap-3 border-[var(--rule-major)] text-[1.125rem] font-medium transition-colors hover:bg-[color-mix(in_oklab,var(--ink)_5%,transparent)]"
+          className="border flex h-24 items-center justify-center gap-3 border-[var(--line)] text-[1.125rem] font-medium transition-colors hover:bg-[color-mix(in_oklab,var(--text)_5%,transparent)]"
         >
           <IconArrowLeft width={24} height={24} />
           Previous
@@ -191,14 +191,14 @@ export function VoiceStage({
         <button
           type="button"
           onClick={() => go(1)}
-          className="hairline flex h-24 items-center justify-center gap-3 border-[var(--rule-major)] text-[1.125rem] font-medium transition-colors hover:bg-[color-mix(in_oklab,var(--ink)_5%,transparent)]"
+          className="border flex h-24 items-center justify-center gap-3 border-[var(--line)] text-[1.125rem] font-medium transition-colors hover:bg-[color-mix(in_oklab,var(--text)_5%,transparent)]"
         >
           Next
           <IconArrowRight width={24} height={24} />
         </button>
       </div>
 
-      <p className="pb-2 font-mono text-[0.8125rem] leading-[1.5] text-[var(--ink-2)]">
+      <p className="pb-2 font-mono text-[0.8125rem] leading-[1.5] text-[var(--text-2)]">
         Hold anywhere, or hold the space bar, to ask the agent for something.
         Left and right arrow keys move between items.
       </p>

@@ -196,7 +196,7 @@ export function VoiceLayer() {
         onPointerLeave={() => active.current && release()}
         aria-label="Hold to talk to the agent"
         className="fixed bottom-6 right-6 z-40 flex h-14 items-center gap-3 px-5 text-[0.9375rem] font-medium shadow-[0_2px_16px_-4px_rgba(0,0,0,0.25)] transition-transform duration-150 active:scale-[0.97]"
-        style={{ backgroundColor: "var(--plot)", color: "var(--paper-raised)", borderRadius: 999 }}
+        style={{ backgroundColor: "var(--brand)", color: "var(--surface)", borderRadius: 999 }}
       >
         <IconMic width={20} height={20} />
         Hold to talk
@@ -211,7 +211,7 @@ export function VoiceLayer() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.18 }}
             className="fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center"
-            style={{ backgroundColor: "color-mix(in oklab, var(--paper) 82%, transparent)" }}
+            style={{ backgroundColor: "color-mix(in oklab, var(--bg) 82%, transparent)" }}
             onClick={phase === "answering" ? dismiss : undefined}
           >
             <motion.div
@@ -219,14 +219,14 @@ export function VoiceLayer() {
               animate={{ y: 0, opacity: 1 }}
               exit={animate ? { y: 10, opacity: 0 } : { opacity: 0 }}
               transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
-              className="hairline w-full max-w-[42rem] border-[var(--rule-major)] p-7 sm:p-9"
-              style={{ backgroundColor: "var(--paper-raised)" }}
+              className="border w-full max-w-[42rem] border-[var(--line)] p-7 sm:p-9"
+              style={{ backgroundColor: "var(--surface)" }}
               role="dialog"
               aria-modal="true"
               aria-label="Talking to the agent"
             >
               <div className="flex items-center justify-between">
-                <p className="font-mono text-[0.6875rem] uppercase tracking-[0.12em] text-[var(--ink-2)]">
+                <p className="font-mono text-[0.6875rem] uppercase tracking-[0.12em] text-[var(--text-2)]">
                   {phase === "listening" && "Listening"}
                   {phase === "thinking" && "Working"}
                   {phase === "answering" && "Answer"}
@@ -236,9 +236,9 @@ export function VoiceLayer() {
 
               <p
                 aria-live="polite"
-                className="mt-5 font-[family-name:var(--font-instrument-serif)] text-[clamp(1.5rem,3.5vw,2.125rem)] leading-[1.2] tracking-[-0.015em]"
+                className="mt-5 display-sm text-[clamp(1.5rem,3.5vw,2.125rem)]"
               >
-                {heard || <span className="text-[var(--ink-2)]">…</span>}
+                {heard || <span className="text-[var(--text-2)]">…</span>}
               </p>
 
               {reply && (
@@ -248,22 +248,22 @@ export function VoiceLayer() {
                   transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
                   className="mt-7"
                 >
-                  <div className="h-px w-full" style={{ backgroundColor: "var(--rule)" }} />
+                  <div className="h-px w-full" style={{ backgroundColor: "var(--line-soft)" }} />
                   <p
                     aria-live="polite"
-                    className="mt-5 text-[1.0625rem] leading-[1.6] text-[var(--ink)]"
+                    className="mt-5 text-[1.0625rem] leading-[1.6] text-[var(--text)]"
                     style={{ maxWidth: "68ch" }}
                   >
                     {reply}
                   </p>
-                  <p className="mt-6 font-mono text-[0.6875rem] uppercase tracking-[0.1em] text-[var(--ink-2)]">
+                  <p className="mt-6 font-mono text-[0.6875rem] uppercase tracking-[0.1em] text-[var(--text-2)]">
                     Press Escape to close &middot; simulated transcription
                   </p>
                 </motion.div>
               )}
 
               {phase === "listening" && (
-                <p className="mt-6 font-mono text-[0.75rem] text-[var(--ink-2)]">
+                <p className="mt-6 font-mono text-[0.75rem] text-[var(--text-2)]">
                   Let go when you&rsquo;re done.
                 </p>
               )}
@@ -283,7 +283,7 @@ function Waveform({ animate }: { animate: boolean }) {
         <motion.span
           key={i}
           className="w-[3px] rounded-full"
-          style={{ backgroundColor: "var(--plot)" }}
+          style={{ backgroundColor: "var(--brand)" }}
           initial={{ height: 6 }}
           animate={animate ? { height: [6, 18, 9, 22, 6] } : { height: 12 }}
           transition={

@@ -48,10 +48,10 @@ export default function AgentPage() {
   return (
     <div>
       <div className="max-w-[36rem]">
-        <h1 className="font-[family-name:var(--font-instrument-serif)] text-[clamp(1.875rem,4vw,2.75rem)] leading-[1.05] tracking-[-0.02em] text-balance">
+        <h1 className="display-sm text-[clamp(1.875rem,4vw,2.75rem)] text-balance">
           Hand it the parts that used to be fast.
         </h1>
-        <p className="mt-4 text-[0.9375rem] leading-[1.6] text-[var(--ink-2)]">
+        <p className="mt-4 text-[0.9375rem] leading-[1.6] text-[var(--text-2)]">
           {hydrated && adaptation.voiceInputUnavailable
             ? "Every task here is startable without speaking — your profile says voice input isn't a route we should rely on."
             : "Start any of these by tapping, or hold anywhere on the page and just say it."}
@@ -74,8 +74,8 @@ export default function AgentPage() {
       <div className="mt-10">
         <Rule />
         <div className="mt-5 flex gap-3">
-          <IconMic width={17} height={17} className="mt-0.5 shrink-0 text-[var(--ink-2)]" />
-          <p className="max-w-[40rem] text-[0.875rem] leading-[1.6] text-[var(--ink-2)]">
+          <IconMic width={17} height={17} className="mt-0.5 shrink-0 text-[var(--text-2)]" />
+          <p className="max-w-[40rem] text-[0.875rem] leading-[1.6] text-[var(--text-2)]">
             In voice-first mode the agent is not a tab — it&rsquo;s how the whole
             app is operated. It reads the feed aloud, drafts replies in your
             voice, and posts them when you say go.
@@ -108,13 +108,13 @@ function TaskRow({
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2.5">
-            <IconAgent width={17} height={17} className="shrink-0 text-[var(--ink-2)]" />
+            <IconAgent width={17} height={17} className="shrink-0 text-[var(--text-2)]" />
             <h2 className="text-[1.0625rem] font-medium">{task.title}</h2>
           </div>
-          <p className="mt-2 text-[0.9375rem] leading-[1.55] text-[var(--ink-2)]" style={{ maxWidth: "62ch" }}>
+          <p className="mt-2 text-[0.9375rem] leading-[1.55] text-[var(--text-2)]" style={{ maxWidth: "62ch" }}>
             {task.detail}
           </p>
-          <p className="mt-2.5 font-mono text-[0.75rem] text-[var(--ink-2)]">{task.duration}</p>
+          <p className="mt-2.5 font-mono text-[0.75rem] text-[var(--text-2)]">{task.duration}</p>
 
           {matches.length > 0 && (
             <Annotation className="mt-3">
@@ -133,7 +133,7 @@ function TaskRow({
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
                 className="inline-flex h-11 items-center gap-2 px-2 font-mono text-[0.8125rem]"
-                style={{ color: "var(--attest)" }}
+                style={{ color: "var(--accent)" }}
               >
                 <IconCheck width={17} height={17} />
                 Started

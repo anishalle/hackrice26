@@ -56,12 +56,12 @@ export default function ConsentPage() {
   const corroborated = axesCorroborated(granted);
 
   return (
-    <main className="graph-paper min-h-dvh">
+    <main className="min-h-dvh bg-[var(--bg)]">
       <div className="mx-auto max-w-[52rem] px-6 py-6 sm:px-10">
         <header className="flex items-center justify-between">
           <Link
             href="/verify"
-            className="target -ml-3 inline-flex items-center gap-2 px-3 font-mono text-[0.8125rem] tracking-[0.18em] uppercase text-[var(--ink-2)] transition-colors hover:text-[var(--ink)]"
+            className="target -ml-3 inline-flex items-center gap-2 px-3 font-mono text-[0.8125rem] tracking-[0.18em] uppercase text-[var(--text-2)] transition-colors hover:text-[var(--text)]"
           >
             <IconArrowLeft width={16} height={16} />
             Verification
@@ -71,10 +71,10 @@ export default function ConsentPage() {
 
         <div className="mt-14">
           <PlotLabel>Step 3 of 3</PlotLabel>
-          <h1 className="mt-3 max-w-[32rem] font-[family-name:var(--font-instrument-serif)] text-[clamp(2rem,4.5vw,3rem)] leading-[1.03] tracking-[-0.02em]">
+          <h1 className="mt-3 max-w-[32rem] display-sm text-[clamp(2rem,4.5vw,3rem)]">
             {PROVIDER.name} is about to share five things.
           </h1>
-          <p className="mt-4 max-w-[36rem] text-[1rem] leading-[1.6] text-[var(--ink-2)]">
+          <p className="mt-4 max-w-[36rem] text-[1rem] leading-[1.6] text-[var(--text-2)]">
             Each one is listed with the exact record it reads. Turn off anything
             you&rsquo;d rather keep &mdash; only the first is required, and the
             app works without the rest.
@@ -84,10 +84,10 @@ export default function ConsentPage() {
         <Panel className="mt-10">
           <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4 sm:px-7">
             <div className="flex items-center gap-2.5">
-              <IconLock width={16} height={16} className="text-[var(--attest)]" />
+              <IconLock width={16} height={16} className="text-[var(--accent)]" />
               <p className="font-mono text-[0.8125rem] tracking-[0.06em]">{PROVIDER.name}</p>
             </div>
-            <p className="font-mono text-[0.6875rem] uppercase tracking-[0.1em] text-[var(--ink-2)]">
+            <p className="font-mono text-[0.6875rem] uppercase tracking-[0.1em] text-[var(--text-2)]">
               Authorizing &rarr; Axis
             </p>
           </div>
@@ -101,7 +101,7 @@ export default function ConsentPage() {
                   {i > 0 && <Rule />}
                   <label
                     className={`flex cursor-pointer items-start gap-4 px-6 py-5 transition-colors sm:px-7 ${
-                      scope.required ? "cursor-default" : "hover:bg-[color-mix(in_oklab,var(--ink)_3%,transparent)]"
+                      scope.required ? "cursor-default" : "hover:bg-[color-mix(in_oklab,var(--text)_3%,transparent)]"
                     }`}
                   >
                     <input
@@ -109,21 +109,21 @@ export default function ConsentPage() {
                       checked={on}
                       disabled={scope.required}
                       onChange={() => toggle(scope.id, scope.required)}
-                      className="mt-1 h-4 w-4 shrink-0 accent-[var(--plot)] disabled:opacity-50"
+                      className="mt-1 h-4 w-4 shrink-0 accent-[var(--brand)] disabled:opacity-50"
                     />
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                        <span className={`text-[0.9375rem] font-medium ${on ? "" : "text-[var(--ink-2)]"}`}>
+                        <span className={`text-[0.9375rem] font-medium ${on ? "" : "text-[var(--text-2)]"}`}>
                           {scope.label}
                         </span>
                         {scope.required && (
-                          <span className="font-mono text-[0.6875rem] uppercase tracking-[0.1em] text-[var(--ink-2)]">
+                          <span className="font-mono text-[0.6875rem] uppercase tracking-[0.1em] text-[var(--text-2)]">
                             Required
                           </span>
                         )}
                       </div>
-                      <p className="mt-1.5 font-mono text-[0.75rem] text-[var(--ink-2)]">{scope.resource}</p>
-                      <p className="mt-2 text-[0.875rem] leading-[1.55] text-[var(--ink-2)]">{scope.reason}</p>
+                      <p className="mt-1.5 font-mono text-[0.75rem] text-[var(--text-2)]">{scope.resource}</p>
+                      <p className="mt-2 text-[0.875rem] leading-[1.55] text-[var(--text-2)]">{scope.reason}</p>
                       {scope.corroborates.length > 0 && on && (
                         <Annotation tone="attest" className="mt-2">
                           corroborates{" "}
@@ -142,7 +142,7 @@ export default function ConsentPage() {
             <PlotLabel>Never requested</PlotLabel>
             <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-1.5">
               {EXCLUDED.map((x) => (
-                <li key={x} className="flex items-center gap-1.5 font-mono text-[0.75rem] text-[var(--ink-2)]">
+                <li key={x} className="flex items-center gap-1.5 font-mono text-[0.75rem] text-[var(--text-2)]">
                   <IconBlocked width={13} height={13} className="opacity-60" />
                   {x}
                 </li>
@@ -163,10 +163,10 @@ export default function ConsentPage() {
 
         {corroborated.length > 0 && (
           <div className="mt-6 flex gap-2.5">
-            <IconCheck width={16} height={16} className="mt-0.5 shrink-0 text-[var(--attest)]" />
-            <p className="max-w-[36rem] text-[0.875rem] leading-[1.55] text-[var(--ink-2)]">
+            <IconCheck width={16} height={16} className="mt-0.5 shrink-0 text-[var(--accent)]" />
+            <p className="max-w-[36rem] text-[0.875rem] leading-[1.55] text-[var(--text-2)]">
               This will mark{" "}
-              <span className="text-[var(--attest)]">
+              <span className="text-[var(--accent)]">
                 {corroborated.map((a) => AXIS_SPECS[a].title.toLowerCase()).join(", ")}
               </span>{" "}
               as provider-attested on your profile, so you won&rsquo;t be asked to demonstrate them again.

@@ -1,15 +1,14 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
+import { Inter_Tight, Geist_Mono } from "next/font/google";
 import { SessionProvider } from "@/lib/session";
 import "./globals.css";
 
-const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
-const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
-const instrumentSerif = Instrument_Serif({
-  variable: "--font-instrument-serif",
+const interTight = Inter_Tight({
+  variable: "--font-inter-tight",
   subsets: ["latin"],
-  weight: "400",
+  weight: ["400", "500", "600"],
 });
+const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Axis — an interface that reads your capability profile",
@@ -19,10 +18,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" data-theme="light" data-contrast="normal" data-density="full" data-motion="full">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable} antialiased`}
-      >
+    <html lang="en" data-theme="dark" data-contrast="normal" data-density="full" data-motion="full">
+      <body className={`${interTight.variable} ${geistMono.variable} antialiased`}>
         <SessionProvider>{children}</SessionProvider>
       </body>
     </html>

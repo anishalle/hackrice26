@@ -25,12 +25,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   ];
 
   return (
-    <div className="graph-paper min-h-dvh">
-      <header className="sticky top-0 z-30 backdrop-blur-[2px]" style={{ backgroundColor: "color-mix(in oklab, var(--paper) 88%, transparent)" }}>
+    <div className="min-h-dvh bg-[var(--bg)]">
+      <header className="sticky top-0 z-30 backdrop-blur-[2px]" style={{ backgroundColor: "color-mix(in oklab, var(--bg) 88%, transparent)" }}>
         <div className="mx-auto flex max-w-[78rem] items-center justify-between gap-2 px-4 py-3 sm:gap-6 sm:px-10">
           <Link
             href="/"
-            className="font-mono text-[0.8125rem] tracking-[0.18em] uppercase transition-colors hover:text-[var(--plot)]"
+            className="font-mono text-[0.8125rem] tracking-[0.18em] uppercase transition-colors hover:text-[var(--brand)]"
           >
             Axis
           </Link>
@@ -45,7 +45,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   aria-current={active ? "page" : undefined}
                   title={hint}
                   className="target relative inline-flex items-center gap-2 px-2.5 text-[0.9375rem] font-medium transition-colors sm:px-4"
-                  style={{ color: active ? "var(--ink)" : "var(--ink-2)" }}
+                  style={{ color: active ? "var(--text)" : "var(--text-2)" }}
                 >
                   <Icon width={18} height={18} />
                   {label}
@@ -53,7 +53,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     <span
                       aria-hidden
                       className="absolute inset-x-2 bottom-0 h-[2px]"
-                      style={{ backgroundColor: "var(--plot)" }}
+                      style={{ backgroundColor: "var(--brand)" }}
                     />
                   )}
                 </Link>
@@ -65,10 +65,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             {hydrated && (
               <Link
                 href="/profile"
-                className="target hidden items-center gap-2 px-3 font-mono text-[0.75rem] text-[var(--ink-2)] transition-colors hover:text-[var(--ink)] sm:inline-flex"
+                className="target hidden items-center gap-2 px-3 font-mono text-[0.75rem] text-[var(--text-2)] transition-colors hover:text-[var(--text)] sm:inline-flex"
                 title="Your capability profile"
               >
-                {attestation && <IconCheck width={14} height={14} className="text-[var(--attest)]" />}
+                {attestation && <IconCheck width={14} height={14} className="text-[var(--accent)]" />}
                 {fingerprint(profile)}
               </Link>
             )}
@@ -94,7 +94,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             {hydrated && notes.length > 0 ? (
               notes.map((n) => (
                 <Annotation key={`${n.axis}-${n.effect}`}>
-                  <span className="text-[var(--ink-2)]">
+                  <span className="text-[var(--text-2)]">
                     {AXIS_SPECS[n.axis].title.toLowerCase()} · {stopFor(n.axis, profile[n.axis]).code}
                   </span>
                   <br />
@@ -102,9 +102,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 </Annotation>
               ))
             ) : (
-              <p className="font-mono text-[0.75rem] leading-[1.6] text-[var(--ink-2)]">
+              <p className="font-mono text-[0.75rem] leading-[1.6] text-[var(--text-2)]">
                 Default rendering — your profile is at full on every axis.{" "}
-                <Link href="/profile" className="underline decoration-[var(--rule-major)]">
+                <Link href="/profile" className="underline decoration-[var(--line)]">
                   Change an axis
                 </Link>{" "}
                 and this screen changes with it.
@@ -116,8 +116,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <div className="mt-7">
               <Rule />
               <div className="mt-4 flex gap-2.5">
-                <IconCheck width={15} height={15} className="mt-0.5 shrink-0 text-[var(--attest)]" />
-                <p className="font-mono text-[0.75rem] leading-[1.55]" style={{ color: "var(--attest)" }}>
+                <IconCheck width={15} height={15} className="mt-0.5 shrink-0 text-[var(--accent)]" />
+                <p className="font-mono text-[0.75rem] leading-[1.55]" style={{ color: "var(--accent)" }}>
                   {attestation.axes.length > 0
                     ? `${attestation.axes.map((a) => AXIS_SPECS[a].title.toLowerCase()).join(", ")} attested by ${attestation.provider}`
                     : `identity attested by ${attestation.provider}`}
@@ -137,7 +137,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
           <div className="mt-7">
             <Rule />
-            <p className="mt-4 font-mono text-[0.6875rem] uppercase leading-[1.6] tracking-[0.08em] text-[var(--ink-2)]">
+            <p className="mt-4 font-mono text-[0.6875rem] uppercase leading-[1.6] tracking-[0.08em] text-[var(--text-2)]">
               Prototype · {AXES.length} axes · synthetic content
             </p>
           </div>

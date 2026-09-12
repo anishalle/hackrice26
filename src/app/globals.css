@@ -1,134 +1,227 @@
 @import "tailwindcss";
 
 /* ---------------------------------------------------------------------------
-   Chart — warm ink on bone paper. See DESIGN.md.
+   Palette derived from Persona's brand ramp:
+     Stratos #010334 · Cornflower #7379FD · Periwinkle #C8CBFE
+     Aquamarine #68F0FD · Onahau #CDFAFF
+   See DESIGN.md. Dark is the default; light is a full peer, not an afterthought.
    --------------------------------------------------------------------------- */
 
-:root {
-  --paper: #f2ede1;
-  --paper-raised: #fbf8f0;
-  --rule: #ddd4be;
-  --rule-major: #c8bc9e;
-  --ink: #191510;
-  --ink-2: #5c5347;
-  --plot: #a93b22;
-  --attest: #1e5f52;
-  --route: #7d5f0d;
+:root,
+[data-theme="dark"] {
+  --bg: #010334;
+  --bg-deep: #00021f;
+  --surface: #0a0d45;
+  --surface-2: #12165c;
+  --line: #23287a;
+  --line-soft: #171b60;
+
+  --text: #f3f4ff;
+  --text-2: #a6adde;
+  --text-3: #6f77b4;
+
+  --brand: #7379fd;
+  --brand-hover: #8d92ff;
+  --brand-ink: #010334;
+  --brand-soft: #c8cbfe;
+  --brand-dim: #2b3080;
+
+  --accent: #68f0fd;
+  --accent-soft: #cdfaff;
+  --accent-dim: #0d4e63;
+
+  --warn: #ffb27a;
+
+  /* Duotone ramp handed to the shader. */
+  --duo-shadow: #010334;
+  --duo-mid: #4a52c8;
+  --duo-light: #cdfaff;
+  --duo-sun: #ffe3c4;
 
   --type-scale: 1;
-  --target: 40px;
-
-  --module: 8px;
-  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --target: 44px;
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --r: 14px;
+  --r-sm: 10px;
 }
 
-[data-theme="dark"] {
-  --paper: #16140f;
-  --paper-raised: #1e1b15;
-  --rule: #2e2a21;
-  --rule-major: #3d382c;
-  --ink: #f4efe3;
-  --ink-2: #a79c88;
-  --plot: #e2694a;
-  --attest: #5fb3a1;
-  --route: #d2a73a;
+[data-theme="light"] {
+  --bg: #fafaff;
+  --bg-deep: #f0f1fb;
+  --surface: #ffffff;
+  --surface-2: #f4f5ff;
+  --line: #dfe1f7;
+  --line-soft: #ebecfb;
+
+  --text: #010334;
+  --text-2: #4b5190;
+  --text-3: #5a6098;
+
+  --brand: #4a52e8;
+  --brand-hover: #3a42d4;
+  --brand-ink: #ffffff;
+  --brand-soft: #4a52e8;
+  --brand-dim: #dcdefb;
+
+  --accent: #0b6e88;
+  --accent-soft: #0b6e88;
+  --accent-dim: #cdeef5;
+
+  --warn: #a2521a;
+
+  --duo-shadow: #0b1150;
+  --duo-mid: #7379fd;
+  --duo-light: #eef6ff;
+  --duo-sun: #ffe3c4;
 }
 
-/* Vision 0–2 pushes ink and paper apart rather than recolouring the world. */
-[data-contrast="max"] {
-  --paper: #fffdf7;
-  --paper-raised: #ffffff;
-  --ink: #000000;
-  --ink-2: #2e2a24;
-  --rule: #c5bba2;
-  --rule-major: #9c8f70;
-  --plot: #8f2c14;
-  --attest: #10463b;
-  --route: #5c4407;
+/* The vision axis pushes text and ground apart rather than recolouring. */
+[data-contrast="max"][data-theme="dark"] {
+  --bg: #000018;
+  --bg-deep: #000010;
+  --surface: #050830;
+  --surface-2: #0a0e44;
+  --line: #3a4099;
+  --text: #ffffff;
+  --text-2: #dfe2ff;
+  --text-3: #b4baee;
+  --brand: #9aa0ff;
+  --brand-ink: #000018;
+  --accent: #a9f6ff;
 }
 
-[data-theme="dark"][data-contrast="max"] {
-  --paper: #000000;
-  --paper-raised: #0d0c09;
-  --ink: #ffffff;
-  --ink-2: #d6cdb8;
-  --rule: #3a352a;
-  --rule-major: #56503f;
-  --plot: #ff8a68;
-  --attest: #7fd3c0;
-  --route: #f0c14e;
+[data-contrast="max"][data-theme="light"] {
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --surface-2: #f4f5ff;
+  --line: #9aa0cc;
+  --text: #000000;
+  --text-2: #20254f;
+  --text-3: #3a4070;
+  --brand: #2c34c8;
+  --accent: #05505f;
 }
 
 @theme inline {
-  --color-paper: var(--paper);
-  --color-paper-raised: var(--paper-raised);
-  --color-rule: var(--rule);
-  --color-rule-major: var(--rule-major);
-  --color-ink: var(--ink);
-  --color-ink-2: var(--ink-2);
-  --color-plot: var(--plot);
-  --color-attest: var(--attest);
-  --color-route: var(--route);
-  --font-sans: var(--font-geist-sans);
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-text: var(--text);
+  --color-text-2: var(--text-2);
+  --color-text-3: var(--text-3);
+  --color-brand: var(--brand);
+  --color-accent: var(--accent);
+  --font-sans: var(--font-inter-tight);
   --font-mono: var(--font-geist-mono);
-  --font-display: var(--font-instrument-serif);
 }
 
 * {
-  border-color: var(--rule);
+  border-color: var(--line);
 }
 
 html {
-  /* The adaptation's type scale is applied once, here, and inherited. */
   font-size: calc(16px * var(--type-scale));
   -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+
+[data-motion="reduced"] html {
+  scroll-behavior: auto;
 }
 
 body {
-  background-color: var(--paper);
-  color: var(--ink);
-  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
-  font-synthesis-weight: none;
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: var(--font-inter-tight), ui-sans-serif, system-ui, sans-serif;
+  font-feature-settings: "cv05" 1, "ss03" 1;
+  -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
 
-/* --- The substrate: a real measuring surface, 8px module, major every 5th. -- */
+/* --- Display type: tight, optical, the river.ai register ------------------- */
 
-.graph-paper {
-  background-image:
-    linear-gradient(to right, var(--rule-major) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--rule-major) 1px, transparent 1px),
-    linear-gradient(to right, var(--rule) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--rule) 1px, transparent 1px);
-  background-size:
-    calc(var(--module) * 5) calc(var(--module) * 5),
-    calc(var(--module) * 5) calc(var(--module) * 5),
-    var(--module) var(--module),
-    var(--module) var(--module);
-  background-position: -1px -1px;
+.display {
+  font-weight: 500;
+  letter-spacing: -0.028em;
+  line-height: 1.02;
+  text-wrap: balance;
 }
 
-/* Density drops the fine rules — fewer lines, same grid. */
-[data-density="reduced"] .graph-paper,
-[data-density="minimal"] .graph-paper {
-  background-image:
-    linear-gradient(to right, var(--rule-major) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--rule-major) 1px, transparent 1px);
-  background-size: calc(var(--module) * 5) calc(var(--module) * 5);
+.display-sm {
+  font-weight: 500;
+  letter-spacing: -0.022em;
+  line-height: 1.12;
+  text-wrap: balance;
 }
 
-/* --- Browser surfaces, themed from the palette. ---------------------------- */
+.eyebrow {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 0.6875rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.mono,
+[class*="font-mono"] {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* --- Surfaces -------------------------------------------------------------- */
+
+.card {
+  background-color: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+}
+
+/* Elevation is declared once. A border OR a shadow, never both competing. */
+.card-lift {
+  background-color: var(--surface);
+  border-radius: var(--r);
+  box-shadow:
+    0 1px 2px rgba(1, 3, 52, 0.18),
+    0 12px 32px -12px rgba(1, 3, 52, 0.45);
+}
+
+[data-theme="light"] .card-lift {
+  box-shadow:
+    0 1px 2px rgba(1, 3, 52, 0.05),
+    0 12px 32px -14px rgba(1, 3, 52, 0.16);
+}
+
+/* Frosted chrome over the hero, the one place glass is doing a real job. */
+.glass {
+  background-color: color-mix(in oklab, var(--bg) 62%, transparent);
+  backdrop-filter: blur(14px) saturate(150%);
+  -webkit-backdrop-filter: blur(14px) saturate(150%);
+}
+
+.canyon-fallback {
+  background:
+    radial-gradient(70% 46% at 50% 46%, color-mix(in oklab, var(--duo-light) 28%, transparent) 0%, transparent 62%),
+    linear-gradient(to bottom, var(--duo-shadow) 0%, var(--bg) 72%);
+}
+
+/* --- Browser surfaces, themed ---------------------------------------------- */
 
 ::selection {
-  background-color: color-mix(in oklab, var(--plot) 22%, transparent);
-  color: var(--ink);
+  background-color: color-mix(in oklab, var(--brand) 38%, transparent);
+  color: var(--text);
 }
 
 :root {
-  caret-color: var(--plot);
-  accent-color: var(--plot);
-  scrollbar-color: var(--rule-major) transparent;
+  caret-color: var(--brand);
+  accent-color: var(--brand);
+  scrollbar-color: var(--line) transparent;
   scrollbar-width: thin;
+  color-scheme: dark;
+}
+
+[data-theme="light"] {
+  color-scheme: light;
 }
 
 ::-webkit-scrollbar {
@@ -139,30 +232,23 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background-color: var(--rule-major);
-  border: 3px solid var(--paper);
+  background-color: var(--line);
+  border: 3px solid var(--bg);
   border-radius: 999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background-color: var(--ink-2);
+  background-color: var(--text-3);
 }
 
 :focus-visible {
-  outline: 2px solid var(--plot);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
-  border-radius: 2px;
+  border-radius: 4px;
 }
 
 a {
   text-underline-offset: 0.2em;
   text-decoration-thickness: 1px;
-}
-
-/* Measurement always sets tabular. */
-.mono,
-[class*="font-mono"] {
-  font-variant-numeric: tabular-nums;
-  font-feature-settings: "tnum" 1;
 }
 
 /* --- Motion ---------------------------------------------------------------- */
@@ -178,7 +264,6 @@ a {
   }
 }
 
-/* The cognitive axis is wired to the same switch as the OS preference. */
 [data-motion="reduced"] *,
 [data-motion="reduced"] *::before,
 [data-motion="reduced"] *::after {
@@ -189,18 +274,6 @@ a {
 
 /* --- Utilities -------------------------------------------------------------- */
 
-.leader {
-  stroke: var(--route);
-  stroke-width: 1;
-  stroke-dasharray: 3 3;
-}
-
-.hairline {
-  border-width: 1px;
-  border-style: solid;
-}
-
-/* Minimum target size comes from the motor axis. */
 .target {
   min-height: var(--target);
   min-width: var(--target);

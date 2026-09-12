@@ -50,7 +50,7 @@ export default function FeedPage() {
   return (
     <div>
       <div className="max-w-[36rem]">
-        <h1 className="font-[family-name:var(--font-instrument-serif)] text-[clamp(1.875rem,4vw,2.75rem)] leading-[1.05] tracking-[-0.02em] text-balance">
+        <h1 className="display-sm text-[clamp(1.875rem,4vw,2.75rem)] text-balance">
           How people plotted like you are solving it.
         </h1>
         {hydrated && relevantAxes.length > 0 ? (
@@ -59,7 +59,7 @@ export default function FeedPage() {
             {relevantAxes.map((a) => AXIS_SPECS[a].title.toLowerCase()).join(", ")}
           </Annotation>
         ) : (
-          <p className="mt-4 text-[0.9375rem] leading-[1.6] text-[var(--ink-2)]">
+          <p className="mt-4 text-[0.9375rem] leading-[1.6] text-[var(--text-2)]">
             Sorted by how many people it worked for. Set an axis on your profile
             and this reorders around what you actually need.
           </p>
@@ -111,16 +111,16 @@ function PostCard({
         {author.attested.length > 0 && (
           <span
             className="inline-flex items-center gap-1 font-mono text-[0.6875rem] uppercase tracking-[0.08em]"
-            style={{ color: "var(--attest)" }}
+            style={{ color: "var(--accent)" }}
             title={`${author.attested.map((a) => AXIS_SPECS[a].title).join(", ")} attested by a provider`}
           >
             <IconCheck width={12} height={12} />
             attested
           </span>
         )}
-        <span className="font-mono text-[0.75rem] text-[var(--ink-2)]">{post.ago}</span>
+        <span className="font-mono text-[0.75rem] text-[var(--text-2)]">{post.ago}</span>
         {matches.length > 0 && (
-          <span className="ml-auto font-mono text-[0.6875rem] uppercase tracking-[0.08em] text-[var(--plot)]">
+          <span className="ml-auto font-mono text-[0.6875rem] uppercase tracking-[0.08em] text-[var(--brand)]">
             matches your {matches.map((a) => AXIS_SPECS[a].title.toLowerCase()).join(" + ")}
           </span>
         )}
@@ -128,7 +128,7 @@ function PostCard({
 
       <h2 className="mt-4 text-[1.125rem] font-medium leading-[1.35] text-balance">{post.problem}</h2>
 
-      <p className="mt-3 text-[0.9375rem] leading-[1.65] text-[var(--ink-2)]" style={{ maxWidth: "70ch" }}>
+      <p className="mt-3 text-[0.9375rem] leading-[1.65] text-[var(--text-2)]" style={{ maxWidth: "70ch" }}>
         {post.solution}
       </p>
 
@@ -140,7 +140,7 @@ function PostCard({
           onClick={() => setWorked((w) => !w)}
           aria-pressed={worked}
           className="h-10 px-3 text-[0.8125rem]"
-          style={worked ? { color: "var(--attest)" } : undefined}
+          style={worked ? { color: "var(--accent)" } : undefined}
         >
           <IconSolved width={16} height={16} />
           <span className="tabular-nums">{post.worked + (worked ? 1 : 0)}</span>
@@ -162,14 +162,14 @@ function PostCard({
       </div>
 
       {open && post.comments.length > 0 && (
-        <ul className="mt-4 grid gap-4 border-l pl-5" style={{ borderColor: "var(--rule-major)" }}>
+        <ul className="mt-4 grid gap-4 border-l pl-5" style={{ borderColor: "var(--line)" }}>
           {post.comments.map((c) => (
             <li key={c.id}>
               <div className="flex flex-wrap items-baseline gap-x-2.5">
                 <span className="text-[0.875rem] font-medium">{AUTHORS[c.authorId].name}</span>
-                <span className="font-mono text-[0.6875rem] text-[var(--ink-2)]">{c.ago}</span>
+                <span className="font-mono text-[0.6875rem] text-[var(--text-2)]">{c.ago}</span>
               </div>
-              <p className="mt-1 text-[0.875rem] leading-[1.6] text-[var(--ink-2)]" style={{ maxWidth: "68ch" }}>
+              <p className="mt-1 text-[0.875rem] leading-[1.6] text-[var(--text-2)]" style={{ maxWidth: "68ch" }}>
                 {c.body}
               </p>
             </li>

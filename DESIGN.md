@@ -2,122 +2,112 @@
 
 <!-- impeccable:design-schema 1 -->
 
-## World: Chart
+> Replaces the earlier "Chart" world. The user pinned this direction, and a
+> pinned direction beats the roll.
 
-The visual world is **clinical measurement graphics, reauthored by the person
-being measured** — the audiogram, the visual-field plot, the range-of-motion
-chart, the growth curve. Plotted axes, threshold lines, symbol legends, a
-graph-paper substrate, and precise margin annotation.
+## World: the duotone valley
 
-Why this world and not another: a capability profile *is* a chart. This is the
-only visual tradition the audience already knows that treats human capability as
-precise, legible, plotted data rather than as a deficit to be described in
-prose. The product's mechanism — a machine-readable profile that routes auth and
-regenerates the UI — is a chart that does something.
+The visual world is a **contre-jour canyon rendered as a luminance duotone** —
+two dark masses converging on a bright gap, the whole frame resolved into a
+brand-coloured ramp and broken into an ordered dot matrix that thickens toward
+the light.
 
-**The inversion that keeps it from being cold:** in the medical tradition the
-chart is drawn *about* you, by a clinician, on cold white stock, and handed down
-as a verdict. Here you draw it, it sits on warm bone paper, it speaks in first
-person, and its annotations describe what the *product* will do differently —
-never what you lack. "Head-turn liveness unavailable → routing to voice
-attestation" is a routing note, not a diagnosis.
+References, in order of weight: **river.ai** (the hero treatment, the dither,
+the type register), **Persona** (the palette, since Persona is the identity
+layer this product is built on), **natural.com** (restraint and the amount of
+air around things).
 
-**Honest risk:** clinical graphics can read as medicalizing to an audience
-tired of being measured. Authorship, warm ground, and first-person copy are the
-mitigations, and they have to be enforced in the copy layer, not just the paint.
+The reference sites were unreachable from the build environment, so the
+system below is derived from the supplied screenshot, the supplied markup
+(which names Inter Tight), and a lookup of Persona's published brand colours.
+Anything here that needs to match a real brand exactly should be checked
+against the source before it ships.
 
-## Substrate
+## Why this world fits the product
 
-Bone paper with a 1px rule grid at an 8px module, the rule strengthening every
-5th line. The grid is a real measuring surface, not decoration — plots, cards,
-and the layout column all snap to it, and it is the app's actual layout grid.
-Dark theme reads as a backlit chart: the paper goes to warm graphite and the
-rules emit rather than recede.
+The mechanism is *a path that exists for you when the default one doesn't*. A
+canyon read from inside is exactly that image: the walls are the constraints,
+and the gap is the route through them. The duotone is the second half of the
+argument — one scene, re-rendered entirely through a different mapping, which
+is what the app does to its own interface when the profile changes.
 
-## Color
+## Palette
 
-Warm ink on bone. Never clinical blue, never gray secondary text.
+Persona's brand ramp, used as the actual duotone stops rather than as accents.
 
-| Token | Light | Dark | Role |
-|---|---|---|---|
-| `--paper` | `#F2EDE1` | `#16140F` | page ground |
-| `--paper-raised` | `#FBF8F0` | `#1E1B15` | plotted surfaces, cards |
-| `--rule` | `#DDD4BE` | `#2E2A21` | grid, 1px |
-| `--rule-major` | `#C8BC9E` | `#3D382C` | every 5th rule, axes |
-| `--ink` | `#191510` | `#F4EFE3` | primary text, plot marks |
-| `--ink-2` | `#5C5347` | `#A79C88` | secondary — warm-tinted, never gray |
-| `--plot` | `#A93B22` | `#E2694A` | the plotted line, the value, you |
-| `--attest` | `#1E5F52` | `#5FB3A1` | verified / attested / provider-backed |
-| `--route` | `#8A6A12` | `#D2A73A` | routing annotations, adaptation notices |
+| Token | Hex | Role |
+|---|---|---|
+| Stratos | `#010334` | ground, and the duotone shadow |
+| Cornflower | `#7379FD` | primary action, duotone midtone |
+| Periwinkle | `#C8CBFE` | secondary text on dark, soft marks |
+| Aquamarine | `#68F0FD` | attested / verified — never decorative |
+| Onahau | `#CDFAFF` | duotone highlight |
+| Sun | `#FFE3C4` | the warm punch at the top of the range |
 
-`--plot` is the only saturated color allowed to carry quantity. `--attest`
-appears exclusively where something has been provider-verified, so its presence
-is information. `--route` marks every place the UI changed itself because of the
-profile — it is the color of the product's core mechanism and must never be used
-decoratively.
+Dark is the default. Light is a full peer with its own ramp, not an inversion —
+`--brand` darkens to `#4A52E8` and `--accent` to `#0B6E88` so both clear AA on
+white. `[data-contrast="max"]`, driven by the vision axis, pushes a third set.
+
+The one deliberate tension: a cool ramp with a single warm light source. That
+contrast is what stops the palette reading as generic tech-blue.
 
 ## Type
 
-- **Display — Instrument Serif.** The authored, human voice. Chart titles and
-  page headings. Its warmth is the deliberate counterweight to the clinical
-  grammar; without it the world reads as a hospital printout.
-- **UI — Geist Sans.** Controls, body, posts. Body measure held to 65–75ch.
-- **Measurement — Geist Mono, tabular numerals.** Axis labels, values,
-  thresholds, scope names, the fields in the consent screen. Monospace is earned
-  here: this is literal measurement and data, not a technical costume.
+**Inter Tight** throughout, which is what river.ai uses.
 
-Scale steps are obvious, not incremental. Tracking floor -0.03em on display.
+- Display: weight 500, tracking `-0.028em`, leading `1.02`, balanced. Tight
+  tracking at large sizes is the whole register — at default tracking the same
+  words read like a settings page.
+- Body: 0.9375–1.1875rem, leading 1.55–1.6, measure held under 70ch.
+- **Geist Mono** for anything that is literally data: FHIR resource paths,
+  profile fingerprints, axis codes, durations, the eyebrow. Tabular numerals
+  wherever a number can change.
+
+## The hero
+
+`src/components/canyon/` — a WebGL fragment shader in three stages.
+
+1. **Raymarch.** An SDF height field: a smoothstep wall profile with blobs
+   smin'd into it, so the walls read as continuous rounded mass rather than as
+   noise. Five bisection steps after the hit kill the grazing-angle streaks a
+   non-metric field otherwise produces.
+2. **Resolve to luminance.** Deliberately colourless. Backlit, so the walls are
+   silhouettes; aerial perspective separates the far masses from the near ones.
+3. **Duotone + dither.** Luminance maps through the three-stop ramp, and
+   **the strength of that mapping scales with luminance** — shadows keep the
+   ground colour, highlights take the ramp fully. An 8×8 Bayer matrix is gated
+   on the same value, so the dots thicken toward the light and the darks stay
+   clean.
+
+Budget: renders at 0.7–0.85 device pixels (the dither turns upscaling into
+grain), ~30fps, 72–96 march steps, and stops entirely when scrolled out of view
+or the tab is hidden. A CSS gradient sits underneath as the no-WebGL fallback
+and as the colour the canvas resolves to anyway, so there is never a flash.
+
+**It is capability-aware, like everything else.** Reduced motion resolves one
+frame and freezes. A low-vision profile drops the dot matrix and cuts filter
+strength, so the ground stays flat enough for text contrast to hold.
 
 ## Composition
 
-The chart grid is the layout grid. Content sits in plotted regions with visible
-axes rather than in a deck of same-size cards. A card is used only where a post
-is genuinely a discrete object; nested cards never.
+The camera yaws left so the gap and sun sit right of centre, leaving the left
+third as dark mass for the headline. Two gradient scrims — one up from the
+bottom, one in from the left — guarantee the text floor regardless of what the
+shader resolves to. The background is never allowed to decide whether the
+headline is readable.
 
-Annotation is a first-class layout element: a hairline leader rule from a mark
-out to a mono note in the margin. This is how the app explains itself, and it
-replaces the tooltip almost everywhere.
-
-## Signature interaction
-
-**The profile plots live, and the consequences annotate themselves.** As the
-user sets each axis, the mark slides along its track and, one beat later, a
-leader rule draws out to a margin note naming what the product just changed —
-which verification modalities dropped off, what the interface will become. The
-adaptation is visible as it is decided, which is the entire product argument in
-one interaction.
+Elsewhere: generous air, one hairline border **or** one soft shadow for
+elevation but never both, 14px radii on surfaces and 10px on controls, full-
+bleed hairline dividers instead of stacked card decks.
 
 ## Motion
 
-One authored moment per surface, exponential ease-out from an already-visible
-default. The authored moment is the leader-rule draw: the mark settles (spring,
-low bounce), then the rule strokes out over 240ms, then the note fades up. Never
-a uniform entrance on every section.
-
-`prefers-reduced-motion` removes the stroke and the slide; the mark and note
-change state instantly. This is not a courtesy here — it is a correctness
-requirement for this audience, and it is also wired to the `cognitive` axis.
-
-## Adaptation is visual, not just functional
-
-The same components render differently per profile, and the difference is
-designed, not degraded:
-
-- **vision: none** → the visual surface is not the point. A voice-first
-  surface: near-full-bleed plot ground, one enormous press-and-hold target, live
-  transcript in display size. Everything still renders correctly for a screen
-  reader underneath.
-- **vision: low** → type scale steps up two stops, `--ink`/`--paper` contrast
-  pushed to maximum, rules strengthen, annotation moves inline.
-- **motor: limited/minimal** → 56px minimum targets, no drag, no hover-only
-  affordance, dwell timing visible as a filling rule.
-- **hearing: none** → every audio cue gets a visual equivalent; agent speech
-  renders as a transcript by default, not on request.
-- **cognitive: high-support** → one decision per screen, density drops, plain
-  language, motion off.
+One authored moment per surface, exponential ease-out, `[0.16, 1, 0.3, 1]`.
+The hero's is a staggered rise on load; everything else earns its motion or
+doesn't get any. `prefers-reduced-motion` and the pace axis both cut it, and
+for this audience that is correctness, not courtesy.
 
 ## Browser surfaces
 
-Selection, caret, focus ring, and scrollbar are all themed from the palette.
-Focus is a 2px `--plot` ring with a 2px paper offset — visible on every surface,
-never removed. Numerals are tabular wherever they carry measurement.
+Selection, caret, focus ring and scrollbar all themed. Focus is a 2px
+`--accent` ring at 2px offset — visible on every surface, never removed.

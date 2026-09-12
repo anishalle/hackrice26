@@ -89,7 +89,18 @@ axis means changing `adaptation.ts`, not fifty components.
 
 ## Design
 
-The visual world is clinical measurement graphics — the audiogram, the
-visual-field plot, the range-of-motion chart — reauthored by the person being
-measured rather than by a clinician. See [DESIGN.md](DESIGN.md) for the palette,
-type and motion decisions, and [PRODUCT.md](PRODUCT.md) for the product record.
+The visual world is a **contre-jour canyon rendered as a luminance duotone**:
+two dark masses converging on a bright gap, resolved through Persona's brand
+ramp and broken into an ordered dot matrix that thickens toward the light.
+
+The hero (`src/components/canyon/`) is a WebGL fragment shader — an SDF height
+field raymarched with smin'd blobs for the walls, resolved to pure luminance,
+then duotone-mapped with the filter strength scaling by luminance and an 8×8
+Bayer dither gated on the same value. It renders at reduced device pixels
+(the dither hides it), caps at ~30fps, stops when off-screen, freezes under
+reduced motion, and drops its dot matrix for a low-vision profile so text
+contrast holds.
+
+Type is Inter Tight with Geist Mono for anything that is literally data. See
+[DESIGN.md](DESIGN.md) for the palette, the shader stages and the motion
+rules, and [PRODUCT.md](PRODUCT.md) for the product record.

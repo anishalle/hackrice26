@@ -44,13 +44,13 @@ export function AxisPlot({
   return (
     <div className="grid gap-3 sm:grid-cols-[11rem_1fr] sm:gap-6">
       <div className="flex items-start gap-2.5 pt-0.5">
-        <AxisIcon className="mt-px shrink-0 text-[var(--ink-2)]" width={18} height={18} />
+        <AxisIcon className="mt-px shrink-0 text-[var(--text-2)]" width={18} height={18} />
         <div className="min-w-0">
           <h3 className="text-[0.9375rem] font-medium leading-tight">
             {spec.title}{" "}
-            <span className="font-mono text-[0.75rem] font-normal text-[var(--ink-2)]">{spec.unit}</span>
+            <span className="whitespace-nowrap font-mono text-[0.75rem] font-normal text-[var(--text-3)]">{spec.unit}</span>
           </h3>
-          <p className="mt-0.5 text-[0.8125rem] leading-snug text-[var(--ink-2)]">{spec.question}</p>
+          <p className="mt-0.5 text-[0.8125rem] leading-snug text-[var(--text-2)]">{spec.question}</p>
         </div>
       </div>
 
@@ -86,7 +86,7 @@ export function AxisPlot({
             <div
               aria-hidden
               className="absolute left-0 right-0 top-1/2 h-px -translate-y-1/2"
-              style={{ backgroundColor: "var(--rule-major)" }}
+              style={{ backgroundColor: "var(--line)" }}
             />
 
             <div
@@ -112,13 +112,13 @@ export function AxisPlot({
                       aria-hidden
                       className="h-3 w-px transition-colors duration-150"
                       style={{
-                        backgroundColor: selected ? "transparent" : "var(--rule-major)",
+                        backgroundColor: selected ? "transparent" : "var(--line)",
                       }}
                     />
                     <span
                       aria-hidden
                       className="absolute inset-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100"
-                      style={{ backgroundColor: "color-mix(in oklab, var(--plot) 7%, transparent)" }}
+                      style={{ backgroundColor: "color-mix(in oklab, var(--brand) 7%, transparent)" }}
                     />
                   </button>
                 );
@@ -129,7 +129,7 @@ export function AxisPlot({
                 aria-hidden
                 className="pointer-events-none absolute top-1/2 h-3.5 w-3.5 -translate-y-1/2 rounded-full"
                 style={{
-                  backgroundColor: "var(--plot)",
+                  backgroundColor: "var(--brand)",
                   left: `calc(${(index + 0.5) * (100 / ordered.length)}% - 0.4375rem)`,
                 }}
                 animate={{ left: `calc(${(index + 0.5) * (100 / ordered.length)}% - 0.4375rem)` }}

@@ -28,12 +28,15 @@ const VIEWPORTS = [
   { tag: "mobile",  width: 390,  height: 844 },
 ];
 
-const browser = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium" });
+const browser = await chromium.launch({
+  executablePath: "/opt/pw-browsers/chromium",
+  args: ["--use-gl=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"],
+});
 
 for (const vp of VIEWPORTS) {
   for (const shot of SHOTS) {
     if (vp.tag === "mobile" && shot.name.includes("-")) continue; // variants desktop-only
-    for (const theme of vp.tag === "desktop" && shot.name === "landing" ? ["light", "dark"] : ["light"]) {
+    for (const theme of vp.tag === "desktop" && shot.name === "landing" ? ["dark", "light"] : ["dark"]) {
       const ctx = await browser.newContext({
         viewport: { width: vp.width, height: vp.height },
         deviceScaleFactor: 2,
@@ -52,8 +55,8 @@ for (const vp of VIEWPORTS) {
       page.on("pageerror", (e) => errors.push(String(e)));
       page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
       await page.goto(BASE + shot.path, { waitUntil: "networkidle" });
-      await page.waitForTimeout(450);
-      const suffix = theme === "dark" ? "-dark" : "";
+      await page.waitForTimeout(1600);
+      const suffix = theme === "light" ? "-light" : "";
       const file = `${OUT}/${vp.tag}-${shot.name}${suffix}.png`;
       await page.screenshot({ path: file, fullPage: vp.tag === "desktop" });
       // Cheap defect scan that a screenshot cannot show.
