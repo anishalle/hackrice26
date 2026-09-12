@@ -41,7 +41,7 @@ export default function Home() {
         />
 
         <header className="relative z-20">
-          <div className="mx-auto flex max-w-[82rem] items-center justify-between px-6 py-5 sm:px-10">
+          <div className="mx-auto flex max-w-[90rem] items-center justify-between py-5 px-[var(--pad-x)]">
             <Wordmark />
             <nav aria-label="Main" className="flex items-center gap-1">
               <a
@@ -55,7 +55,7 @@ export default function Home() {
           </div>
         </header>
 
-        <div className="relative z-10 mx-auto flex min-h-[calc(100dvh-8.25rem)] max-w-[82rem] flex-col justify-end px-6 pb-32 sm:px-10 sm:pb-28">
+        <div className="relative z-10 mx-auto flex min-h-[calc(100dvh-8.25rem)] max-w-[90rem] flex-col justify-end pb-32 px-[var(--pad-x)] sm:pb-28">
           <motion.p {...rise(0.05)} className="eyebrow !text-[var(--text-2)]">
             Personal AI · Accessibility
           </motion.p>
@@ -69,7 +69,7 @@ export default function Home() {
 
           <motion.p
             {...rise(0.24)}
-            className="cursor-block mt-6 max-w-[44ch] text-[clamp(1rem,1.3vw,1.1875rem)] leading-[1.55] text-[var(--text-2)]"
+            className="cursor-block prose-lg mt-6 !max-w-[44ch] text-[var(--text-2)]"
           >
             One profile decides two things most software decides for you: how
             you prove who you are, and what the interface becomes once
@@ -98,7 +98,7 @@ export default function Home() {
 
       {/* ------------------------------------------------------ mechanism -- */}
       <section id="how" className="relative z-10 bg-[var(--bg)]">
-        <div className="mx-auto max-w-[82rem] px-6 py-24 sm:px-10 sm:py-32">
+        <div className="mx-auto max-w-[90rem] py-24 px-[var(--pad-x)] sm:py-32">
           <p className="eyebrow">The mechanism</p>
           <h2 className="display-sm mt-5 max-w-[22ch] text-[clamp(1.875rem,3.6vw,3rem)]">
             Accessibility as the input, not a compliance layer.
@@ -149,7 +149,7 @@ function Mechanism({ n, title, body }: { n: string; title: string; body: string 
     <div className="bg-[var(--bg)] p-8 sm:p-9">
       <span className="font-mono text-[0.75rem] text-[var(--brand)]">{n}</span>
       <h3 className="mt-5 text-[1.125rem] font-medium tracking-[-0.01em]">{title}</h3>
-      <p className="mt-3 text-[0.9375rem] leading-[1.6] text-[var(--text-2)]">{body}</p>
+      <p className="mt-3 text-[0.9375rem] leading-[1.55] text-[var(--text-2)]">{body}</p>
     </div>
   );
 }

@@ -17,11 +17,21 @@ the type register), **Persona** (the palette, since Persona is the identity
 layer this product is built on), **natural.com** (restraint and the amount of
 air around things).
 
-The reference sites were unreachable from the build environment, so the
-system below is derived from the supplied screenshot, the supplied markup
-(which names Inter Tight), and a lookup of Persona's published brand colours.
-Anything here that needs to match a real brand exactly should be checked
-against the source before it ships.
+The reference sites are unreachable from the build environment, so the values
+below were measured in the user's own browser with
+`reference/extract-tokens.js` and recorded in
+[reference/extracted-tokens.md](reference/extracted-tokens.md). They are
+computed styles from the live sites, not inferences from screenshots.
+
+Two corrections that measurement forced:
+
+- **river.ai's page is warm cream paper (`#F2E9D6`) with deep blue ink
+  (`#0E2F7E`).** The dark blue is the hero only. The supplied screenshot was
+  the hero alone, which is why this build went dark throughout. The dark
+  treatment is kept deliberately — it suits a product whose hero *is* the
+  argument — but it is this build's choice, not an inherited one.
+- **Persona's primary blue is `#3f48fd`**, not the `#7379FD` a brand-asset
+  lookup reported. The live site wins.
 
 ## Why this world fits the product
 
@@ -53,15 +63,39 @@ contrast is what stops the palette reading as generic tech-blue.
 
 ## Type
 
-**Inter Tight** throughout, which is what river.ai uses.
+**Inter Tight** + **JetBrains Mono**, which is exactly river.ai's pairing
+(`--type-sans` / `--type-mono`). Persona's own face is **ABC Monument
+Grotesk** — a commercial Dinamo licence, so it cannot be vendored here; Inter
+Tight is the closest free grotesque in proportion and weight range.
 
-- Display: weight 500, tracking `-0.028em`, leading `1.02`, balanced. Tight
-  tracking at large sizes is the whole register — at default tracking the same
-  words read like a settings page.
-- Body: 0.9375–1.1875rem, leading 1.55–1.6, measure held under 70ch.
-- **Geist Mono** for anything that is literally data: FHIR resource paths,
-  profile fingerprints, axis codes, durations, the eyebrow. Tabular numerals
-  wherever a number can change.
+The measured numbers overturned the first pass, which was heavier and much
+tighter than either reference:
+
+| | Persona | river.ai | Here |
+|---|---|---|---|
+| Display weight | **300** | 300–400 | **300** |
+| Display tracking | −0.008em | −0.02em | **−0.012em** |
+| Display leading | 1.04–1.12 | 1.22 | **1.06 / 1.14** |
+| Body | 16px / 400 / 1.40 | 17px / 300 / 1.60 | **17px / 300 / 1.60** (`.prose-lg`) |
+| Eyebrow tracking | — | 0.09–0.22em | **0.18em** |
+
+Light display weight is the premium signal, and it was the single biggest gap.
+Weight 500 at −0.028em read as a dashboard; 300 at −0.012em reads as the
+references do.
+
+**`[data-contrast="max"]` walks the weights back up** (display to 400, prose to
+400) rather than changing sizes. A 300 weight loses too much stroke for a
+low-vision profile, and weight is the part that was costing legibility — so the
+vision axis buys it back without disturbing the layout.
+
+Mono carries anything that is literally data: FHIR resource paths, profile
+fingerprints, axis codes, durations, the eyebrow. Tabular numerals throughout.
+
+## Geometry and layout
+
+Both references agree, so these are taken directly: **16px** card radius,
+**10px** small controls, **999px** pills. Layout follows river.ai's own tokens
+— `--grid: 1440px`, `--measure: 800px`, `--pad-x: clamp(20px, 4vw, 56px)`.
 
 ## The hero
 

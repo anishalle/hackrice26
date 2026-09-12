@@ -49,7 +49,7 @@ export default function VerifyPage() {
 
   return (
     <main className="min-h-dvh bg-[var(--bg)]">
-      <div className="mx-auto max-w-[54rem] px-6 py-6 sm:px-10">
+      <div className="mx-auto max-w-[54rem] py-6 px-[var(--pad-x)]">
         <header className="flex items-center justify-between">
           <Link
             href="/profile"
@@ -66,7 +66,7 @@ export default function VerifyPage() {
           <h1 className="mt-3 display-sm text-[clamp(2rem,4.5vw,3rem)]">
             Prove it&rsquo;s you, a way you can finish.
           </h1>
-          <p className="mt-4 text-[1rem] leading-[1.6] text-[var(--text-2)]">
+          <p className="prose-lg mt-5 text-[var(--text-2)]">
             Five standard checks were evaluated against your profile.{" "}
             {hydrated && unavailable.length > 0 ? (
               <>

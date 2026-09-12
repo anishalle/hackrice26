@@ -20,8 +20,8 @@
   --text-2: #a6adde;
   --text-3: #6f77b4;
 
-  --brand: #7379fd;
-  --brand-hover: #8d92ff;
+  --brand: #5b63ff;
+  --brand-hover: #7d84ff;
   --brand-ink: #010334;
   --brand-soft: #c8cbfe;
   --brand-dim: #2b3080;
@@ -48,25 +48,30 @@
   --type-scale: 1;
   --target: 44px;
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
-  --r: 14px;
+  --r: 16px;
   --r-sm: 10px;
   --r-pill: 999px;
+
+  /* Layout, from river.ai's --grid / --body / --pad-x. */
+  --grid: 1440px;
+  --measure: 800px;
+  --pad-x: clamp(20px, 4vw, 56px);
 }
 
 [data-theme="light"] {
-  --bg: #f4f4f2;
-  --bg-deep: #eceae5;
+  --bg: #f6f6f6;
+  --bg-deep: #ebebeb;
   --surface: #ffffff;
-  --surface-2: #faf9f7;
-  --line: #dedcd6;
-  --line-soft: #eae8e3;
+  --surface-2: #fafafa;
+  --line: #d4d4d4;
+  --line-soft: #e6e6e6;
 
   --text: #010334;
   --text-2: #4a4f6b;
   --text-3: #6b6f85;
 
-  --brand: #4a52e8;
-  --brand-hover: #3a42d4;
+  --brand: #3f48fd;
+  --brand-hover: #2f38ee;
   --brand-ink: #ffffff;
   --brand-soft: #4a52e8;
   --brand-dim: #dcdefb;
@@ -127,7 +132,7 @@
   --color-brand: var(--brand);
   --color-accent: var(--accent);
   --font-sans: var(--font-inter-tight);
-  --font-mono: var(--font-geist-mono);
+  --font-mono: var(--font-jetbrains-mono);
 }
 
 * {
@@ -148,6 +153,7 @@ body {
   background-color: var(--bg);
   color: var(--text);
   font-family: var(--font-inter-tight), ui-sans-serif, system-ui, sans-serif;
+  font-weight: 400;
   font-feature-settings: "cv05" 1, "ss03" 1;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
@@ -156,22 +162,45 @@ body {
 /* --- Display type: tight, optical, the river.ai register ------------------- */
 
 .display {
-  font-weight: 500;
-  letter-spacing: -0.028em;
-  line-height: 1.02;
+  font-weight: 300;
+  letter-spacing: -0.012em;
+  line-height: 1.06;
   text-wrap: balance;
 }
 
 .display-sm {
-  font-weight: 500;
-  letter-spacing: -0.022em;
-  line-height: 1.12;
+  font-weight: 300;
+  letter-spacing: -0.014em;
+  line-height: 1.14;
   text-wrap: balance;
 }
 
+/* Light display weights lose too much stroke for a low-vision profile, so
+   max-contrast walks them back up. The type stays the same size; only the
+   weight moves, which is the part that was costing legibility. */
+[data-contrast="max"] .display,
+[data-contrast="max"] .display-sm {
+  font-weight: 400;
+  letter-spacing: -0.008em;
+}
+
+/* Long-form body, after river.ai's 17px / 300 / 1.6. Reserved for reading
+   passages — UI text stays at 400, where weight is doing work at small sizes. */
+.prose-lg {
+  font-size: 1.0625rem;
+  font-weight: 300;
+  line-height: 1.6;
+  max-width: 62ch;
+}
+
+[data-contrast="max"] .prose-lg {
+  font-weight: 400;
+}
+
 .eyebrow {
-  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
   font-size: 0.6875rem;
+  font-weight: 400;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--text-3);

@@ -12,7 +12,7 @@ import { IconArrowRight } from "./icons";
 export function Announce() {
   return (
     <div className="announce relative z-30">
-      <div className="mx-auto flex max-w-[82rem] flex-wrap items-center justify-center gap-x-2 gap-y-1 px-6 py-2.5 text-center text-[0.8125rem] sm:px-10">
+      <div className="mx-auto flex max-w-[90rem] flex-wrap items-center justify-center gap-x-2 gap-y-1 px-6 py-2.5 text-center text-[0.8125rem] sm:px-10">
         <span className="font-medium">Prototype.</span>
         <span className="opacity-85">
           Simulated identity verification and a fictional provider — no real records.

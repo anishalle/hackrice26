@@ -57,7 +57,7 @@ export default function ConsentPage() {
 
   return (
     <main className="min-h-dvh bg-[var(--bg)]">
-      <div className="mx-auto max-w-[52rem] px-6 py-6 sm:px-10">
+      <div className="mx-auto max-w-[52rem] py-6 px-[var(--pad-x)]">
         <header className="flex items-center justify-between">
           <Link
             href="/verify"
@@ -74,7 +74,7 @@ export default function ConsentPage() {
           <h1 className="mt-3 max-w-[32rem] display-sm text-[clamp(2rem,4.5vw,3rem)]">
             {PROVIDER.name} is about to share five things.
           </h1>
-          <p className="mt-4 max-w-[36rem] text-[1rem] leading-[1.6] text-[var(--text-2)]">
+          <p className="prose-lg mt-5 text-[var(--text-2)]">
             Each one is listed with the exact record it reads. Turn off anything
             you&rsquo;d rather keep &mdash; only the first is required, and the
             app works without the rest.

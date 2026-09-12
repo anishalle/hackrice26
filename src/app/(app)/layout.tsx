@@ -27,7 +27,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-dvh bg-[var(--bg)]">
       <header className="sticky top-0 z-30 backdrop-blur-[2px]" style={{ backgroundColor: "color-mix(in oklab, var(--bg) 88%, transparent)" }}>
-        <div className="mx-auto flex max-w-[78rem] items-center justify-between gap-2 px-4 py-3 sm:gap-6 sm:px-10">
+        <div className="mx-auto flex max-w-[90rem] items-center justify-between gap-2 px-4 py-3 sm:gap-6 sm:px-10">
           <Link
             href="/"
             className="font-mono text-[0.8125rem] tracking-[0.18em] uppercase transition-colors hover:text-[var(--brand)]"
@@ -79,7 +79,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       </header>
 
       <div
-        className={`mx-auto grid max-w-[78rem] gap-10 px-6 py-10 sm:px-10 lg:gap-14 ${
+        className={`mx-auto grid max-w-[90rem] gap-10 py-10 px-[var(--pad-x)] lg:gap-14 ${
           adaptation.voiceFirst ? "" : "lg:grid-cols-[minmax(0,1fr)_17rem]"
         }`}
       >

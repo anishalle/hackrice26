@@ -1,14 +1,21 @@
 import type { Metadata } from "next";
-import { Inter_Tight, Geist_Mono } from "next/font/google";
+import { Inter_Tight, JetBrains_Mono } from "next/font/google";
 import { SessionProvider } from "@/lib/session";
 import "./globals.css";
 
+// Inter Tight is what river.ai uses, and the closest free grotesque to
+// Persona's ABC Monument Grotesk, which is commercially licensed. Weight 300
+// is loaded because both references carry their display type on it.
 const interTight = Inter_Tight({
   variable: "--font-inter-tight",
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
+  weight: ["300", "400", "500"],
 });
-const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-jetbrains-mono",
+  subsets: ["latin"],
+  weight: ["300", "400"],
+});
 
 export const metadata: Metadata = {
   title: "Axis — an interface that reads your capability profile",
@@ -19,7 +26,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" data-theme="dark" data-contrast="normal" data-density="full" data-motion="full">
-      <body className={`${interTight.variable} ${geistMono.variable} antialiased`}>
+      <body className={`${interTight.variable} ${jetbrainsMono.variable} antialiased`}>
         <SessionProvider>{children}</SessionProvider>
       </body>
     </html>
