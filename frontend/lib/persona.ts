@@ -4,10 +4,6 @@ import { client } from "./appwrite";
 const functions = new Functions(client);
 
 export async function startPersona(): Promise<void> {
-  if (process.env.NODE_ENV === "development") {
-    window.location.assign("/home");
-    return;
-  }
   // Invoke through the authenticated Appwrite API so the execution receives
   // x-appwrite-user-id. Domain requests only forward the user JWT.
   const execution = await functions.createExecution({

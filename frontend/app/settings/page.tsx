@@ -1,83 +1,41 @@
 "use client";
 
-import { Suspense, useState } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
-import { useAuth } from "@/lib/auth-context";
+import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { startPersona } from "@/lib/persona";
 import { ProtectedRoute } from "@/components/protected-route";
 import { Button } from "@/components/ui/button";
-import { Loader2, ShieldCheck } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
-function PersonaSettings() {
-  const { user, logout } = useAuth();
+function PersonaDemo() {
   const router = useRouter();
-  const params = useSearchParams();
-  const [busy, setBusy] = useState(false);
+  const attempted = useRef(false);
   const [error, setError] = useState<string | null>(null);
-  // AuthProvider fetches the account again on the full-page callback navigation.
-  // The callback query parameter is feedback only, never proof of verification.
-  const developmentBypass = process.env.NODE_ENV === "development";
-  const verified = developmentBypass || user?.prefs.persona_verified === true;
-  const callbackError = params.get("persona") === "error"
-    ? "Identity verification was not completed. Please try again."
-    : params.get("persona") === "success" && !verified
-      ? "We could not confirm your verification. Please try again."
-      : null;
 
-  async function beginVerification() {
-    setBusy(true);
+  useEffect(() => {
+    if (attempted.current) return;
+    attempted.current = true;
+    startPersona().catch(() => setError("We couldn't open the Persona demo. Try again or continue to the app."));
+  }, []);
+
+  function retry() {
     setError(null);
-    try {
-      await startPersona();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to start verification. Please try again.");
-      setBusy(false);
-    }
-  }
-
-  async function signOut() {
-    setBusy(true);
-    try {
-      await logout();
-      router.replace("/login");
-    } catch {
-      setError("Unable to sign out. Please try again.");
-      setBusy(false);
-    }
+    startPersona().catch(() => setError("We couldn't open the Persona demo. Try again or continue to the app."));
   }
 
   return (
     <div className="flex min-h-svh items-center justify-center bg-background p-6">
       <main className="w-full max-w-sm space-y-6 rounded-xl border bg-card p-6 shadow-sm">
-        <ShieldCheck className="size-8 text-primary" aria-hidden="true" />
-        <div className="space-y-2">
-          <p className="text-sm text-muted-foreground">{developmentBypass ? "Local development · Persona bypassed" : verified ? "Account verified" : "One more step"}</p>
-          <h1 className="text-xl font-bold">{verified ? "You're ready to go" : "Verify your identity"}</h1>
-          <p className="text-sm text-muted-foreground">
-            {verified
-              ? developmentBypass ? "Persona is disabled for local development. Continue to the app." : "Your identity verification is complete. Continue to the app."
-              : "You're signed in. Continue to Persona to verify your identity before entering the app."}
-          </p>
-        </div>
-        {(error || callbackError) && <p role="alert" className="text-sm text-destructive">{error || callbackError}</p>}
-        <div className="space-y-3">
-          <Button className="w-full" disabled={busy} onClick={verified ? () => router.replace("/home") : beginVerification}>
-            {busy && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
-            {verified ? "Continue to app" : busy ? "Opening Persona…" : "Continue with Persona"}
-          </Button>
-          <Button variant="outline" className="w-full" disabled={busy} onClick={signOut}>Sign out</Button>
-        </div>
+        <p className="text-sm text-muted-foreground">Persona demo</p>
+        <h1 className="text-xl font-bold">{error ? "Unable to open Persona" : "Opening Persona…"}</h1>
+        <p className="text-sm text-muted-foreground">You are signed in. This demo shows the Persona screens and returns you to the app without checking the result.</p>
+        {error ? <><p role="alert" className="text-sm text-destructive">{error}</p><Button onClick={retry}>Try again</Button></> : <Loader2 className="size-6 animate-spin" aria-label="Opening Persona" />}
+        <Button variant="outline" className="w-full" onClick={() => router.replace("/home")}>Continue to app</Button>
       </main>
     </div>
   );
 }
 
 export default function SettingsPage() {
-  return (
-    <ProtectedRoute requirePersona={false}>
-      <Suspense fallback={<p className="p-6" role="status">Loading verification…</p>}>
-        <PersonaSettings />
-      </Suspense>
-    </ProtectedRoute>
-  );
+  return <ProtectedRoute><PersonaDemo /></ProtectedRoute>;
 }

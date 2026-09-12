@@ -40,7 +40,7 @@ function VerifyContent() {
         });
         setStatus("success");
         setTimeout(() => {
-          router.replace("/home");
+          router.replace("/settings");
         }, 1200);
       } catch (err: unknown) {
         setStatus("error");
@@ -80,7 +80,7 @@ function VerifyContent() {
             <div className="space-y-1">
               <h2 className="text-xl font-bold text-foreground">Signed in!</h2>
               <p className="text-sm text-muted-foreground">
-                Redirecting you to your account...
+                Opening the Persona demo...
               </p>
             </div>
           </div>
