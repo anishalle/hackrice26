@@ -6,21 +6,21 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import { colors, spacing, radii, tagPalette, tagGlyph, type, cardShadow, softShadow } from '../theme';
-import { SKILLS, CATEGORIES } from '../data/skills';
+import { CATEGORIES, useSkills } from '../lib/skills';
 import SkillCard from '../components/SkillCard';
 import BlobMark from '../components/BlobMark';
 import SkillDetailScreen from './SkillDetailScreen';
+import ShareSkillScreen from './ShareSkillScreen';
 import Icon from '../components/Icon';
 
 const PAGE = 6;
-const FEATURED = SKILLS.filter((s) => s.featured);
 
 function FeaturedCard({ skill, width, onOpen }) {
   const palette = tagPalette[skill.tags[0]];
   return (
     <Pressable style={[styles.featured, { backgroundColor: palette.bg, width }]} onPress={onOpen}>
       <BlobMark
-        seed={skill.id}
+        seed={skill.slug}
         size={44}
         glyphSize={24}
         fill="#FFFFFF"
@@ -49,15 +49,19 @@ export default function MarketplaceScreen() {
   const [category, setCategory] = useState(null);
   const [shown, setShown] = useState(PAGE);
   const [open, setOpen] = useState(null);
+  const [sharing, setSharing] = useState(false);
+  const { skills, loaded, error, refresh } = useSkills();
+  const featured = useMemo(() => skills.filter((s) => s.featured), [skills]);
 
   // Home routes here with a skill to open. The param is cleared as it is read,
   // so coming back to the tab later lands on the list rather than reopening.
+  // It waits for the catalogue, so a cold start still lands on the skill.
   const requested = route.params?.skillId;
   useEffect(() => {
-    if (!requested) return;
-    setOpen(SKILLS.find((s) => s.id === requested) ?? null);
+    if (!requested || !loaded) return;
+    setOpen(skills.find((s) => s.slug === requested) ?? null);
     navigation.setParams({ skillId: undefined });
-  }, [requested]);
+  }, [requested, loaded]);
 
   // Axl's sidebar routes here with a sub-market already chosen, so the list
   // lands filtered instead of asking for the same tap twice.
@@ -72,7 +76,7 @@ export default function MarketplaceScreen() {
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return SKILLS.filter(
+    return skills.filter(
       (s) =>
         (!category || s.tags.includes(category)) &&
         (!q ||
@@ -80,7 +84,7 @@ export default function MarketplaceScreen() {
           s.description.toLowerCase().includes(q) ||
           s.author.toLowerCase().includes(q))
     );
-  }, [query, category]);
+  }, [skills, query, category]);
 
   // Featured is a browse affordance. It only gets in the way once the list
   // has been narrowed down.
@@ -97,6 +101,18 @@ export default function MarketplaceScreen() {
   // A detail page rather than a stack: one piece of state beats a navigator
   // for a screen with a single way in and a single way out.
   if (open) return <SkillDetailScreen skill={open} onBack={() => setOpen(null)} />;
+  if (sharing) {
+    return (
+      <ShareSkillScreen
+        onBack={() => setSharing(false)}
+        onShared={(skill) => {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          setSharing(false);
+          setOpen(skill);
+        }}
+      />
+    );
+  }
 
   return (
     <View style={styles.root}>
@@ -105,8 +121,22 @@ export default function MarketplaceScreen() {
         keyboardDismissMode="on-drag"
       >
         <View style={styles.headerBlock}>
-          <Text style={styles.title}>Marketplace</Text>
-          <Text style={styles.subtitle}>Agent skills the community built. Add one and Axl runs it for you.</Text>
+          <View style={styles.headerRow}>
+            <Text style={styles.title}>Marketplace</Text>
+            <Pressable
+              style={styles.shareBtn}
+              onPress={() => {
+                Haptics.selectionAsync();
+                setSharing(true);
+              }}
+            >
+              <Icon name="newChat" size={14} color="#fff" />
+              <Text style={styles.shareText}>Share</Text>
+            </Pressable>
+          </View>
+          <Text style={styles.subtitle}>
+            Agent skills the community built. Add one and Axl runs it for you, or share one of your own.
+          </Text>
         </View>
 
         <View style={styles.searchField}>
@@ -165,7 +195,7 @@ export default function MarketplaceScreen() {
               contentContainerStyle={styles.featuredRow}
               style={styles.featuredScroll}
             >
-              {FEATURED.map((s) => (
+              {featured.map((s) => (
                 <FeaturedCard key={s.id} skill={s} width={featuredW} onOpen={() => setOpen(s)} />
               ))}
             </ScrollView>
@@ -178,8 +208,17 @@ export default function MarketplaceScreen() {
             <Text style={styles.sectionCount}>{results.length}</Text>
           </View>
 
-          {results.length === 0 ? (
-            <Text style={styles.empty}>No skill matches that yet. Try another word, or ask Axl to build one.</Text>
+          {!loaded && error ? (
+            <View style={styles.notice}>
+              <Text style={styles.noticeText}>The marketplace could not be reached. {error}</Text>
+              <Pressable style={styles.retry} onPress={refresh}>
+                <Text style={styles.retryText}>Try again</Text>
+              </Pressable>
+            </View>
+          ) : !loaded ? (
+            <Text style={styles.empty}>Loading skills…</Text>
+          ) : results.length === 0 ? (
+            <Text style={styles.empty}>No skill matches that yet. Try another word, or share one yourself.</Text>
           ) : (
             <View style={styles.grid}>
               {visible.map((s) => (
@@ -214,8 +253,36 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.page },
   container: { paddingHorizontal: spacing(2.5), paddingBottom: spacing(3), gap: spacing(2) },
   headerBlock: { gap: spacing(0.5) },
+  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   title: { ...type.title, color: colors.ink },
   subtitle: { ...type.callout, color: colors.inkMuted },
+  shareBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing(0.75),
+    backgroundColor: colors.ink,
+    borderRadius: radii.pill,
+    paddingVertical: spacing(1),
+    paddingHorizontal: spacing(2),
+  },
+  shareText: { ...type.label, color: '#fff' },
+
+  notice: {
+    gap: spacing(1.5),
+    backgroundColor: colors.surface,
+    borderRadius: radii.tile,
+    padding: spacing(2),
+    ...softShadow,
+  },
+  noticeText: { ...type.callout, color: colors.inkMuted },
+  retry: {
+    alignSelf: 'flex-start',
+    backgroundColor: colors.ink,
+    borderRadius: radii.pill,
+    paddingVertical: spacing(0.875),
+    paddingHorizontal: spacing(2),
+  },
+  retryText: { ...type.label, color: '#fff' },
 
   searchField: {
     flexDirection: 'row',

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import {
-  View, Text, TextInput, Pressable, ScrollView, StyleSheet, KeyboardAvoidingView, Platform,
+  View, Text, TextInput, Pressable, ScrollView, StyleSheet, KeyboardAvoidingView, Platform, Alert,
 } from 'react-native';
 import { Blobatar } from '@blobatar/react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,7 +8,7 @@ import * as Haptics from 'expo-haptics';
 import {
   colors, accents, type, spacing, radii, tagPalette, tagGlyph, cardShadow, softShadow,
 } from '../theme';
-import { SKILL_DOCS } from '../data/skills';
+import { removeSkill } from '../lib/skills';
 import Icon from '../components/Icon';
 import BlobMark from '../components/BlobMark';
 import { EYE } from '../components/AgentBlob';
@@ -24,10 +24,36 @@ export default function SkillDetailScreen({ skill, onBack }) {
   const insets = useSafeAreaInsets();
   const [asked, setAsked] = useState([]);
   const [draft, setDraft] = useState('');
+  const [removing, setRemoving] = useState(false);
 
   const palette = tagPalette[skill.tags[0]];
-  const doc = SKILL_DOCS[skill.id];
+  // Long-form docs ride along with the skill. Most only have the card text.
+  const doc = skill.docs;
   const creator = skill.author.replace('@', '');
+
+  // Only the person who shared a skill sees this, and it asks first: the skill
+  // comes off the marketplace for everyone, not just this phone.
+  const confirmRemove = () => {
+    Haptics.selectionAsync();
+    Alert.alert('Remove this skill?', 'It comes off the marketplace for everyone.', [
+      { text: 'Keep', style: 'cancel' },
+      {
+        text: 'Remove',
+        style: 'destructive',
+        onPress: async () => {
+          setRemoving(true);
+          try {
+            await removeSkill(skill.slug);
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            onBack();
+          } catch (e) {
+            setRemoving(false);
+            Alert.alert('Could not remove it', e.message);
+          }
+        },
+      },
+    ]);
+  };
 
   const ask = () => {
     const question = draft.trim();
@@ -53,9 +79,16 @@ export default function SkillDetailScreen({ skill, onBack }) {
         >
           <Icon name="back" size={17} color={colors.ink} />
         </Pressable>
-        <Pressable style={styles.addBtn} onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}>
-          <Text style={styles.addText}>Add</Text>
-        </Pressable>
+        <View style={styles.navActions}>
+          {skill.mine && (
+            <Pressable style={styles.removeBtn} hitSlop={6} onPress={confirmRemove} disabled={removing}>
+              <Text style={styles.removeText}>{removing ? 'Removing…' : 'Remove'}</Text>
+            </Pressable>
+          )}
+          <Pressable style={styles.addBtn} onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}>
+            <Text style={styles.addText}>Add</Text>
+          </Pressable>
+        </View>
       </View>
 
       <ScrollView
@@ -64,7 +97,7 @@ export default function SkillDetailScreen({ skill, onBack }) {
       >
         <View style={styles.hero}>
           <BlobMark
-            seed={skill.id}
+            seed={skill.slug}
             size={52}
             glyphSize={26}
             fill={palette.bg}
@@ -85,8 +118,9 @@ export default function SkillDetailScreen({ skill, onBack }) {
 
         <Text style={styles.summary}>{doc?.summary ?? skill.description}</Text>
 
-        {doc ? (
+        {doc?.features?.length || doc?.why?.length ? (
           <>
+            {doc.features?.length ? (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>What it does</Text>
               <View style={styles.features}>
@@ -98,7 +132,9 @@ export default function SkillDetailScreen({ skill, onBack }) {
                 ))}
               </View>
             </View>
+            ) : null}
 
+            {doc.why?.length ? (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Why it helps</Text>
               <View style={styles.card}>
@@ -110,6 +146,7 @@ export default function SkillDetailScreen({ skill, onBack }) {
                 ))}
               </View>
             </View>
+            ) : null}
           </>
         ) : null}
 
@@ -182,6 +219,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     ...softShadow,
   },
+  navActions: { flexDirection: 'row', alignItems: 'center', gap: spacing(1) },
   addBtn: {
     backgroundColor: colors.ink,
     borderRadius: radii.pill,
@@ -189,6 +227,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing(2.5),
   },
   addText: { ...type.label, color: '#fff' },
+  removeBtn: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.pill,
+    paddingVertical: spacing(1.25),
+    paddingHorizontal: spacing(2),
+    ...softShadow,
+  },
+  removeText: { ...type.label, color: colors.ink },
 
   container: { paddingHorizontal: spacing(2.5), gap: spacing(3) },
 

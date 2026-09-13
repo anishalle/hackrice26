@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import { colors, accents, spacing, radii, type, tagPalette, cardShadow } from '../theme';
-import { SKILLS, CATEGORIES } from '../data/skills';
+import { CATEGORIES, useSkills } from '../lib/skills';
 import { CHATS, SUGGESTIONS } from '../data/chats';
 import { CLINICIANS } from '../data/days';
 import Icon from './Icon';
@@ -34,14 +34,17 @@ const SEARCH_CLOSED_W = 32;
 
 // Sub-markets are not a separate list. A category's standing is the karma its
 // resources have earned, so trending falls out of the marketplace data itself.
-const SUBMARKETS = CATEGORIES.map((name) => {
-  const items = SKILLS.filter((s) => s.tags.includes(name)).sort((a, b) => b.karma - a.karma);
-  return { name, items, karma: items.reduce((n, s) => n + s.karma, 0) };
-}).sort((a, b) => b.karma - a.karma);
+function rankSubmarkets(skills) {
+  return CATEGORIES.map((name) => {
+    const items = skills.filter((s) => s.tags.includes(name)).sort((a, b) => b.karma - a.karma);
+    return { name, items, karma: items.reduce((n, s) => n + s.karma, 0) };
+  }).sort((a, b) => b.karma - a.karma);
+}
 
-const SUGGESTED = SUGGESTIONS.map((s) => ({ ...s, skill: SKILLS.find((k) => k.id === s.id) })).filter(
-  (s) => s.skill
-);
+// Suggestions name skills by slug; one that has left the marketplace drops out.
+function pickSuggested(skills) {
+  return SUGGESTIONS.map((s) => ({ ...s, skill: skills.find((k) => k.slug === s.id) })).filter((s) => s.skill);
+}
 
 // Three of each, not all of them. The panel is for picking up where you left
 // off, so an open thread beats a recent one and everything past the third row
@@ -113,7 +116,7 @@ function SubMarket({ market, open, onToggle, onOpenSkill, onOpenMarket }) {
           {market.items.slice(0, 3).map((s) => (
             <Pressable
               key={s.id}
-              onPress={() => onOpenSkill(s.id)}
+              onPress={() => onOpenSkill(s.slug)}
               style={({ pressed }) => [styles.previewItem, pressed && styles.rowOn]}
             >
               <Text style={styles.previewTitle} numberOfLines={1}>{s.title}</Text>
@@ -144,6 +147,9 @@ export default function AgentSidebar({
   const navigation = useNavigation();
   const { width } = useWindowDimensions();
   const { gaze, t } = useAccess();
+  const { skills } = useSkills();
+  const submarkets = useMemo(() => rankSubmarkets(skills), [skills]);
+  const suggested = useMemo(() => pickSuggested(skills), [skills]);
   // Wider in gaze mode, and it arrives from the right because that is the side
   // the menu button lives on: a panel that slides in from under your hand is
   // a panel you do not have to re-find.
@@ -241,7 +247,7 @@ export default function AgentSidebar({
               <Text style={styles.gazeRowText}>Marketplace</Text>
             </Pressable>
 
-            {SUGGESTED.slice(0, 2).map(({ id, why, skill }) => (
+            {suggested.slice(0, 2).map(({ id, why, skill }) => (
               <Pressable
                 key={id}
                 style={({ pressed }) => [styles.gazeRow, pressed && styles.rowOn]}
@@ -298,7 +304,7 @@ export default function AgentSidebar({
             <Row
               icon="store"
               label="Marketplace"
-              meta={`${SKILLS.length}`}
+              meta={skills.length ? `${skills.length}` : undefined}
               onPress={() => leave(() => navigation.navigate('Marketplace'))}
             />
           </View>
@@ -334,7 +340,7 @@ export default function AgentSidebar({
               <Text style={styles.sectionLabel}>Suggested for you</Text>
             </View>
             <View style={styles.group}>
-              {SUGGESTED.map(({ id, why, skill }) => {
+              {suggested.map(({ id, why, skill }) => {
                 const palette = tagPalette[skill.tags[0]];
                 return (
                   <Pressable
@@ -381,7 +387,7 @@ export default function AgentSidebar({
               <Text style={styles.sectionLabel}>Trending sub-markets</Text>
             </View>
             <View style={styles.group}>
-              {SUBMARKETS.slice(0, 4).map((m) => (
+              {submarkets.slice(0, 4).map((m) => (
                 <SubMarket
                   key={m.name}
                   market={m}

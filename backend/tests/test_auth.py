@@ -23,6 +23,7 @@ def client(monkeypatch):
         "/docs",
         "/api/v1/openapi.json",
         "/api/v1/voice/profile",
+        "/api/v1/skills",
         "/api/v1/agents/sessions",
         "/api/v1/agents/responses",
         "/api/v1/browser/sessions",

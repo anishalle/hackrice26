@@ -1,7 +1,7 @@
 """API request and response schemas."""
 
 from datetime import datetime
-from typing import Literal
+from typing import Any, Literal
 from uuid import UUID
 
 from pydantic import BaseModel, Field, HttpUrl
@@ -9,6 +9,33 @@ from pydantic import BaseModel, Field, HttpUrl
 
 class HealthResponse(BaseModel):
     status: Literal["ok"]
+
+
+SkillCategory = Literal["Speech", "Voice", "Mobility", "Daily", "Care", "Automation"]
+
+
+class CreateSkillRequest(BaseModel):
+    """What a person fills in to share a skill. The first tag picks the icon."""
+
+    title: str = Field(min_length=3, max_length=80)
+    description: str = Field(min_length=10, max_length=280)
+    tags: list[SkillCategory] = Field(min_length=1, max_length=2)
+    summary: str | None = Field(default=None, max_length=2_000)
+
+
+class SkillResponse(BaseModel):
+    id: UUID
+    slug: str
+    title: str
+    author: str
+    tags: list[str]
+    karma: int
+    featured: bool
+    description: str
+    docs: dict[str, Any] | None
+    # True when the caller named in X-Owner-Subject shared this skill.
+    mine: bool
+    created_at: datetime
 
 
 class BrowserLiveViewResponse(BaseModel):

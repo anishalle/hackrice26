@@ -37,6 +37,34 @@ index on skill embeddings. `EMBEDDING_DIMENSIONS` defaults to 1536 and must
 match the embedding model before the first migration; changing dimensions later
 requires a new migration and re-indexing.
 
+## Marketplace
+
+The marketplace catalogue lives in the `skills` table. Migration `0003` adds
+the marketplace columns (`slug`, `author_handle`, `tags`, `karma`, `featured`,
+`docs`) and seeds the thirteen launch skills, each with a published version 1,
+so `uv run alembic upgrade head` is the whole setup. The seed is idempotent:
+re-running it against a database that already has the rows changes nothing.
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `GET` | `/api/v1/skills` | Published skills, highest karma first |
+| `GET` | `/api/v1/skills/{slug}` | One skill with its long-form docs |
+| `POST` | `/api/v1/skills` | Share a skill: title, description, one or two tags, optional summary |
+| `DELETE` | `/api/v1/skills/{slug}` | Remove a skill you shared |
+
+Writes name the current person in an `X-Owner-Subject` header, the same demo
+identity bridge the voice endpoints use. Reads may send it too, in which case
+each skill carries `mine: true` when that person shared it. Seeded skills have
+no owner and cannot be removed through the API. Tags must come from the six
+app categories; the first tag picks the icon in the apps.
+
+The integration tests run the migration and the endpoints against an embedded
+PostgreSQL with pgvector when `pgserver` is available, and skip otherwise:
+
+```sh
+uv run --with pgserver pytest backend/tests/test_marketplace.py
+```
+
 ## Guided browser
 
 Set `BROWSER_USE_API_KEY` in `.env` to enable the user-approved guided browser.
@@ -90,13 +118,14 @@ backend/app/
   api/
     main.py        # Collect feature routers
     deps.py        # Shared database-session dependency
-    routes/        # Health, browser, and voice-preservation route modules
+    routes/        # Health, browser, voice-preservation, and marketplace routes
   core/
     config.py      # Typed environment settings
     db.py          # PostgreSQL engine, pgvector registration, request sessions
   services/
     browser_use.py # Guided cloud-browser lifecycle and CDP controls
     voice_preservation.py # Encrypted samples and server-side ElevenLabs calls
+    marketplace.py # Catalogue reads, sharing a skill, removing your own
     retrieval.py   # pgvector skill-chunk retrieval
 alembic/           # Versioned PostgreSQL/pgvector schema migrations
 backend/tests/     # API smoke tests

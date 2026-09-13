@@ -10,7 +10,7 @@ export default function SkillCard({ skill, style, onPress }) {
   return (
     <Pressable style={[styles.card, style]} onPress={onPress}>
       <BlobMark
-        seed={skill.id}
+        seed={skill.slug}
         size={38}
         glyphSize={20}
         fill={palette.bg}

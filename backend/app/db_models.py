@@ -13,6 +13,7 @@ from uuid import UUID, uuid4
 
 from pgvector.sqlalchemy import VECTOR
 from sqlalchemy import (
+    Boolean,
     DateTime,
     ForeignKey,
     Index,
@@ -118,19 +119,35 @@ class VoiceSample(CreatedAtMixin, Base):
 
 
 class Skill(CreatedAtMixin, Base):
+    """One marketplace entry: what the app lists, searches and opens.
+
+    ``goal`` is the one-line card description. ``docs`` is the optional
+    long-form page (summary, features, why, forum) that only some skills have.
+    ``slug`` is the stable public handle the apps navigate by; ``id`` stays the
+    relational key.
+    """
+
     __tablename__ = "skills"
 
     id: Mapped[UUID] = mapped_column(
         PG_UUID(as_uuid=True), primary_key=True, default=uuid4
     )
+    slug: Mapped[str] = mapped_column(String(64), unique=True, index=True)
     author_id: Mapped[UUID | None] = mapped_column(
         PG_UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="SET NULL"),
         nullable=True,
     )
+    author_handle: Mapped[str] = mapped_column(String(64), default="")
     title: Mapped[str] = mapped_column(String(255))
-    domain: Mapped[str] = mapped_column(String(255), index=True)
+    # Site the skill is tied to, when there is one. Cross-site skills leave it
+    # empty, which is why retrieval treats the filter as optional.
+    domain: Mapped[str | None] = mapped_column(String(255), index=True, nullable=True)
     goal: Mapped[str] = mapped_column(Text)
+    tags: Mapped[list[str]] = mapped_column(JSONB, default=list)
+    karma: Mapped[int] = mapped_column(Integer, default=0)
+    featured: Mapped[bool] = mapped_column(Boolean, default=False)
+    docs: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
     status: Mapped[str] = mapped_column(String(32), default="draft", index=True)
 
 
