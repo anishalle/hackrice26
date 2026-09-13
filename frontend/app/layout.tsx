@@ -50,8 +50,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <AuthProvider>
           <SessionProvider>{children}</SessionProvider>
         </AuthProvider>
-        {/* Renders nothing outside development — see the component. */}
-        <DevAnnotator />
+        {/* The annotation toolbar needs a separate local service. Keep it off
+            unless a developer explicitly opts in to that workflow. */}
+        {process.env.NODE_ENV === "development" &&
+          process.env.ENABLE_AGENTATION === "true" && <DevAnnotator />}
       </body>
     </html>
   );

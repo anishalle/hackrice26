@@ -3,7 +3,8 @@
 import dynamic from "next/dynamic";
 
 /**
- * The Agentation feedback toolbar, development only.
+ * The optional Agentation feedback toolbar. RootLayout mounts it only when
+ * ENABLE_AGENTATION=true in development and the local MCP server is available.
  *
  * Annotations made here are posted to the local agentation-mcp HTTP server,
  * which the coding agent then reads over MCP — so pointing at a piece of copy
