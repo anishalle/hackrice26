@@ -6,6 +6,7 @@ from fastapi.routing import APIRoute
 from starlette.middleware.cors import CORSMiddleware
 
 from app.api.main import api_router
+from app.core.auth import APIKeyMiddleware, validate_api_key_config
 from app.core.config import settings
 from app.core.db import dispose_database, verify_database
 
@@ -21,6 +22,7 @@ if settings.SENTRY_DSN and settings.FASTAPI_ENV != "development":
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
+    validate_api_key_config()
     if settings.DATABASE_URL is not None:
         verify_database()
     try:
@@ -36,6 +38,8 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+app.add_middleware(APIKeyMiddleware)
+# CORS stays outermost so preflight works and 401s include CORS headers.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[settings.FRONTEND_HOST],

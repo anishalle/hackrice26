@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     HERMES_API_KEY: SecretStr | None = None
     HERMES_MODEL: str = "hermes-agent"
     HERMES_TIMEOUT_SECONDS: float = 300
+    BACKEND_API_KEY: SecretStr | None = None
 
     PROJECT_NAME: str = "HackRice 26"
     API_V1_STR: str = "/api/v1"

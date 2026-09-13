@@ -117,9 +117,8 @@ uv run ruff format --check .
 
 ## Docker
 
-```sh
-docker build -t hackrice26 .
-docker run --rm -p 8000:8000 hackrice26
-```
-
-Pass `--env-file .env` to `docker run` if you created a configuration file.
+See [the deployment guide](../deploy/README.md) for the personal-server Compose
+stack, dedicated Azure SSH tunnel, API-key authentication, push/management commands,
+and a native phone build that works without Metro. Docker builds use `uv.lock` and
+include Alembic migrations. Production requires `BACKEND_API_KEY`; Expo sends the
+matching `EXPO_PUBLIC_BACKEND_API_KEY` as `X-API-Key`.
