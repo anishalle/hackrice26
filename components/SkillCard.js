@@ -1,5 +1,5 @@
 import { View, Text, Pressable, StyleSheet } from 'react-native';
-import Icon from './Icon';
+import BlobMark from './BlobMark';
 import VoteRail from './VoteRail';
 import { colors, spacing, radii, tagPalette, tagGlyph, type, softShadow } from '../theme';
 
@@ -9,9 +9,14 @@ export default function SkillCard({ skill, style, onPress }) {
 
   return (
     <Pressable style={[styles.card, style]} onPress={onPress}>
-      <View style={[styles.mark, { backgroundColor: palette.bg }]}>
-        <Icon name={tagGlyph[skill.tags[0]]} size={20} color={palette.text} />
-      </View>
+      <BlobMark
+        seed={skill.id}
+        size={38}
+        glyphSize={20}
+        fill={palette.bg}
+        glyph={tagGlyph[skill.tags[0]]}
+        glyphColor="#FFFFFF"
+      />
 
       <View style={styles.head}>
         <Text style={styles.title} numberOfLines={2}>{skill.title}</Text>
@@ -39,7 +44,6 @@ const styles = StyleSheet.create({
     padding: spacing(1.75),
     ...softShadow,
   },
-  mark: { width: 38, height: 38, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
   head: { gap: 1 },
   title: { ...type.label, fontSize: 15, color: colors.ink },
   author: { ...type.caption, color: colors.inkMuted },

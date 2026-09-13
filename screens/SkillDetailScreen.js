@@ -10,12 +10,14 @@ import {
 } from '../theme';
 import { SKILL_DOCS } from '../data/skills';
 import Icon from '../components/Icon';
+import BlobMark from '../components/BlobMark';
+import { EYE } from '../components/AgentBlob';
 import VoteRail from '../components/VoteRail';
 
 const ROUND = { shape: 0.05 };
 
 function Person({ name, tint }) {
-  return <Blobatar name={name} size={26} traits={ROUND} palette={{ head: tint }} title={name} />;
+  return <Blobatar name={name} size={26} traits={ROUND} palette={{ head: tint, eye: EYE }} title={name} />;
 }
 
 export default function SkillDetailScreen({ skill, onBack }) {
@@ -61,13 +63,18 @@ export default function SkillDetailScreen({ skill, onBack }) {
         keyboardDismissMode="on-drag"
       >
         <View style={styles.hero}>
-          <View style={[styles.mark, { backgroundColor: palette.bg }]}>
-            <Icon name={tagGlyph[skill.tags[0]]} size={26} color={palette.text} />
-          </View>
+          <BlobMark
+            seed={skill.id}
+            size={52}
+            glyphSize={26}
+            fill={palette.bg}
+            glyph={tagGlyph[skill.tags[0]]}
+            glyphColor="#FFFFFF"
+          />
           <Text style={styles.title}>{skill.title}</Text>
 
           <View style={styles.byline}>
-            <Person name={creator} tint={accents.blue} />
+            <Person name={creator} tint={accents.periwinkle} />
             <Text style={styles.author}>{skill.author}</Text>
             <View style={[styles.tag, { backgroundColor: palette.bg }]}>
               <Text style={[styles.tagText, { color: palette.text }]}>{skill.tags[0]}</Text>
@@ -97,7 +104,7 @@ export default function SkillDetailScreen({ skill, onBack }) {
               <View style={styles.card}>
                 {doc.why.map((w, i) => (
                   <View key={w} style={[styles.whyRow, i > 0 && styles.whyDivided]}>
-                    <View style={[styles.bullet, { backgroundColor: palette.bg }]} />
+                    <BlobMark seed={w} size={9} fill={palette.bg} style={styles.bullet} />
                     <Text style={styles.whyText}>{w}</Text>
                   </View>
                 ))}
@@ -112,7 +119,7 @@ export default function SkillDetailScreen({ skill, onBack }) {
           {threads.map((t) => (
             <View key={t.id} style={styles.card}>
               <View style={styles.qHead}>
-                <Person name={t.asker} tint={accents.green} />
+                <Person name={t.asker} tint={accents.mint} />
                 <Text style={styles.qAsker}>@{t.asker}</Text>
               </View>
               <Text style={styles.question}>{t.question}</Text>
@@ -120,7 +127,7 @@ export default function SkillDetailScreen({ skill, onBack }) {
               {t.answer ? (
                 <View style={styles.answer}>
                   <View style={styles.qHead}>
-                    <Person name={creator} tint={accents.blue} />
+                    <Person name={creator} tint={accents.periwinkle} />
                     <Text style={styles.qAsker}>{skill.author}</Text>
                     <View style={styles.creatorTag}>
                       <Text style={styles.creatorTagText}>creator</Text>
@@ -186,7 +193,6 @@ const styles = StyleSheet.create({
   container: { paddingHorizontal: spacing(2.5), gap: spacing(3) },
 
   hero: { gap: spacing(1.5) },
-  mark: { width: 52, height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   title: { ...type.title, color: colors.ink },
   byline: { flexDirection: 'row', alignItems: 'center', gap: spacing(1) },
   author: { ...type.label, color: colors.inkMuted },
@@ -223,7 +229,7 @@ const styles = StyleSheet.create({
     borderTopColor: colors.border,
     paddingTop: spacing(1),
   },
-  bullet: { width: 8, height: 8, borderRadius: 4, marginTop: 6 },
+  bullet: { marginTop: 6 },
   whyText: { ...type.footnote, color: colors.ink, flex: 1 },
 
   qHead: { flexDirection: 'row', alignItems: 'center', gap: spacing(0.75) },
@@ -232,13 +238,13 @@ const styles = StyleSheet.create({
   answer: {
     gap: spacing(0.75),
     borderLeftWidth: 2,
-    borderLeftColor: colors.blue,
+    borderLeftColor: colors.periwinkle,
     paddingLeft: spacing(1.5),
     marginTop: spacing(0.5),
   },
   answerText: { ...type.footnote, color: colors.inkMuted },
   creatorTag: {
-    backgroundColor: colors.blue,
+    backgroundColor: colors.periwinkle,
     borderRadius: radii.pill,
     paddingVertical: 2,
     paddingHorizontal: 7,

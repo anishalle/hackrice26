@@ -25,10 +25,15 @@ const LOADING_MS = 1100;
 
 const GREETING = [
   { id: 'g1', text: "Hi, I'm Axl." },
-  { id: 'g2', text: 'Ask me about equipment, daily routines, or what other people at your stage have found that works.' },
+  { id: 'g2', text: 'Ask me to handle something: a refill, a form, a ride. Or tell me how the week has gone and I will log it.' },
 ];
 
-const FLAG_TINT = { gold: accents.gold, blue: accents.blue, green: accents.green, purple: accents.purple };
+const FLAG_TINT = {
+  amber: accents.amber,
+  periwinkle: accents.periwinkle,
+  mint: accents.mint,
+  peach: accents.peach,
+};
 
 const clock = () =>
   new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }).toLowerCase().replace(' ', '');
@@ -156,7 +161,7 @@ export default function AgentsScreen() {
 
         <View style={styles.navTitleWrap}>
           <Text style={styles.navTitle}>{reviewing ? reviewing.date : 'Axl'}</Text>
-          {reviewing && <Text style={styles.navSub}>day log</Text>}
+          {reviewing && <Text style={styles.navSub}>check-in</Text>}
         </View>
 
         {/* Matches the left cluster's width so the title stays centred. */}
@@ -182,19 +187,20 @@ export default function AgentsScreen() {
         >
           {reviewing ? (
             <>
-              {/* A past day is read-only and says so. The flags are Axl's own
-                  reading of the thread, which is what a clinician skims first. */}
+              {/* A past check-in is read-only and says so. The signals are
+                  what Axl measured in the recording, and what a clinician
+                  reads first; the transcript is the context under them. */}
               <View style={styles.logCard}>
                 <View style={styles.logHead}>
                   <Icon name="audit" size={14} color={colors.inkMuted} />
-                  <Text style={styles.logKicker}>Audited · read only</Text>
+                  <Text style={styles.logKicker}>Tracked · read only</Text>
                 </View>
                 <Text style={styles.logTitle}>{reviewing.title}</Text>
                 <Text style={styles.logSummary}>{reviewing.summary}</Text>
 
                 {reviewing.flags.map((f, i) => (
                   <View key={i} style={styles.flag}>
-                    <BlobMark seed={f.text} size={10} fill={FLAG_TINT[f.tone] ?? accents.blue} />
+                    <BlobMark seed={f.text} size={10} fill={FLAG_TINT[f.tone] ?? accents.periwinkle} />
                     <Text style={styles.flagText}>{f.text}</Text>
                   </View>
                 ))}
@@ -264,7 +270,7 @@ export default function AgentsScreen() {
             <View style={styles.logBar}>
               <Pressable style={styles.logBack} onPress={today}>
                 <Icon name="back" size={14} color={colors.ink} />
-                <Text style={styles.logBackText}>Back to today</Text>
+                <Text style={styles.logBackText}>Back to Axl</Text>
               </Pressable>
               <Pressable style={styles.logSend} onPress={() => setSheet(reviewing)}>
                 <Icon name="note" size={14} color="#fff" />

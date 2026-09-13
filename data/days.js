@@ -1,9 +1,12 @@
-// Every day with Axl is kept as a log: the thread, plus whatever in it a
-// clinician would want to see. `flags` is the audited part — lines Axl pulled
-// out because they read as a change rather than a question.
+// Weekly check-ins. Axl asks how the week went, records the answer, and reads
+// the recording for signal rather than content: speaking rate, pause length,
+// filler count, how confident recognition was, how long replies took to start,
+// and how accurately targets were being hit. Those are the `flags` on a
+// check-in, and they are what a clinician can follow between assessments
+// instead of re-running the whole test.
 //
-// `sent` is the last clinician this day went to, or null. The screen keeps its
-// own overrides on top of this while the app is open.
+// `sent` is the last clinician this check-in went to, or null. The screen keeps
+// its own overrides on top of this while the app is open.
 
 export const CLINICIANS = [
   { id: 'reyes', name: 'Dr. Amara Reyes', role: 'Neurology · ALS clinic' },
@@ -13,116 +16,133 @@ export const CLINICIANS = [
 
 export const DAYS = [
   {
-    id: 'd-0312',
-    label: 'Today',
+    id: 'w-0312',
+    label: 'This week',
     date: 'Mar 12',
-    title: 'Thin liquids and the new cup',
-    summary: 'Two questions about swallowing, one about the angled cup Priya uses.',
+    title: 'Week 14 check-in',
+    summary: 'Three minutes spoken. Speaking rate down slightly, pauses longer by the end of the week.',
     tags: ['Speech', 'Daily'],
     sent: null,
     flags: [
-      { tone: 'gold', text: 'Coughing on water mentioned twice in one day' },
-      { tone: 'blue', text: 'Asked about thickeners unprompted' },
+      { tone: 'amber', text: 'Speaking rate 132 wpm, down 6 from last week' },
+      { tone: 'amber', text: 'Mean pause 0.9s, longest runs in the evening' },
+      { tone: 'periwinkle', text: 'Recognition confidence 94%, unchanged' },
+      { tone: 'mint', text: 'Tap accuracy steady, no target growth needed' },
     ],
     transcript: [
       {
-        q: 'Water keeps catching in my throat by the evening. Is that the day wearing me out?',
-        a: 'Often, yes — swallowing gets less reliable as the muscles tire, so evenings are usually worse than mornings. Thin liquids are the hardest, which is why water tends to be the first thing that catches. Worth telling your SLP that it is time-of-day rather than constant; that detail changes what they suggest.',
+        q: 'Mornings were fine. By about six I was losing words, and water kept catching in my throat.',
+        a: 'That matches the recording. Your rate holds through the first half of the week and drops in the evening clips, with pauses lengthening alongside it. Both point at fatigue rather than a step change. I logged the swallowing separately, because that one is worth your SLP hearing on its own.',
       },
       {
-        q: 'Does thickening it actually help or does it just feel safer?',
-        a: 'It helps for real. A thicker liquid moves slower, so the airway has time to close. Most people start with nectar consistency at the end of the day only, and keep water plain in the morning while it is still easy.',
+        q: 'Anything I should do differently?',
+        a: 'Move whatever needs your voice earlier in the day and let me take the calls that land after five. I also queued two banking sittings from this week’s audio, so the bank grows without you sitting down to record.',
       },
     ],
   },
   {
-    id: 'd-0311',
-    label: 'Yesterday',
-    date: 'Mar 11',
-    title: 'Voice banking, second sitting',
-    summary: 'Recorded 140 phrases. Asked what order to do the rest in.',
+    id: 'w-0305',
+    label: 'Last week',
+    date: 'Mar 5',
+    title: 'Week 13 check-in',
+    summary: 'Voice steady for eighteen minutes, then noticeably softer. 140 phrases banked from the week.',
     tags: ['Voice'],
-    sent: { to: 'okafor', notes: 'Second sitting done. Voice steady for ~18 min then noticeably softer.' },
-    flags: [{ tone: 'green', text: '140 phrases banked, 18 minutes before fatigue' }],
+    sent: { to: 'okafor', notes: 'Voice holds ~18 min then drops off. Banking is ahead of schedule.' },
+    flags: [
+      { tone: 'mint', text: '140 phrases banked, no sitting run past fatigue' },
+      { tone: 'periwinkle', text: 'Speaking rate 138 wpm, flat for three weeks' },
+      { tone: 'amber', text: 'Filler rate up: 14 per hundred words' },
+    ],
     transcript: [
       {
-        q: 'Got through 140 today before my voice went soft. Which phrases next?',
-        a: 'The ones you say to people rather than the ones you read. Names, "can you help me sit up", "I love you", the way you answer the phone. Vendors want volume eventually, but recognisability comes from the everyday lines, and those are the ones that stop being recordable first.',
+        q: 'Got through a lot of recording this week. Felt good until it suddenly did not.',
+        a: 'Eighteen minutes is where your volume starts falling off, the same point as the last two weeks, so it is a reliable number rather than a bad day. I capped the sittings there instead of at twenty.',
       },
       {
-        q: 'Should I push past the point where it gets soft?',
-        a: 'No. A tired take is a take you will re-record, and pushing costs you tomorrow’s sitting. Eighteen minutes is a real number — log it and stop there each time.',
+        q: 'Which phrases should it take next?',
+        a: 'The ones you say to people rather than the ones you read. Names, "can you help me sit up", the way you answer the phone. Those stop being recordable first, so they go to the front of the queue.',
       },
     ],
   },
   {
-    id: 'd-0309',
-    label: 'Sat',
-    date: 'Mar 9',
-    title: 'Night turning, split shift',
-    summary: 'Worked through Sarah’s two-person overnight split with Mom.',
-    tags: ['Care'],
-    sent: { to: 'reyes', notes: 'Caregiver sleep is the bottleneck, not the turning itself.' },
-    flags: [{ tone: 'purple', text: 'Caregiver woke 4× overnight' }],
+    id: 'w-0226',
+    label: 'Feb 26',
+    date: 'Feb 26',
+    title: 'Week 12 check-in',
+    summary: 'First week the app grew its own buttons. Overnight turning came up again.',
+    tags: ['Mobility', 'Care'],
+    sent: { to: 'reyes', notes: 'Targets grown one step. Caregiver sleep is the bottleneck, not the turning.' },
+    flags: [
+      { tone: 'peach', text: 'Tap accuracy 88%, targets grown one step' },
+      { tone: 'peach', text: 'Caregiver woke 4× overnight' },
+      { tone: 'periwinkle', text: 'Reply latency 2.4s, up from 1.9s' },
+    ],
     transcript: [
       {
-        q: 'Mom is up four times a night with me. How do other people split this?',
-        a: 'The split that holds is by block, not by alarm: one person owns until 2am and sleeps after, the other takes 2am on and sleeps before. Four wakes split across two people is two each, but four wakes split across the same person is nobody sleeping. Sarah’s write-up in the marketplace has the exact handover she uses.',
+        q: 'I keep missing the small buttons, and Mom is up four times a night with me.',
+        a: 'I saw the misses before you mentioned them. Accuracy dropped to 88% on the smallest targets, so everything stepped up a size and the spacing came with it. For the nights, Care Shift Roster splits the wake-ups by block rather than by alarm, and it asks the second person itself so you are not the one chasing.',
       },
     ],
   },
   {
-    id: 'd-0306',
-    label: 'Wed',
-    date: 'Mar 6',
-    title: 'Breath stacking, day one',
-    summary: 'Set up the routine and the cue for when to call the clinic.',
+    id: 'w-0219',
+    label: 'Feb 19',
+    date: 'Feb 19',
+    title: 'Week 11 check-in',
+    summary: 'Morning headaches twice. Breathing routine started and logged.',
     tags: ['Daily', 'Care'],
     sent: null,
     flags: [
-      { tone: 'gold', text: 'Morning headache reported — escalation cue met' },
-      { tone: 'blue', text: 'Routine started, 3× daily' },
+      { tone: 'amber', text: 'Morning headache twice, escalation cue met' },
+      { tone: 'mint', text: 'Breathing routine logged 3× daily' },
+      { tone: 'periwinkle', text: 'Speaking rate 139 wpm, unchanged' },
     ],
     transcript: [
       {
-        q: 'I woke up with a headache again. Related?',
-        a: 'It can be. Morning headaches are one of the first signs that breathing is shallower overnight, and they are on the short list of things to call the clinic about rather than wait out. Log it with the date — if it repeats this week that is the pattern they need to hear, not a one-off.',
+        q: 'Woke up with a headache twice this week. Related?',
+        a: 'It can be. Morning headaches are one of the first signs breathing is shallower overnight, and they are on the short list of things to call the clinic about rather than wait out. Twice in one week is the pattern they need to hear, so this check-in is flagged and ready to send.',
       },
       {
-        q: 'And the stacking routine — how often?',
-        a: 'Three times a day, five stacks each, before meals works for most people because your chest is not full. Stop if you feel dizzy.',
+        q: 'Send it then.',
+        a: 'Sent to Dr. Reyes with the last three weeks attached, so the headaches arrive next to your rate and pause trend rather than on their own.',
       },
     ],
   },
   {
-    id: 'd-0302',
-    label: 'Sat',
-    date: 'Mar 2',
-    title: 'Kitchen without grip',
-    summary: 'Rocker knife, plate guard, and which mug actually works.',
+    id: 'w-0212',
+    label: 'Feb 12',
+    date: 'Feb 12',
+    title: 'Week 10 check-in',
+    summary: 'Ate unassisted all week. Grocery ordering moved onto the agent.',
     tags: ['Daily'],
     sent: null,
-    flags: [{ tone: 'green', text: 'Ate unassisted all three meals' }],
+    flags: [
+      { tone: 'mint', text: 'Ate unassisted all seven days' },
+      { tone: 'mint', text: 'Grocery Loop ran twice, no intervention needed' },
+    ],
     transcript: [
       {
-        q: 'Dropping mugs. Is there one that is actually designed for this?',
-        a: 'Two handles and a lid, not a weighted one — weight helps tremor, not grip. Priya’s kitchen write-up lists the three she kept and the five she returned.',
+        q: 'Dropping mugs, but eating is still mine. Ordering is the annoying part.',
+        a: 'Grocery Loop has your usual shop now, and it swaps in the two-handled lidded mugs rather than the ones you have been dropping. It reorders on your rhythm and only tells you when something is out of stock.',
       },
     ],
   },
   {
-    id: 'd-0226',
-    label: 'Feb 26',
-    date: 'Feb 26',
-    title: 'Eye-gaze desk height',
-    summary: 'Recalibrated after moving the mount 4cm lower.',
-    tags: ['Speech'],
-    sent: { to: 'okafor', notes: 'Mount lowered 4cm, fatigue down noticeably.' },
-    flags: [{ tone: 'green', text: 'Session length up from 12 to 25 minutes' }],
+    id: 'w-0205',
+    label: 'Feb 5',
+    date: 'Feb 5',
+    title: 'Week 9 check-in',
+    summary: 'Gaze setup recalibrated. Comfortable session length up from 12 to 25 minutes.',
+    tags: ['Mobility', 'Speech'],
+    sent: { to: 'okafor', notes: 'Gaze mount lowered 4cm, comfortable session length roughly doubled.' },
+    flags: [
+      { tone: 'mint', text: 'Gaze session length 12 → 25 minutes' },
+      { tone: 'periwinkle', text: 'Dwell time 480ms, targets held at current size' },
+    ],
     transcript: [
       {
         q: 'My eyes ache after ten minutes on the gaze board. Is that just practice?',
-        a: 'Usually it is geometry. Most mounts sit too high out of the box, so you are holding a slight upward gaze the whole time. Devon’s setup notes put the screen centre just below eye level and step the tracker back — people report roughly doubling their comfortable session length from that one change.',
+        a: 'Usually it is geometry. Most mounts sit too high out of the box, so you hold a slight upward gaze the whole time. Eye-Gaze Tune-Up dropped the screen centre just below eye level and stepped the tracker back, and your comfortable session roughly doubled that same week.',
       },
     ],
   },

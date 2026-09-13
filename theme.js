@@ -1,10 +1,21 @@
-// Four accents and nothing else. `blue` is sampled from blobatar's own ramp:
-// it is the colour Axl wears, so the mascot and the interface share a hue.
+// Four accents and nothing else: Easter pastels rather than crayons. All four
+// sit in a narrow luminance band (0.76-0.83) so no one accent shouts over the
+// others, and desaturated enough to sit on the lilac page without vibrating
+// against it.
+//
+// The warm accent is an apricot rather than a yellow. A pastel yellow carries
+// its lightness in green, which lands it paler and dustier than its
+// neighbours however it is mixed; at hue 33 it keeps its chroma at the same
+// luminance as the rest. It reads as a pair with the peach instead of
+// contrasting against it, so the set is two warms and two cools.
+//
+// Blue still needs watching: a pastel blue drifts into the lilac ground unless
+// it holds a cornflower edge, so it is the least washed of the four.
 export const accents = {
-  blue: '#B6D3FF',
-  green: '#C8FFB7',
-  purple: '#E0CDFF',
-  gold: '#F5E68A',
+  peach: '#F8B4A8',
+  amber: '#F8C98A',
+  mint: '#A2E3C0',
+  periwinkle: '#AFC6F7',
 };
 
 export const colors = {
@@ -23,14 +34,14 @@ export const colors = {
 // Categories cycle the four accents. Text is always ink. A fifth and sixth
 // hue for "legible version of the fill" is exactly the randomness we dropped.
 export const tagPalette = {
-  Speech: { bg: accents.gold, text: colors.ink },
-  Mobility: { bg: accents.green, text: colors.ink },
-  Daily: { bg: accents.blue, text: colors.ink },
-  Care: { bg: accents.purple, text: colors.ink },
-  Voice: { bg: accents.purple, text: colors.ink },
-  Automation: { bg: accents.blue, text: colors.ink },
-  Sight: { bg: accents.green, text: colors.ink },
-  Hearing: { bg: accents.gold, text: colors.ink },
+  Speech: { bg: accents.amber, text: colors.ink },
+  Mobility: { bg: accents.mint, text: colors.ink },
+  Daily: { bg: accents.periwinkle, text: colors.ink },
+  Care: { bg: accents.peach, text: colors.ink },
+  Voice: { bg: accents.peach, text: colors.ink },
+  Automation: { bg: accents.periwinkle, text: colors.ink },
+  Sight: { bg: accents.mint, text: colors.ink },
+  Hearing: { bg: accents.amber, text: colors.ink },
 };
 
 // Abstract line glyphs, one per category, the same family as the chevrons and

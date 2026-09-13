@@ -11,9 +11,9 @@ import Icon from './Icon';
 // in the same family as Axl and the member avatars.
 const ORGANIC = { shape: 0.25 };
 
-export default function BlobMark({ seed, size = 44, fill, glyph, glyphColor, glyphSize = 18 }) {
+export default function BlobMark({ seed, size = 44, fill, glyph, glyphColor, glyphSize = 18, style }) {
   return (
-    <View style={{ width: size, height: size }}>
+    <View style={[{ width: size, height: size }, style]}>
       <Blobatar name={seed} size={size} traits={ORGANIC} palette={{ head: fill, eye: fill }} />
       {glyph && (
         <View style={[StyleSheet.absoluteFill, styles.center]} pointerEvents="none">

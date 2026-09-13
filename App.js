@@ -15,6 +15,8 @@ import HomeScreen from './screens/HomeScreen';
 import AgentsScreen from './screens/AgentsScreen';
 import MarketplaceScreen from './screens/MarketplaceScreen';
 import GetStartedScreen from './screens/GetStartedScreen';
+import LoginScreen from './screens/LoginScreen';
+import ProfileScreen from './screens/ProfileScreen';
 import TabBar from './components/TabBar';
 
 const Tab = createBottomTabNavigator();
@@ -39,13 +41,14 @@ const navTheme = {
 
 export default function App() {
   const [fontsLoaded] = useFonts({ Inter_300Light, Inter_400Regular, Inter_500Medium, Inter_600SemiBold });
-  const [started, setStarted] = useState(false);
+  // 'start' -> 'login' -> 'app'. Get started skips the door; Log in uses it.
+  const [screen, setScreen] = useState('start');
 
   if (!fontsLoaded) return null;
 
   return (
     <SafeAreaProvider>
-      {started ? (
+      {screen === 'app' ? (
         <NavigationContainer theme={navTheme}>
           <Tab.Navigator
             screenOptions={{ headerShown: false, animation: 'fade' }}
@@ -54,10 +57,20 @@ export default function App() {
             <Tab.Screen name="Home" component={HomeScreen} />
             <Tab.Screen name="Agents" component={AgentsScreen} options={{ tabBarStyle: { display: 'none' } }} />
             <Tab.Screen name="Marketplace" component={MarketplaceScreen} />
+            {/* Reachable from the Home header and Axl's sidebar, not the tab
+                bar: a fourth pill would crowd the three that are destinations. */}
+            <Tab.Screen
+              name="Profile"
+              options={{ tabBarStyle: { display: 'none' }, tabBarHidden: true }}
+            >
+              {({ navigation }) => <ProfileScreen onBack={() => navigation.navigate('Home')} />}
+            </Tab.Screen>
           </Tab.Navigator>
         </NavigationContainer>
+      ) : screen === 'login' ? (
+        <LoginScreen onDone={() => setScreen('app')} onBack={() => setScreen('start')} />
       ) : (
-        <GetStartedScreen onStart={() => setStarted(true)} />
+        <GetStartedScreen onStart={() => setScreen('app')} onLogin={() => setScreen('login')} />
       )}
       <StatusBar style="dark" />
     </SafeAreaProvider>

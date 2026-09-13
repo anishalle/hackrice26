@@ -5,10 +5,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import { colors, accents, type, spacing, radii, tagPalette, tagGlyph, cardShadow, softShadow } from '../theme';
-import AgentBlob from '../components/AgentBlob';
+import AgentBlob, { EYE } from '../components/AgentBlob';
 import TiltGaze from '../components/TiltGaze';
 import Icon from '../components/Icon';
 import BlobMark from '../components/BlobMark';
+import { PROFILE } from '../data/profile';
 
 const ACTIONS = [
   { key: 'Speech', label: 'Speech' },
@@ -20,34 +21,34 @@ const ACTIONS = [
 const HISTORY = [
   {
     id: 'h1',
-    skillId: 'voice-banking',
+    skillId: 'voice-bank',
     tag: 'Speech',
-    title: 'Voice banking',
-    note: 'How many phrases should I record before my speech changes?',
+    title: 'Voice Bank Builder',
+    note: 'It records in the gaps instead of asking me to sit down for an hour. 1,240 phrases in.',
     author: 'sunay',
   },
   {
     id: 'h2',
-    skillId: 'transfer-playbook',
-    tag: 'Mobility',
-    title: 'Bathroom transfers',
-    note: 'Grab bars beat a ramp in a narrow hallway. Here is the layout that worked.',
-    author: 'sarahw',
+    skillId: 'refill-runner',
+    tag: 'Care',
+    title: 'Refill Runner',
+    note: 'I have not sat in a pharmacy queue since January. It only pings me for decisions.',
+    author: 'sahas',
   },
   {
     id: 'h3',
-    skillId: 'grip-kitchen',
+    skillId: 'grocery-loop',
     tag: 'Daily',
-    title: 'Eating with weak grip',
-    note: 'Weighted utensils and a plate guard bought me another eight months of eating alone.',
-    author: 'devonk',
+    title: 'Grocery Loop',
+    note: 'Orders the shop on my rhythm and swaps in packaging I can still open one-handed.',
+    author: 'jordan',
   },
   {
     id: 'h4',
-    skillId: 'night-shift-split',
+    skillId: 'care-roster',
     tag: 'Care',
-    title: 'Night shifts',
-    note: 'What my partner and I split once I needed help turning at night.',
+    title: 'Care Shift Roster',
+    note: 'It asks the next person for me. My partner and I stopped negotiating at 3am.',
     author: 'priya',
   },
 ];
@@ -56,7 +57,7 @@ const FILTERS = ['All', 'Speech', 'Mobility', 'Daily', 'Care'];
 
 // Blobatar picks a hue from the seed; override the head so members land on the
 // four accents instead of anywhere on the wheel.
-const ACCENT_CYCLE = [accents.blue, accents.green, accents.purple, accents.gold];
+const ACCENT_CYCLE = [accents.periwinkle, accents.mint, accents.peach, accents.amber];
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
@@ -80,13 +81,34 @@ export default function HomeScreen() {
       <ScrollView contentContainerStyle={[styles.container, { paddingTop: insets.top + spacing(1.5) }]}>
         <View style={styles.topRow}>
           <View>
-            <Text style={styles.greeting}>Hi, Anish</Text>
+            <Text style={styles.greeting}>Hi, {PROFILE.name.split(' ')[0]}</Text>
             <Text style={styles.greetingSub}>How can I help?</Text>
           </View>
-          <Pressable style={styles.bell} hitSlop={8}>
-            <Icon name="bell" size={18} color={colors.ink} />
-            <View style={styles.bellDot} />
-          </Pressable>
+          <View style={styles.topActions}>
+            <Pressable style={styles.bell} hitSlop={8} accessibilityLabel="Notifications">
+              <Icon name="bell" size={18} color={colors.ink} />
+              <View style={styles.bellDot} />
+            </Pressable>
+            {/* The profile is where the adaptive settings live, so it stays one
+                tap from the first screen rather than behind the agent. */}
+            <Pressable
+              style={styles.bell}
+              hitSlop={8}
+              accessibilityLabel="Your profile"
+              onPress={() => {
+                Haptics.selectionAsync();
+                navigation.navigate('Profile');
+              }}
+            >
+              <Blobatar
+                name={PROFILE.handle}
+                size={26}
+                traits={{ shape: 0.05 }}
+                palette={{ head: accents.periwinkle, eye: EYE }}
+                title={PROFILE.name}
+              />
+            </Pressable>
+          </View>
         </View>
 
         <Pressable style={styles.agentCard} onPress={openAgent}>
@@ -95,9 +117,9 @@ export default function HomeScreen() {
           </TiltGaze>
 
           <View style={styles.agentCopy}>
-            <Text style={styles.agentTitle}>Axl is tuned to where you are now</Text>
-            <Pressable style={styles.agentBtn} onPress={() => openMarketplace()}>
-              <Text style={styles.agentBtnText}>Explore</Text>
+            <Text style={styles.agentTitle}>Your weekly check-in takes two minutes</Text>
+            <Pressable style={styles.agentBtn} onPress={openAgent}>
+              <Text style={styles.agentBtnText}>Check in</Text>
               <Icon name="next" size={14} color={colors.ink} />
             </Pressable>
           </View>
@@ -119,7 +141,7 @@ export default function HomeScreen() {
                   glyphSize={22}
                   fill={palette.bg}
                   glyph={tagGlyph[a.key]}
-                  glyphColor={palette.text}
+                  glyphColor="#FFFFFF"
                 />
                 <Text style={styles.tileLabel}>{a.label}</Text>
               </Pressable>
@@ -128,7 +150,7 @@ export default function HomeScreen() {
         </ScrollView>
 
         <View style={styles.historyHead}>
-          <Text style={styles.sectionTitle}>Shared by others</Text>
+          <Text style={styles.sectionTitle}>Skills others built</Text>
           <Pressable onPress={() => navigation.navigate('Marketplace')}>
             <Text style={styles.viewAll}>View all</Text>
           </Pressable>
@@ -161,7 +183,7 @@ export default function HomeScreen() {
                 name={h.author}
                 size={38}
                 traits={{ shape: 0.05 }}
-                palette={{ head: ACCENT_CYCLE[i % ACCENT_CYCLE.length] }}
+                palette={{ head: ACCENT_CYCLE[i % ACCENT_CYCLE.length], eye: EYE }}
                 title={h.author}
               />
               <View style={styles.entryBody}>
@@ -184,6 +206,7 @@ const styles = StyleSheet.create({
   topRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
   greeting: { ...type.title, color: colors.ink },
   greetingSub: { ...type.callout, color: colors.inkMuted },
+  topActions: { flexDirection: 'row', alignItems: 'center', gap: spacing(1) },
   bell: {
     width: 42,
     height: 42,
@@ -200,7 +223,7 @@ const styles = StyleSheet.create({
     width: 7,
     height: 7,
     borderRadius: 4,
-    backgroundColor: colors.green,
+    backgroundColor: colors.mint,
     borderWidth: 1.5,
     borderColor: colors.surface,
   },
@@ -228,7 +251,7 @@ const styles = StyleSheet.create({
     gap: spacing(0.75),
     alignSelf: 'stretch',
     borderRadius: radii.pill,
-    backgroundColor: colors.green,
+    backgroundColor: colors.mint,
     paddingVertical: spacing(1.75),
   },
   agentBtnText: { ...type.heading, color: colors.ink },
@@ -259,7 +282,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing(0.875),
     paddingHorizontal: spacing(1.75),
   },
-  filterActive: { backgroundColor: colors.green },
+  filterActive: { backgroundColor: colors.mint },
   filterText: { ...type.label, color: colors.inkMuted },
   filterTextActive: { color: colors.ink },
 

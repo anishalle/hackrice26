@@ -7,7 +7,7 @@ import { colors, fonts, spacing, type } from '../theme';
 const R = 20;
 const GAP = spacing(1);
 
-const ACTIVE = { Home: colors.green, Agents: colors.blue, Marketplace: colors.purple };
+const ACTIVE = { Home: colors.mint, Agents: colors.periwinkle, Marketplace: colors.peach };
 
 // Morphic segmented nav: one solid white strip where the active item detaches
 // into its own accent pill, and the segments either side round off the edges
@@ -19,7 +19,6 @@ const ACTIVE = { Home: colors.green, Agents: colors.blue, Marketplace: colors.pu
 // only the two actually involved ever move.
 export default function TabBar({ state, descriptors, navigation }) {
   const insets = useSafeAreaInsets();
-  const count = state.routes.length;
   const one = useRef(new Animated.Value(1)).current;
   const acts = useRef(state.routes.map((_, i) => new Animated.Value(i === state.index ? 1 : 0))).current;
 
@@ -49,13 +48,20 @@ export default function TabBar({ state, descriptors, navigation }) {
   const corner = (value) =>
     value.interpolate({ inputRange: [0, 1], outputRange: [0, R], extrapolate: 'clamp' });
 
+  // A route can stay out of the bar entirely with `tabBarHidden`, which is how
+  // Profile lives in the navigator without becoming a fourth pill. The index
+  // into `acts` stays the route's own, so the springs keep lining up.
+  const shown = state.routes.filter((r) => !descriptors[r.key].options.tabBarHidden);
+
   return (
     <View style={[styles.wrap, { paddingBottom: insets.bottom || spacing(1.5) }]}>
       <View style={styles.glass}>
-        {state.routes.map((route, index) => {
+        {shown.map((route) => {
+          const index = state.routes.indexOf(route);
           const act = acts[index];
           const leftOpen = index === 0 ? one : Animated.add(act, acts[index - 1]);
-          const rightOpen = index === count - 1 ? one : Animated.add(act, acts[index + 1]);
+          const last = index === shown.length - 1;
+          const rightOpen = last ? one : Animated.add(act, acts[index + 1]);
 
           return (
             <Pressable
@@ -72,7 +78,7 @@ export default function TabBar({ state, descriptors, navigation }) {
                     marginHorizontal: act.interpolate({ inputRange: [0, 1], outputRange: [0, GAP] }),
                     backgroundColor: act.interpolate({
                       inputRange: [0, 1],
-                      outputRange: [colors.surface, ACTIVE[route.name] ?? colors.blue],
+                      outputRange: [colors.surface, ACTIVE[route.name] ?? colors.periwinkle],
                     }),
                     borderTopLeftRadius: corner(leftOpen),
                     borderBottomLeftRadius: corner(leftOpen),

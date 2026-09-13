@@ -1,7 +1,7 @@
 import { AnimatedBlobatar } from '@blobatar/react-native/animated';
 import { useEffect, useState } from 'react';
-import { idle, thinking, happy, sleepy, smug } from 'blobatar/expression';
-import { accents } from '../theme';
+import { idle, thinking, happy, sleepy, smug, poseVars, bakePose } from 'blobatar/expression';
+import { accents, colors } from '../theme';
 
 // Axl's face. Blobatar seeds, pinned round so he matches the community blobs
 // rather than sitting apart from them.
@@ -35,56 +35,101 @@ const FACE = {
 };
 
 // The seed picks the silhouette; the head colour is pinned so Axl is the same
-// blue whichever of the two shapes he is wearing.
-const PALETTE = { head: accents.blue };
+// periwinkle whichever of the two shapes he is wearing, and the eye is pinned
+// to ink so it does not track the head's lightness — blobatar would otherwise
+// pick a different near-black per accent.
+export const EYE = colors.ink;
+const PALETTE = { head: accents.periwinkle, eye: EYE };
 
 // A blink on a timer, for the one blob whose idle layer is switched off.
 // blobatar's `amp` (which scales the saccade and the blink together) is not
 // exposed through the adapter, so the choice is the whole idle layer or none,
-// and the glance is what fights the tilt. `sleepy` closes the lids, so a short
-// hold of it reads as a blink.
-const BLINK_MIN = 2600;
-const BLINK_MAX = 6200;
-const BLINK_HOLD = 130;
+// and the glance is what fights the tilt.
+//
+// The roster has no shut-eye pose — `sleepy`, its flattest, is a 22%-height
+// droop — so the lid is authored here. An expression is just `{ p, vars, bake }`,
+// and `poseVars`/`bakePose` are the same two the built-in poses carry.
+const BLINK = {
+  p: {
+    ...sleepy.p,
+    esx: 1.08,
+    esy: 0.05,
+    tilt: 0,
+    edy: 0.5,
+    edx: 0.2,
+    esx2: 0.02,
+    esy2: 0,
+    tilt2: 0,
+    edy2: 0,
+  },
+  vars: poseVars,
+  bake: bakePose,
+};
 
-function useBlink(enabled) {
-  const [shut, setShut] = useState(false);
+// The hold has to outlast the adapter's 300ms morph-in or the lid never
+// arrives: at the old 130ms it got 40% of the way into a droop and reversed,
+// which is what read as a flutter rather than a blink. 340ms shut plus the
+// 400ms morph back out is a slow blink, and slow is the cost of those two
+// clocks being fixed.
+// ponytail: tied to the adapter's IN/OUT; if blobatar exposes the morph clock,
+// shorten both.
+const BLINK_HOLD = 340;
+
+// And every fourth beat or so he squints instead — `happy` is the roster's
+// smiling squint, held long enough to read as a held expression rather than a
+// blink that stuck.
+const SQUINT_HOLD = 900;
+const SQUINT_CHANCE = 0.28;
+
+const REST_MIN = 2600;
+const REST_MAX = 6200;
+
+function useRest(enabled) {
+  const [pose, setPose] = useState(null);
 
   useEffect(() => {
     if (!enabled) return;
-    let open;
-    let close;
-    const schedule = () => {
-      close = setTimeout(() => {
-        setShut(true);
-        open = setTimeout(() => {
-          setShut(false);
-          schedule();
-        }, BLINK_HOLD);
-      }, BLINK_MIN + Math.random() * (BLINK_MAX - BLINK_MIN));
+    let hold;
+    let gap;
+    const beat = () => {
+      gap = setTimeout(() => {
+        const squint = Math.random() < SQUINT_CHANCE;
+        setPose(squint ? happy : BLINK);
+        hold = setTimeout(() => {
+          setPose(null);
+          beat();
+        }, squint ? SQUINT_HOLD : BLINK_HOLD);
+      }, REST_MIN + Math.random() * (REST_MAX - REST_MIN));
     };
-    schedule();
+    beat();
     return () => {
-      clearTimeout(close);
-      clearTimeout(open);
+      clearTimeout(gap);
+      clearTimeout(hold);
     };
   }, [enabled]);
 
-  return shut;
+  return pose;
 }
 
 // He narrows his eyes the moment a prompt lands, then settles into the
-// thinking rock while he works.
+// thinking rock while he works, and comes back to `idle` to answer.
+//
+// Answering is deliberately the hero's face rather than `happy`: every pose
+// here carries `lock: 1`, which holds the idle layer still, so a thread of
+// finished answers was a column of frozen faces. `idle` is the identity pose,
+// so it leaves breathe, bob, blink and glance running — and `happy` squashes
+// the eyes to a third of their height at nearly twice the width, which is a
+// wide flat squint that only reads as a smile at hero size.
 const STAGE_EXPRESSION = {
   loading: smug,
   thinking: thinking,
-  streaming: happy,
-  done: happy,
+  streaming: idle,
+  done: idle,
 };
 
 export default function AgentBlob({ seed = AXL_SEED, size = 40, stage, animate = true }) {
-  const shut = useBlink(!animate);
-  const pose = shut ? sleepy : STAGE_EXPRESSION[stage] ?? idle;
+  const rest = useRest(!animate);
+  const pose = rest ?? STAGE_EXPRESSION[stage] ?? idle;
 
   return (
     <AnimatedBlobatar

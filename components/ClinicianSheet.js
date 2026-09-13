@@ -14,7 +14,12 @@ import BlobMark from './BlobMark';
 // leaves — which days, which flagged lines inside them — before it goes, which
 // is the whole reason the log is audited in the first place.
 
-const FLAG_TINT = { gold: accents.gold, blue: accents.blue, green: accents.green, purple: accents.purple };
+const FLAG_TINT = {
+  amber: accents.amber,
+  periwinkle: accents.periwinkle,
+  mint: accents.mint,
+  peach: accents.peach,
+};
 
 export default function ClinicianSheet({ visible, days, preselect, onClose, onSend }) {
   const insets = useSafeAreaInsets();
@@ -82,7 +87,7 @@ export default function ClinicianSheet({ visible, days, preselect, onClose, onSe
                 })}
               </View>
 
-              <Text style={styles.label}>Days ({picked.length})</Text>
+              <Text style={styles.label}>Check-ins ({picked.length})</Text>
               <View style={styles.group}>
                 {days.map((d) => {
                   const on = picked.includes(d.id);
@@ -94,7 +99,7 @@ export default function ClinicianSheet({ visible, days, preselect, onClose, onSe
                       <View style={styles.pickText}>
                         <Text style={styles.pickName} numberOfLines={1}>{d.title}</Text>
                         <Text style={styles.pickRole}>
-                          {d.date} · {d.flags.length} flagged{d.sent ? ' · sent before' : ''}
+                          {d.date} · {d.flags.length} signals{d.sent ? ' · sent before' : ''}
                         </Text>
                       </View>
                     </Pressable>
@@ -108,7 +113,7 @@ export default function ClinicianSheet({ visible, days, preselect, onClose, onSe
                   <View style={styles.flags}>
                     {flags.map((f, i) => (
                       <View key={i} style={styles.flag}>
-                        <BlobMark seed={f.text} size={10} fill={FLAG_TINT[f.tone] ?? accents.blue} />
+                        <BlobMark seed={f.text} size={10} fill={FLAG_TINT[f.tone] ?? accents.periwinkle} />
                         <Text style={styles.flagText}>{f.text}</Text>
                       </View>
                     ))}
@@ -121,7 +126,7 @@ export default function ClinicianSheet({ visible, days, preselect, onClose, onSe
                 style={styles.notes}
                 value={notes}
                 onChangeText={setNotes}
-                placeholder="Anything the transcript does not say — how a week felt, what you want asked at the next visit."
+                placeholder="Anything the signals do not say. How the week actually felt, what you want asked at the next visit."
                 placeholderTextColor={colors.inkMuted}
                 multiline
                 textAlignVertical="top"
@@ -140,7 +145,7 @@ export default function ClinicianSheet({ visible, days, preselect, onClose, onSe
             >
               <Icon name="paperplane" size={15} color="#fff" />
               <Text style={styles.sendText}>
-                Send {picked.length} {picked.length === 1 ? 'day' : 'days'}
+                Send {picked.length} {picked.length === 1 ? 'check-in' : 'check-ins'}
               </Text>
             </Pressable>
           </View>

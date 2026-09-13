@@ -1,16 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 import { View, Text, Pressable, Animated, Easing, StyleSheet } from 'react-native';
-import { Blobatar } from '@blobatar/react-native';
 import * as Haptics from 'expo-haptics';
+import BlobMark from './BlobMark';
 import VoiceWave from './VoiceWave';
 import Icon from './Icon';
 import { colors, type, spacing, radii, cardShadow } from '../theme';
 
-// A droplet rather than a circle: a round blob spinning is indistinguishable
-// from one sitting still. Eye colour is pinned to the head colour, which is
-// how blobatar draws a silhouette with no face.
+// The same lopsided blob the marketplace tiles wear, turning on the spot. A
+// perfect circle spinning is indistinguishable from one sitting still, and the
+// droplet this used to be read as a cog; the organic silhouette is off-centre
+// enough for the rotation to show without looking like machinery.
 const SPIN_MS = 3000;
-const SHAPE = { shape: 0.95 };
 
 const clock = (s) =>
   `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
@@ -55,13 +55,7 @@ export default function VoiceRecorder({ onSend, onCancel }) {
             ],
           }}
         >
-          <Blobatar
-            name="axl-voice"
-            size={30}
-            traits={SHAPE}
-            palette={{ head: colors.ink, eye: colors.ink }}
-            title="Recording"
-          />
+          <BlobMark seed="axl-voice" size={30} fill={colors.ink} />
         </Animated.View>
       </Pressable>
 

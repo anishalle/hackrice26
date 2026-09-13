@@ -4,10 +4,10 @@ import Icon from './Icon';
 import { colors, spacing, type } from '../theme';
 
 const STEPS = [
-  'Reading flavor briefs',
-  'Scanning supplier lists',
-  'Comparing tasting notes',
-  'Writing the scoop report',
+  'Reading your last three check-ins',
+  'Checking your speech trend',
+  'Looking up skills the community ran',
+  'Drafting what to do next',
 ];
 
 const STEP_INTERVAL = 420;

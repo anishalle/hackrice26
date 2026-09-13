@@ -5,15 +5,19 @@ import { colors, fonts, type, spacing, radii, cardShadow } from '../theme';
 import AgentBlob, { AXL_HERO_SEED } from '../components/AgentBlob';
 import Icon from '../components/Icon';
 
-export default function GetStartedScreen({ onStart }) {
+export default function GetStartedScreen({ onStart, onLogin }) {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const blob = Math.max(160, Math.min(width - spacing(2), 420));
 
   return (
     <View style={[styles.root, { paddingTop: insets.top + spacing(3), paddingBottom: insets.bottom + spacing(2) }]}>
+      {/* The break is explicit: "velocity back" is the line that has to land,
+          so it gets one to itself rather than wrapping wherever the width
+          happens to run out. */}
       <Text style={styles.headline}>
-        Your <Text style={styles.accent}>shared agent</Text> for every stage of ALS
+        Get your{'\n'}
+        <Text style={styles.accent}>velocity</Text> back
       </Text>
 
       <View style={styles.stage}>
@@ -29,8 +33,8 @@ export default function GetStartedScreen({ onStart }) {
       </View>
 
       <Text style={styles.subhead}>
-        Care that adapts as your needs change, built on what other people living with ALS
-        have already worked out.
+        Axl runs the things ALS made harder: the calls, the refills, the forms. It checks in
+        with you weekly, and grows the buttons before you start missing them.
       </Text>
 
       <Pressable
@@ -49,9 +53,7 @@ export default function GetStartedScreen({ onStart }) {
         hitSlop={8}
         onPress={() => {
           Haptics.selectionAsync();
-          // No auth yet, so this lands in the same place as Get started rather
-          // than being a dead control in a demo.
-          onStart?.();
+          onLogin?.();
         }}
       >
         <Text style={styles.loginText}>
@@ -66,13 +68,17 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.page, paddingHorizontal: spacing(2.5), alignItems: 'center' },
   headline: {
     ...type.display,
+    // Bigger than the display size, and the side padding comes off so the
+    // second line has the full column to sit on one row.
+    fontSize: 44,
+    lineHeight: 48,
+    letterSpacing: -1,
     color: colors.ink,
     textAlign: 'center',
     alignSelf: 'stretch',
     marginTop: spacing(5),
-    paddingHorizontal: spacing(1),
   },
-  accent: { color: colors.blue },
+  accent: { color: colors.periwinkle },
 
   stage: { flex: 1, alignSelf: 'stretch', alignItems: 'center', justifyContent: 'center' },
 

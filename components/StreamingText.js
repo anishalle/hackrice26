@@ -4,9 +4,9 @@ import Icon from './Icon';
 import { colors, spacing, radii, type, softShadow } from '../theme';
 
 const ANSWER =
-  'Most people bank phrases in short sittings rather than one long one. Twenty minutes at a time, while your voice is still steady. Sarah recorded hers over three weeks and says the everyday lines mattered more than the long ones.';
-const SOURCES = ['ALS Association', 'Community notes', 'Your care team'];
-const FOLLOW_UPS = ['Which phrases should I record first?', 'Show me what others recorded'];
+  'Start now, in short sittings rather than one long one. Your check-in audio already gives me 1,240 phrases, and your rate has been flat for three weeks, so there is room. I can add Voice Bank Builder and have it record whenever your voice is steady, so you never schedule a sitting.';
+const SOURCES = ['Your check-ins', 'Community skills', 'ALS Association'];
+const FOLLOW_UPS = ['Add Voice Bank Builder', 'Show me my speech trend'];
 
 export default function StreamingText({ onComplete }) {
   const words = ANSWER.split(' ');

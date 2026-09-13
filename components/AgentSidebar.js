@@ -209,6 +209,11 @@ export default function AgentSidebar({
             <Row icon="newChat" label="New chat" onPress={() => leave(onNewChat)} />
             <Row icon="home" label="Home" onPress={() => leave(() => navigation.navigate('Home'))} />
             <Row
+              icon="audit"
+              label="Profile & access"
+              onPress={() => leave(() => navigation.navigate('Profile'))}
+            />
+            <Row
               icon="store"
               label="Marketplace"
               meta={`${SKILLS.length}`}
@@ -251,7 +256,7 @@ export default function AgentSidebar({
                 ]}
               >
                 <Icon name="history" size={13} color={colors.inkMuted} />
-                <Text style={styles.sectionLabel}>Day log</Text>
+                <Text style={styles.sectionLabel}>Check-ins</Text>
               </Animated.View>
 
               <Animated.View
@@ -282,7 +287,7 @@ export default function AgentSidebar({
                   style={styles.fieldInput}
                   value={query}
                   onChangeText={setQuery}
-                  placeholder="Search days"
+                  placeholder="Search check-ins"
                   placeholderTextColor={colors.inkMuted}
                   autoCorrect={false}
                   keyboardAppearance="light"
@@ -313,7 +318,7 @@ export default function AgentSidebar({
                       <Text style={[styles.dayTitle, active && styles.rowLabelOn]} numberOfLines={1}>
                         {d.title}
                       </Text>
-                      {d.sent && <BlobMark seed={`sent-${d.id}`} size={9} fill={accents.green} />}
+                      {d.sent && <BlobMark seed={`sent-${d.id}`} size={9} fill={accents.mint} />}
                     </View>
                     <View style={styles.dayFoot}>
                       <Text style={styles.dayDate}>{d.label}</Text>
@@ -322,7 +327,7 @@ export default function AgentSidebar({
                           <Text style={styles.dayDivider}>·</Text>
                           <Icon name="audit" size={11} color={colors.inkMuted} />
                           <Text style={styles.dayDate}>
-                            {d.flags.length} flagged
+                            {d.flags.length} signals
                           </Text>
                         </>
                       )}
@@ -330,7 +335,7 @@ export default function AgentSidebar({
                   </Pressable>
                 );
               })}
-              {q && visibleDays.length === 0 && <Text style={styles.empty}>No days match that.</Text>}
+              {q && visibleDays.length === 0 && <Text style={styles.empty}>No check-ins match that.</Text>}
             </View>
           </View>
         </ScrollView>

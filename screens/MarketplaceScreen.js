@@ -8,6 +8,7 @@ import * as Haptics from 'expo-haptics';
 import { colors, spacing, radii, tagPalette, tagGlyph, type, cardShadow, softShadow } from '../theme';
 import { SKILLS, CATEGORIES } from '../data/skills';
 import SkillCard from '../components/SkillCard';
+import BlobMark from '../components/BlobMark';
 import SkillDetailScreen from './SkillDetailScreen';
 import Icon from '../components/Icon';
 
@@ -18,9 +19,14 @@ function FeaturedCard({ skill, width, onOpen }) {
   const palette = tagPalette[skill.tags[0]];
   return (
     <Pressable style={[styles.featured, { backgroundColor: palette.bg, width }]} onPress={onOpen}>
-      <View style={styles.featuredMark}>
-        <Icon name={tagGlyph[skill.tags[0]]} size={24} color={palette.text} />
-      </View>
+      <BlobMark
+        seed={skill.id}
+        size={44}
+        glyphSize={24}
+        fill="#FFFFFF"
+        glyph={tagGlyph[skill.tags[0]]}
+        glyphColor={palette.text}
+      />
       <Text style={[styles.featuredTitle, { color: palette.text }]}>{skill.title}</Text>
       <Text style={styles.featuredBody} numberOfLines={3}>{skill.description}</Text>
       <View style={styles.featuredFooter}>
@@ -100,14 +106,14 @@ export default function MarketplaceScreen() {
       >
         <View style={styles.headerBlock}>
           <Text style={styles.title}>Marketplace</Text>
-          <Text style={styles.subtitle}>What others have worked out, ranked by what helped.</Text>
+          <Text style={styles.subtitle}>Agent skills the community built. Add one and Axl runs it for you.</Text>
         </View>
 
         <View style={styles.searchField}>
           <Icon name="search" size={16} color={colors.inkMuted} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search resources"
+            placeholder="Search skills"
             placeholderTextColor={colors.inkMuted}
             value={query}
             onChangeText={(t) => {
@@ -168,12 +174,12 @@ export default function MarketplaceScreen() {
 
         <View style={styles.section}>
           <View style={styles.sectionHead}>
-            <Text style={styles.sectionTitle}>{browsing ? 'All resources' : 'Results'}</Text>
+            <Text style={styles.sectionTitle}>{browsing ? 'All skills' : 'Results'}</Text>
             <Text style={styles.sectionCount}>{results.length}</Text>
           </View>
 
           {results.length === 0 ? (
-            <Text style={styles.empty}>Nothing matches that yet. Try another word or category.</Text>
+            <Text style={styles.empty}>No skill matches that yet. Try another word, or ask Axl to build one.</Text>
           ) : (
             <View style={styles.grid}>
               {visible.map((s) => (
@@ -233,7 +239,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing(0.875),
     paddingHorizontal: spacing(1.75),
   },
-  chipActive: { backgroundColor: colors.green },
+  chipActive: { backgroundColor: colors.mint },
   chipText: { ...type.label, color: colors.inkMuted },
   chipTextActive: { color: colors.ink },
 
@@ -245,14 +251,6 @@ const styles = StyleSheet.create({
   featuredScroll: { marginHorizontal: -spacing(2.5) },
   featuredRow: { paddingHorizontal: spacing(2.5), gap: spacing(1.5) },
   featured: { borderRadius: 26, padding: spacing(2.25), gap: spacing(1), ...cardShadow },
-  featuredMark: {
-    width: 44,
-    height: 44,
-    borderRadius: 13,
-    backgroundColor: 'rgba(255,255,255,0.6)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   featuredTitle: { ...type.bodyMedium },
   featuredBody: { ...type.footnote, color: colors.ink, opacity: 0.75 },
   featuredFooter: {
