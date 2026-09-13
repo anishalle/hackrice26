@@ -3,9 +3,11 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import type { Models } from "appwrite";
 import { account, ID } from "./appwrite";
+import type { AccessibilityPreferences } from "./accessibility";
 
 export interface UserPreferences extends Models.Preferences {
   persona_verified?: boolean;
+  accessibility?: AccessibilityPreferences;
 }
 
 export interface SignupData {
@@ -25,6 +27,7 @@ interface AuthContextType {
   ) => Promise<Models.Session>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
+  updateAccessibilityPreferences: (preferences: AccessibilityPreferences) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -166,6 +169,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const updateAccessibilityPreferences = async (preferences: AccessibilityPreferences) => {
+    const existingPrefs = await account.getPrefs<UserPreferences>();
+    await account.updatePrefs({
+      prefs: {
+        ...existingPrefs,
+        accessibility: preferences,
+      },
+    });
+    await refreshUser();
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -175,6 +189,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         verifyMagicLink,
         logout,
         refreshUser,
+        updateAccessibilityPreferences,
       }}
     >
       {children}

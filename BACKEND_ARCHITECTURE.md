@@ -160,7 +160,7 @@ Recommended initial tables:
 ```text
 users
 accessibility_profiles
-browser_connections
+agent_sessions
 skills
 skill_versions
 skill_embeddings
@@ -176,7 +176,7 @@ approval_requests
 | --- | --- |
 | `users` | Account identity; keep minimal for the demo. |
 | `accessibility_profiles` | Preferred input/output methods, pacing, reduced-motion and confirmation preferences. |
-| `browser_connections` | Opaque extension session ID, current-tab metadata, permission expiry. Never store website passwords or cookies. |
+| `agent_sessions` | Opaque hosted Hermes/browser session ID, run ID, status, expiry, and non-sensitive current-tab metadata. Never store website passwords or cookies. |
 | `skills` | Marketplace identity, title, owner, status, domain, goal, safety class. |
 | `skill_versions` | Immutable structured instruction versions and compatibility metadata. |
 | `skill_embeddings` | One embedding per searchable skill/version chunk, plus pgvector column and metadata filters. |
@@ -225,17 +225,19 @@ Retrieve with a hybrid ranking:
 The model must receive the selected skill text and current page observation; it
 must not invent a skill's steps or claim a skill succeeded without evidence.
 
-## Browser adapter contract
+## Hermes browser contract
 
-Define a backend-facing adapter contract before writing an extension. A mock
-adapter and a real extension both implement it.
+Define a backend-facing contract between FastAPI and the hosted Hermes service.
+The first implementation may invoke Hermes directly; keeping this boundary
+means the browser runtime can be replaced without changing product data or API
+routes.
 
 ```text
-POST /browser/connections             pair a user-approved browser session
-POST /browser/observations            receive sanitized current-page state
-POST /browser/actions/{action_id}/result
-                                      receive action completion/failure
-GET  /browser/actions/next            extension polls or subscribes for approved action
+POST /agent-sessions                  create an isolated Hermes/browser session
+POST /agent-sessions/{id}/observe     request a minimized page observation
+POST /agent-sessions/{id}/steps       ask Hermes to propose the next guided step
+POST /agent-sessions/{id}/actions     execute a policy-approved browser action
+POST /agent-sessions/{id}/close       destroy the browser session and its state
 ```
 
 An observation should include only what the agent needs:
@@ -255,9 +257,11 @@ Allowed action primitives should stay narrow:
 open_url, focus_element, activate_element, set_text, scroll, select_option
 ```
 
-Each action includes its user-visible description, risk class, expiration, and
-the page URL it is valid for. The extension rejects actions that do not match
-the current allowed tab or have expired.
+Each action includes its user-visible description, interaction mode, risk
+class, expiration, and the page URL it is valid for. FastAPI rejects actions
+that violate the selected mode, do not match the current allowed page, or have
+expired. Hermes returns a structured result, which is appended to the run event
+timeline before the next step is shown.
 
 ## API layout
 
@@ -269,7 +273,7 @@ routes/
   profiles.py              accessibility preferences
   skills.py                publish, browse, version, verify marketplace skills
   retrieval.py             internal/search endpoint for skill retrieval
-  browser.py               browser pairing, observations, action results
+  browser.py               hosted Hermes session and browser-action routes
   runs.py                  create, resume, stream, and inspect agent runs
   approvals.py             approve or reject proposed consequential actions
 ```
@@ -290,10 +294,9 @@ POST   /api/v1/skills/{skill_id}/verifications
 POST   /api/v1/runs
 POST   /api/v1/runs/{run_id}/message
 GET    /api/v1/runs/{run_id}/events
-
-POST   /api/v1/browser/connections
-POST   /api/v1/browser/observations
-POST   /api/v1/browser/actions/{action_id}/result
+POST   /api/v1/runs/{run_id}/mode
+POST   /api/v1/runs/{run_id}/continue
+POST   /api/v1/runs/{run_id}/take-control
 
 POST   /api/v1/approvals/{approval_id}/approve
 POST   /api/v1/approvals/{approval_id}/reject
@@ -307,7 +310,7 @@ WebSockets can be added if bidirectional browser streaming becomes necessary.
 ```text
 backend/app/
   api/
-    deps.py                database session, current-user, browser-session dependencies
+    deps.py                database session, current-user, agent-session dependencies
     routes/                HTTP-only route handlers
   core/
     config.py              DATABASE_URL, CORS, model/provider keys, environment
@@ -319,7 +322,8 @@ backend/app/
     retrieval.py           embedding, metadata filtering, pgvector ranking
     skills.py              skill validation/versioning/indexing
     agent.py               bounded run orchestration and tool policy
-    browser.py             adapter/action queue and observation sanitization
+    hermes.py              hosted Hermes session, browser action, and event client
+    browser.py             observation sanitization and action-policy validation
     approvals.py           commit-action policy and audit creation
   crud/
     skills.py              database queries
@@ -341,7 +345,8 @@ FRONTEND_HOST=http://localhost:3000
 EMBEDDING_MODEL=...
 LLM_MODEL=...
 LLM_API_KEY=...
-BROWSER_EXTENSION_ORIGIN=chrome-extension://<extension-id>
+HERMES_BASE_URL=https://hermes.internal.example
+HERMES_API_TOKEN=...
 ```
 
 The current `FRONTEND_HOST` default is `http://localhost:5173`; change it to
@@ -364,7 +369,8 @@ does not change routes or data models.
 
 ## Privacy and safety requirements
 
-- Browser connection is explicit, per user, and revocable.
+- Every hosted Hermes browser session is isolated per run, time-limited, and
+  revocable.
 - Never persist passwords, session cookies, one-time codes, payment details, or
   raw sensitive form fields.
 - Do not send page observations to an LLM until they have been minimized and
@@ -387,11 +393,13 @@ Build in this order to keep the hackathon scope credible:
 3. Implement embedding/indexing plus pgvector retrieval with metadata filters.
 4. Implement `agent_runs` that return structured guidance from retrieved skills
    using a mock browser observation.
-5. Add the browser-adapter API and a mock browser client in the frontend.
-6. Add a small extension or a controlled demo browser surface using the same
-   adapter contract.
+5. Connect the hosted Hermes service and return structured, one-step guidance
+   from a fresh browser session.
+6. Build the accessible guided-session UI: mode selector, transcript,
+   **Continue**, **Repeat**, **Take control**, and **Stop** controls.
 7. Add approvals before any action that changes external state.
 
-The smallest convincing vertical slice is: a user profile, a browser page
-observation, semantic retrieval of one compatible community skill, adaptive
-step-by-step guidance, and an explicit “Open / continue” action.
+The smallest convincing vertical slice is: a user profile, a hosted Hermes
+browser page observation, semantic retrieval of one compatible community skill,
+the **Guide me / Assist me / Do it with me** selector, adaptive step-by-step
+guidance, and an explicit **Continue** action.

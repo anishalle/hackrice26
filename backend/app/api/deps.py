@@ -1,5 +1,15 @@
 """Shared FastAPI dependencies.
 
-Add database session and authenticated-user dependencies here when needed.
-Routes should consume them using Depends rather than manage resources directly.
+Routes consume database sessions through ``get_db`` rather than creating their
+own engines or transactions.
 """
+
+from collections.abc import Generator
+
+from sqlalchemy.orm import Session
+
+from app.core.db import get_db_session
+
+
+def get_db() -> Generator[Session, None, None]:
+    yield from get_db_session()
