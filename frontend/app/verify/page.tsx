@@ -80,7 +80,7 @@ function VerifyContent() {
             <div className="space-y-1">
               <h2 className="text-xl font-bold text-foreground">Signed in!</h2>
               <p className="text-sm text-muted-foreground">
-                Opening the Persona demo...
+                Opening your accessibility settings...
               </p>
             </div>
           </div>
