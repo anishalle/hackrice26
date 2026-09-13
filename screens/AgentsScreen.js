@@ -9,7 +9,11 @@ import * as Haptics from 'expo-haptics';
 import { colors, accents, spacing, radii, type, softShadow } from '../theme';
 import { DAYS, CLINICIANS } from '../data/days';
 import Thinking from '../components/Thinking';
-import StreamingText from '../components/StreamingText';
+import ExecutionMode from '../components/ExecutionMode';
+import AgentBrowser from '../components/AgentBrowser';
+import { agentSession } from '../lib/agent-session';
+import { streamAgent } from '../lib/hermes';
+import { applyAgentEvent } from '../lib/agent-events.mjs';
 import TypingDots from '../components/TypingDots';
 import PromptBar from '../components/PromptBar';
 import VoiceRecorder from '../components/VoiceRecorder';
@@ -21,7 +25,6 @@ import Bubble from '../components/Bubble';
 import Icon from '../components/Icon';
 import BlobMark from '../components/BlobMark';
 
-const LOADING_MS = 1100;
 
 const GREETING = [
   { id: 'g1', text: "Hi, I'm Axl." },
@@ -57,6 +60,9 @@ export default function AgentsScreen() {
   const navigation = useNavigation();
   const isFocused = useIsFocused();
   const [turns, setTurns] = useState([]);
+  const [mode, setMode] = useState('guide');
+  const [browserSession, setBrowserSession] = useState(null);
+  const sessionRef = useRef(null);
   const [keyboardUp, setKeyboardUp] = useState(false);
   const [recording, setRecording] = useState(false);
   const [sidebar, setSidebar] = useState(false);
@@ -65,6 +71,56 @@ export default function AgentsScreen() {
   // Sends made while the app is open sit on top of the seeded log.
   const [sent, setSent] = useState({});
   const scrollRef = useRef(null);
+  const activeRequest = useRef(null);
+  const previousResponseId = useRef(null);
+  useEffect(() => () => {
+    activeRequest.current?.abort();
+    if (sessionRef.current) agentSession(`/${sessionRef.current}`, { method: 'DELETE' }).catch(() => {});
+  }, []);
+  useEffect(() => {
+    if (!browserSession?.id) return;
+    const id = browserSession.id;
+    let cancelled = false;
+    let timer;
+    const poll = async () => {
+      try {
+        const state = await agentSession(`/${id}`);
+        if (!cancelled && sessionRef.current === id) setBrowserSession(state);
+      } catch (error) {
+        if (!cancelled) setBrowserSession((current) => current?.id === id ? { ...current, error: error.message } : current);
+      }
+      if (!cancelled) timer = setTimeout(poll, 800);
+    };
+    poll();
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [browserSession?.id]);
+
+  const resetChat = () => {
+    activeRequest.current?.abort();
+    activeRequest.current = null;
+    const id = sessionRef.current;
+    sessionRef.current = null;
+    setBrowserSession(null);
+    previousResponseId.current = null;
+    setTurns([]);
+    if (id) agentSession(`/${id}`, { method: 'DELETE' }).catch(() => {});
+  };
+  const stopBrowser = async () => {
+    activeRequest.current?.abort();
+    activeRequest.current = null;
+    const id = sessionRef.current;
+    sessionRef.current = null;
+    previousResponseId.current = null;
+    setBrowserSession(null);
+    setTurns((current) => current.map((turn) => turn.stage === 'done' ? turn : { ...turn, stage: 'done', error: 'Stopped by you.' }));
+    if (id) await agentSession(`/${id}`, { method: 'DELETE' }).catch(() => {});
+  };
+  const approveBrowser = async (approvalId, allow) => {
+    const id = sessionRef.current;
+    if (!id) return;
+    await agentSession(`/${id}/approval`, { method: 'POST', body: JSON.stringify({ approval_id: approvalId, allow }) });
+    if (sessionRef.current === id) setBrowserSession((current) => ({ ...current, pending: null }));
+  };
   const boot = useRef(new Animated.Value(0)).current;
   const busy = turns.some((t) => t.stage !== 'done');
 
@@ -97,23 +153,52 @@ export default function AgentsScreen() {
     };
   }, []);
 
-  const advance = (id, stage) => {
-    setTurns((current) => current.map((t) => (t.id === id ? { ...t, stage } : t)));
-  };
-
-  const addTurn = (turn) => {
+  const submitPrompt = async (text) => {
+    if (activeRequest.current || !text.trim()) return;
     const id = `${Date.now()}`;
-    setTurns((current) => [...current, { id, stage: 'loading', ...turn }]);
-    setTimeout(() => advance(id, 'thinking'), LOADING_MS);
-    requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }));
+    const controller = new AbortController();
+    activeRequest.current = controller;
+    const timeout = setTimeout(() => controller.abort(), 600000);
+    setTurns((current) => [...current, { id, prompt: text, stage: 'loading', answer: '', tools: [] }]);
+    try {
+      if (!sessionRef.current) {
+        const session = await agentSession('', { method: 'POST', signal: controller.signal, body: JSON.stringify({ mode }) });
+        if (activeRequest.current !== controller) {
+          agentSession(`/${session.id}`, { method: 'DELETE' }).catch(() => {});
+          return;
+        }
+        sessionRef.current = session.id;
+        setBrowserSession(session);
+      }
+      const responseId = await streamAgent({
+        sessionId: sessionRef.current,
+        input: text, previousResponseId: previousResponseId.current,
+        signal: controller.signal,
+        onEvent: (event) => {
+          if (activeRequest.current !== controller) return;
+          setTurns((current) => current.map((turn) => turn.id === id ? applyAgentEvent(turn, event) : turn));
+        },
+      });
+      if (activeRequest.current === controller) previousResponseId.current = responseId;
+    } catch (error) {
+      if (activeRequest.current === controller) {
+        setTurns((current) => current.map((turn) => turn.id === id ? {
+          ...turn, stage: 'done', error: error.name === 'AbortError'
+            ? 'The request timed out. Please try again.' : error.message,
+        } : turn));
+      }
+    } finally {
+      clearTimeout(timeout);
+      if (activeRequest.current === controller) activeRequest.current = null;
+    }
   };
 
-  const submitPrompt = (text) => addTurn({ prompt: text });
-
-  // A spoken question gets a spoken answer back, with the transcript under it.
-  const submitVoice = (seconds) => {
+  const submitVoice = () => {
     setRecording(false);
-    addTurn({ voice: seconds });
+    setTurns((current) => [...current, {
+      id: `${Date.now()}`, prompt: 'Voice message', stage: 'done', tools: [], answer: '',
+      error: 'Voice transcription is not connected yet. Please type your request.',
+    }]);
   };
 
   const today = () => {
@@ -251,18 +336,17 @@ export default function AgentsScreen() {
 
                   <AgentLine stage={turn.stage}>
                     {turn.stage === 'loading' && <TypingDots />}
-                    {turn.stage === 'thinking' && <Thinking onComplete={() => advance(turn.id, 'streaming')} />}
-                    {(turn.stage === 'streaming' || turn.stage === 'done') && (
-                      <>
-                        {turn.voice ? <VoiceNote seconds={22} style={styles.agentVoice} /> : null}
-                        <StreamingText onComplete={() => advance(turn.id, 'done')} />
-                      </>
-                    )}
+                    {turn.tools.length > 0 && <Thinking tools={turn.tools} done={turn.stage === 'done'} />}
+                    {turn.stage === 'thinking' && turn.tools.length === 0 && <TypingDots />}
+                    {!!turn.answer && <Text selectable style={styles.agentText}>{turn.answer}</Text>}
+                    {!!turn.error && <Text style={styles.agentText}>{turn.error}</Text>}
+
                   </AgentLine>
                 </View>
               ))}
             </>
           )}
+          {!reviewing && <AgentBrowser key={browserSession?.id || 'empty'} session={browserSession} onApprove={approveBrowser} onStop={stopBrowser} />}
         </Animated.ScrollView>
 
         <View style={[styles.promptWrap, { paddingBottom: keyboardUp ? spacing(1) : insets.bottom + spacing(1) }]}>
@@ -280,7 +364,10 @@ export default function AgentsScreen() {
           ) : recording ? (
             <VoiceRecorder onSend={submitVoice} onCancel={() => setRecording(false)} />
           ) : (
-            <PromptBar onSubmit={submitPrompt} onVoice={() => setRecording(true)} editable={!busy} />
+            <>
+              <ExecutionMode mode={mode} disabled={busy} onChange={(next) => { if (next !== mode) { resetChat(); setMode(next); } }} />
+              <PromptBar onSubmit={submitPrompt} onVoice={() => setRecording(true)} editable={!busy} />
+            </>
           )}
         </View>
       </KeyboardAvoidingView>
@@ -292,7 +379,7 @@ export default function AgentsScreen() {
         activeDayId={reviewing?.id}
         onNewChat={() => {
           setDay(null);
-          setTurns([]);
+          resetChat();
         }}
         onOpenDay={setDay}
         onSend={(d) => setSheet(d ?? reviewing ?? days[0])}

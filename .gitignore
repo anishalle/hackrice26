@@ -43,3 +43,11 @@ pnpm-debug.log*
 # agent scratch
 .agents/
 .claude/settings.local.json
+
+# Python backend
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
