@@ -186,7 +186,9 @@ async def create_elevenlabs_clone(
 
     files = [
         (
-            "files[]",
+            # ElevenLabs' request validator expects this field name repeated for
+            # every sample, despite older cURL examples showing `files[]`.
+            "files",
             (
                 sample.original_filename,
                 _decrypt_voice_sample(sample.audio_data),
@@ -328,7 +330,9 @@ def _elevenlabs_error_message(response: httpx.Response) -> str:
     except ValueError:
         payload = None
 
-    detail = payload.get("detail") if isinstance(payload, dict) else None
+    detail = None
+    if isinstance(payload, dict):
+        detail = payload.get("detail") or payload.get("message") or payload.get("error")
     if isinstance(detail, dict):
         detail = detail.get("message") or detail.get("status")
     if not isinstance(detail, str) or not detail.strip():
