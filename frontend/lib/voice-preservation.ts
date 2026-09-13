@@ -84,7 +84,19 @@ export async function deleteVoiceSample(ownerSubject: string, sampleId: string):
 }
 
 export async function createVoiceClone(ownerSubject: string): Promise<VoiceProfile> {
-  const response = await fetch(`${backendUrl()}/api/v1/voice/profile/clone`, {
+  return requestVoiceClone(ownerSubject, "clone", "Could not create your voice.");
+}
+
+export async function rebuildVoiceClone(ownerSubject: string): Promise<VoiceProfile> {
+  return requestVoiceClone(ownerSubject, "rebuild", "Could not rebuild your voice.");
+}
+
+async function requestVoiceClone(
+  ownerSubject: string,
+  action: "clone" | "rebuild",
+  fallback: string
+): Promise<VoiceProfile> {
+  const response = await fetch(`${backendUrl()}/api/v1/voice/profile/${action}`, {
     method: "POST",
     headers: { ...ownerHeaders(ownerSubject), "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -92,7 +104,7 @@ export async function createVoiceClone(ownerSubject: string): Promise<VoiceProfi
       remove_background_noise: false,
     }),
   });
-  if (!response.ok) return readError(response, "Could not create your voice.");
+  if (!response.ok) return readError(response, fallback);
 
   await response.json();
   const profile = await getVoiceProfile(ownerSubject);

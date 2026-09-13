@@ -6,6 +6,7 @@ import {
   Loader2,
   Mic,
   Play,
+  RotateCcw,
   Square,
   Trash2,
   Volume2,
@@ -16,6 +17,7 @@ import {
   deleteVoiceSample,
   generateVoiceSpeech,
   getVoiceProfile,
+  rebuildVoiceClone,
   setUpVoiceProfile,
   type VoiceProfile,
   uploadVoiceSample,
@@ -75,6 +77,7 @@ export function VoicePreservation({
   const [recording, setRecording] = useState(false);
   const [saving, setSaving] = useState(false);
   const [cloning, setCloning] = useState(false);
+  const [confirmingRebuild, setConfirmingRebuild] = useState(false);
   const [speaking, setSpeaking] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [selectedExerciseId, setSelectedExerciseId] =
@@ -265,6 +268,24 @@ export function VoicePreservation({
     }
   }
 
+  async function rebuildVoice() {
+    setCloning(true);
+    setMessage(null);
+    try {
+      setProfile(await rebuildVoiceClone(ownerSubject));
+      setConfirmingRebuild(false);
+      setMessage(
+        "Your voice was rebuilt from every saved recording and is ready to use."
+      );
+    } catch (error) {
+      setMessage(
+        error instanceof Error ? error.message : "Could not rebuild your voice."
+      );
+    } finally {
+      setCloning(false);
+    }
+  }
+
   async function speakPreview() {
     setSpeaking(true);
     setMessage(null);
@@ -392,18 +413,29 @@ export function VoicePreservation({
             Record exercise
           </Button>
         )}
-        <Button
-          variant="outline"
-          onClick={() => void cloneVoice()}
-          disabled={!profile?.sample_count || !!profile.provider_voice_id || cloning}
-        >
-          {cloning ? (
-            <Loader2 className="size-4 animate-spin" />
-          ) : (
-            <Play className="size-4" />
-          )}
-          Create my voice
-        </Button>
+        {profile?.provider_voice_id ? (
+          <Button
+            variant="outline"
+            onClick={() => setConfirmingRebuild(true)}
+            disabled={!profile.sample_count || cloning}
+          >
+            <RotateCcw className="size-4" />
+            Rebuild my voice
+          </Button>
+        ) : (
+          <Button
+            variant="outline"
+            onClick={() => void cloneVoice()}
+            disabled={!profile?.sample_count || cloning}
+          >
+            {cloning ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Play className="size-4" />
+            )}
+            Create my voice
+          </Button>
+        )}
         <Button
           variant="outline"
           onClick={() => void speakPreview()}
@@ -417,6 +449,36 @@ export function VoicePreservation({
           Hear preview
         </Button>
       </div>
+
+      {confirmingRebuild && profile && (
+        <div
+          className="mt-5 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4"
+          role="alertdialog"
+          aria-labelledby="rebuild-voice-title"
+        >
+          <p id="rebuild-voice-title" className="text-sm font-semibold">
+            Rebuild your voice from all {profile.sample_count} saved samples?
+          </p>
+          <p className="mt-1 text-sm leading-6 text-muted-foreground">
+            This creates a new ElevenLabs clone from every recording currently
+            saved here and replaces the active clone. It may use ElevenLabs
+            credits.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-3">
+            <Button
+              variant="outline"
+              onClick={() => setConfirmingRebuild(false)}
+              disabled={cloning}
+            >
+              Cancel
+            </Button>
+            <Button onClick={() => void rebuildVoice()} disabled={cloning}>
+              {cloning ? <Loader2 className="size-4 animate-spin" /> : <RotateCcw className="size-4" />}
+              Rebuild from all samples
+            </Button>
+          </div>
+        </div>
+      )}
 
       {profile?.provider_status === "verification_required" && (
         <p className="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm">
