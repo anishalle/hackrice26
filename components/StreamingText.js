@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { CaretRight } from 'phosphor-react-native';
-import { colors, fonts, spacing, radii } from '../theme';
+import Icon from './Icon';
+import { colors, spacing, radii, type, softShadow } from '../theme';
 
 const ANSWER =
-  "Pistachio is your fastest-growing flavor. Sales are up 23% this month and margins beat vanilla by 8 points.";
-const SOURCES = ['Scoop Data', 'Trends Index', 'Market Basket'];
-const FOLLOW_UPS = ['Which flavors sell best in winter', 'Compare gelato and soft serve margins'];
+  'Most people bank phrases in short sittings rather than one long one — twenty minutes at a time, while your voice is still steady. Sarah recorded hers over three weeks and says the everyday lines mattered more than the long ones.';
+const SOURCES = ['ALS Association', 'Community notes', 'Your care team'];
+const FOLLOW_UPS = ['Which phrases should I record first?', 'Show me what others recorded'];
 
 export default function StreamingText({ onComplete }) {
   const words = ANSWER.split(' ');
@@ -17,14 +17,15 @@ export default function StreamingText({ onComplete }) {
       onComplete?.();
       return;
     }
-    const t = setTimeout(() => setCount((c) => c + 1), 55);
+    const t = setTimeout(() => setCount((c) => c + 1), 40);
     return () => clearTimeout(t);
   }, [count]);
 
   const done = count >= words.length;
 
   return (
-    <View style={styles.card}>
+    <View style={styles.wrap}>
+      {/* No bubble — Axl speaks straight onto the page. */}
       <Text style={styles.answer}>
         {words.slice(0, count).join(' ')}
         {!done && <Text style={styles.cursor}> ▍</Text>}
@@ -40,13 +41,14 @@ export default function StreamingText({ onComplete }) {
             ))}
           </View>
 
-          <Text style={styles.followUpsLabel}>Follow-ups</Text>
-          {FOLLOW_UPS.map((f) => (
-            <Pressable key={f} style={styles.followUp}>
-              <Text style={styles.followUpText}>{f}</Text>
-              <CaretRight size={14} color={colors.inkMuted} />
-            </Pressable>
-          ))}
+          <View style={styles.followUps}>
+            {FOLLOW_UPS.map((f) => (
+              <Pressable key={f} style={styles.followUp}>
+                <Text style={styles.followUpText}>{f}</Text>
+                <Icon name="next" size={12} color={colors.inkMuted} />
+              </Pressable>
+            ))}
+          </View>
         </>
       )}
     </View>
@@ -54,26 +56,30 @@ export default function StreamingText({ onComplete }) {
 }
 
 const styles = StyleSheet.create({
-  card: {
-    backgroundColor: '#E9E9EB',
-    borderRadius: 18,
-    borderBottomLeftRadius: 4,
-    padding: spacing(2),
-    gap: spacing(1.5),
-  },
-  answer: { fontFamily: fonts.regular, fontSize: 16, lineHeight: 21, color: colors.ink },
-  cursor: { color: colors.indigo },
+  wrap: { alignItems: 'flex-start', gap: spacing(1.5) },
+  answer: { ...type.body, color: colors.ink },
+  cursor: { color: colors.inkMuted },
+
   sourceRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing(0.75) },
-  sourceChip: { paddingVertical: spacing(0.5), paddingHorizontal: spacing(1.25), borderRadius: radii.pill, backgroundColor: '#fff' },
-  sourceChipText: { fontFamily: fonts.medium, fontSize: 12, color: colors.inkMuted },
-  followUpsLabel: { fontFamily: fonts.medium, fontSize: 12, color: colors.inkMuted, marginTop: spacing(0.5) },
+  sourceChip: {
+    paddingVertical: 5,
+    paddingHorizontal: 11,
+    borderRadius: radii.pill,
+    backgroundColor: colors.surface,
+    ...softShadow,
+  },
+  sourceChipText: { ...type.caption, color: colors.inkMuted },
+
+  followUps: { alignSelf: 'stretch', alignItems: 'flex-end', gap: spacing(1) },
   followUp: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: spacing(1),
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(21,21,21,0.1)',
+    gap: spacing(1),
+    backgroundColor: colors.surface,
+    borderRadius: radii.pill,
+    paddingVertical: spacing(1.25),
+    paddingHorizontal: spacing(2),
+    ...softShadow,
   },
-  followUpText: { fontFamily: fonts.regular, fontSize: 14, color: colors.ink, flex: 1 },
+  followUpText: { ...type.label, color: colors.ink },
 });

@@ -1,30 +1,80 @@
 import { useEffect, useRef, useState } from 'react';
-import { View, Text, Pressable, ScrollView, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
+import {
+  View, Text, Pressable, StyleSheet, KeyboardAvoidingView, Platform,
+  Animated, Easing, Keyboard,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
-import { CaretLeft } from 'phosphor-react-native';
-import { colors, fonts, spacing, radii, cardShadow } from '../theme';
-import LoadingState from '../components/LoadingState';
+import { useNavigation, useIsFocused } from '@react-navigation/native';
+import * as Haptics from 'expo-haptics';
+import { colors, type, spacing, softShadow } from '../theme';
 import Thinking from '../components/Thinking';
 import StreamingText from '../components/StreamingText';
+import TypingDots from '../components/TypingDots';
 import PromptBar from '../components/PromptBar';
-import AgentAvatar from '../components/AgentAvatar';
+import AgentBlob from '../components/AgentBlob';
+import Bubble from '../components/Bubble';
+import Icon from '../components/Icon';
 
 const LOADING_MS = 1100;
+
+const GREETING = [
+  { id: 'g1', text: "Hi, I'm Axl." },
+  { id: 'g2', text: 'Ask me about equipment, daily routines, or what other people at your stage have found that works.' },
+];
+
+const clock = () =>
+  new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }).toLowerCase().replace(' ', '');
+
+// Axl's byline sits with each answer rather than in the nav bar, so a long
+// thread always says who is speaking.
+function AgentLine({ stage, children }) {
+  return (
+    <View style={styles.agentTurn}>
+      <View style={styles.byline}>
+        <AgentBlob size={26} stage={stage} />
+        <Text style={styles.bylineName}>Axl</Text>
+        <Text style={styles.bylineTime}>{clock()}</Text>
+      </View>
+      <View style={styles.agentBody}>{children}</View>
+    </View>
+  );
+}
 
 export default function AgentsScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
+  const isFocused = useIsFocused();
   const [turns, setTurns] = useState([]);
+  const [keyboardUp, setKeyboardUp] = useState(false);
   const scrollRef = useRef(null);
+  const boot = useRef(new Animated.Value(0)).current;
   const busy = turns.some((t) => t.stage !== 'done');
 
-  // Widget sync disabled until an EAS dev client build links expo-widgets.
-  // useEffect(() => {
-  //   if (Platform.OS !== 'ios') return;
-  //   const activeCount = turns.filter((t) => t.stage !== 'done').length;
-  //   require('../widgets/AgentStatusWidget').default.updateSnapshot({ activeCount });
-  // }, [turns]);
+  // Axl boots up when the tab is entered: the thread rises and settles while
+  // the navigator's cross-fade is still finishing, so the two read as one move.
+  useEffect(() => {
+    if (!isFocused) {
+      boot.setValue(0);
+      return;
+    }
+    Animated.timing(boot, {
+      toValue: 1,
+      duration: 420,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+  }, [isFocused]);
+
+  // `behavior="padding"` already pads past the home indicator, so keeping the
+  // bottom inset on the composer leaves exactly that much dead space under it.
+  useEffect(() => {
+    const show = Keyboard.addListener('keyboardWillShow', () => setKeyboardUp(true));
+    const hide = Keyboard.addListener('keyboardWillHide', () => setKeyboardUp(false));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
 
   const advance = (id, stage) => {
     setTurns((current) => current.map((t) => (t.id === id ? { ...t, stage } : t)));
@@ -38,88 +88,99 @@ export default function AgentsScreen() {
   };
 
   return (
-    <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView
-        ref={scrollRef}
-        contentContainerStyle={[styles.container, { paddingTop: insets.top + spacing(2) }]}
-        onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}
-      >
-        <View style={styles.header}>
-          <Pressable style={styles.backBtn} hitSlop={8} onPress={() => navigation.navigate('Home')}>
-            <CaretLeft size={20} color={colors.ink} />
-          </Pressable>
-          <AgentAvatar stage="idle" size={40} />
-          <View>
-            <Text style={styles.title}>Agents</Text>
-            <Text style={styles.subtitle}>Ask your agent anything.</Text>
-          </View>
-        </View>
+    <View style={styles.root}>
+      <View style={[styles.navBar, { paddingTop: insets.top + spacing(0.5) }]}>
+        <Pressable
+          style={styles.navBtn}
+          hitSlop={10}
+          onPress={() => {
+            Haptics.selectionAsync();
+            navigation.navigate('Home');
+          }}
+        >
+          <Icon name="back" size={17} color={colors.ink} />
+        </Pressable>
+        <Text style={styles.navTitle}>Axl</Text>
+        <View style={styles.navSpacer} />
+      </View>
 
-        {turns.length === 0 && (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyText}>
-              Try asking about accessibility tools, shared findings, or what your agent
-              should do next.
-            </Text>
-          </View>
-        )}
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <Animated.ScrollView
+          ref={scrollRef}
+          style={[
+            styles.flex,
+            { opacity: boot, transform: [{ translateY: boot.interpolate({ inputRange: [0, 1], outputRange: [24, 0] }) }] },
+          ]}
+          contentContainerStyle={styles.container}
+          keyboardDismissMode="interactive"
+          onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}
+        >
+          <AgentLine stage="done">
+            {GREETING.map((g) => (
+              <Text key={g.id} style={styles.agentText}>
+                {g.text}
+              </Text>
+            ))}
+          </AgentLine>
 
-        {turns.map((turn) => (
-          <View key={turn.id} style={styles.turn}>
-            <View style={styles.promptBubble}>
-              <Text style={styles.promptBubbleText}>{turn.prompt}</Text>
-            </View>
+          {turns.map((turn) => (
+            <View key={turn.id} style={styles.turn}>
+              <Bubble side="right">
+                <Text style={styles.promptText}>{turn.prompt}</Text>
+              </Bubble>
 
-            <View style={styles.agentRow}>
-              <AgentAvatar stage={turn.stage} />
-              <View style={styles.agentContent}>
-                {turn.stage === 'loading' && <LoadingState label="Thinking" />}
-                {turn.stage === 'thinking' && (
-                  <Thinking onComplete={() => advance(turn.id, 'streaming')} />
-                )}
+              <AgentLine stage={turn.stage}>
+                {turn.stage === 'loading' && <TypingDots />}
+                {turn.stage === 'thinking' && <Thinking onComplete={() => advance(turn.id, 'streaming')} />}
                 {(turn.stage === 'streaming' || turn.stage === 'done') && (
                   <StreamingText onComplete={() => advance(turn.id, 'done')} />
                 )}
-              </View>
+              </AgentLine>
             </View>
-          </View>
-        ))}
-      </ScrollView>
+          ))}
+        </Animated.ScrollView>
 
-      <View style={[styles.promptWrap, { paddingBottom: insets.bottom + spacing(1.5) }]}>
-        <PromptBar onSubmit={submitPrompt} editable={!busy} />
-      </View>
-    </KeyboardAvoidingView>
+        <View style={[styles.promptWrap, { paddingBottom: keyboardUp ? spacing(1) : insets.bottom + spacing(1) }]}>
+          <PromptBar onSubmit={submitPrompt} editable={!busy} />
+        </View>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
-  container: { padding: spacing(3), paddingBottom: spacing(2), gap: spacing(2.5) },
-  header: { flexDirection: 'row', alignItems: 'center', gap: spacing(1.5) },
-  backBtn: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
-  title: { fontFamily: fonts.light, fontSize: 30, color: colors.ink },
-  subtitle: { fontFamily: fonts.regular, fontSize: 15, color: colors.inkMuted },
-  emptyCard: {
-    backgroundColor: colors.surface,
-    borderRadius: radii.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing(3),
-  },
-  emptyText: { fontFamily: fonts.regular, fontSize: 14, lineHeight: 20, color: colors.inkMuted },
-  turn: { gap: spacing(1.5) },
-  promptBubble: {
-    alignSelf: 'flex-end',
-    maxWidth: '85%',
-    backgroundColor: colors.ink,
-    borderRadius: 18,
-    borderBottomRightRadius: 4,
-    paddingVertical: spacing(1.25),
+  flex: { flex: 1 },
+
+  navBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: spacing(2),
+    paddingBottom: spacing(1.5),
   },
-  promptBubbleText: { fontFamily: fonts.regular, fontSize: 16, lineHeight: 21, color: '#fff' },
-  agentRow: { flexDirection: 'row', gap: spacing(1.5) },
-  agentContent: { flex: 1, gap: spacing(1.5) },
-  promptWrap: { paddingHorizontal: spacing(3), paddingTop: spacing(1) },
+  navBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...softShadow,
+  },
+  navSpacer: { width: 38 },
+  navTitle: { flex: 1, ...type.heading, color: colors.ink, textAlign: 'center' },
+
+  container: { paddingHorizontal: spacing(2.5), paddingBottom: spacing(2), gap: spacing(2.5) },
+  turn: { gap: spacing(2) },
+
+  agentTurn: { gap: spacing(1) },
+  byline: { flexDirection: 'row', alignItems: 'center', gap: spacing(0.75) },
+  bylineName: { ...type.label, color: colors.ink },
+  bylineTime: { ...type.footnote, fontSize: 11, color: colors.inkMuted },
+  // Answers are unboxed — only the person's own messages get a bubble.
+  agentBody: { gap: spacing(1), paddingRight: spacing(2) },
+  agentText: { ...type.body, color: colors.ink },
+
+  promptText: { ...type.body, color: '#fff' },
+  promptWrap: { paddingHorizontal: spacing(2.5), paddingTop: spacing(1) },
 });

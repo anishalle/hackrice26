@@ -1,30 +1,58 @@
-import { useRef, useState } from 'react';
-import { View, Pressable, Text, Animated, StyleSheet, Platform } from 'react-native';
-import { BlurView } from 'expo-blur';
-import { House, Sparkle, Storefront } from 'phosphor-react-native';
+import { useEffect, useMemo, useRef } from 'react';
+import { View, Pressable, Animated, StyleSheet } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, fonts, spacing } from '../theme';
+import { colors, fonts, spacing, type } from '../theme';
 
-const ICONS = {
-  Home: House,
-  Agents: Sparkle,
-  Marketplace: Storefront,
-};
+const R = 20;
+const GAP = spacing(1);
 
+const ACTIVE = { Home: colors.blue, Agents: colors.purple, Marketplace: colors.green };
+
+// Morphic segmented nav: one solid white strip where the active item detaches
+// into its own accent pill, and the segments either side round off the edges
+// they now face.
+//
+// All of that hangs off a single spring holding the active index, so the
+// detach, the corner rounding and the fill cross together instead of snapping
+// the moment state.index flips. None of it can use the native driver — margin,
+// radius and colour are JS-thread props — but three items is well inside
+// budget.
 export default function TabBar({ state, descriptors, navigation }) {
   const insets = useSafeAreaInsets();
-  const layouts = useRef({});
-  const pillX = useRef(new Animated.Value(0)).current;
-  const pillW = useRef(new Animated.Value(0)).current;
-  const [ready, setReady] = useState(false);
+  const pos = useRef(new Animated.Value(state.index)).current;
+  const one = useRef(new Animated.Value(1)).current;
 
-  const animateToIndex = (index) => {
-    const l = layouts.current[index];
-    if (!l) return;
-    Animated.spring(pillX, { toValue: l.x, useNativeDriver: false, damping: 18, mass: 0.6, stiffness: 220 }).start();
-    Animated.spring(pillW, { toValue: l.width, useNativeDriver: false, damping: 18, mass: 0.6, stiffness: 220 }).start();
-    if (!ready) setReady(true);
-  };
+  useEffect(() => {
+    Animated.spring(pos, {
+      toValue: state.index,
+      useNativeDriver: false,
+      damping: 18,
+      mass: 0.7,
+      stiffness: 170,
+    }).start();
+  }, [state.index]);
+
+  const last = state.routes.length - 1;
+
+  const segments = useMemo(() => {
+    // 1 when this item is the active one, falling to 0 either side of it.
+    const activeness = (i) =>
+      pos.interpolate({ inputRange: [i - 1, i, i + 1], outputRange: [0, 1, 0], extrapolate: 'clamp' });
+
+    return state.routes.map((route, i) => {
+      const act = activeness(i);
+      // A corner opens when this item is active or the neighbour it faces is.
+      // Mid-slide the two activenesses sum to 1, so adding them tracks the edge
+      // continuously where a boolean would flip.
+      return {
+        route,
+        act,
+        leftOpen: i === 0 ? one : Animated.add(act, activeness(i - 1)),
+        rightOpen: i === last ? one : Animated.add(act, activeness(i + 1)),
+      };
+    });
+  }, [state.routes, last]);
 
   // A screen can opt out via options={{ tabBarStyle: { display: 'none' } }} —
   // React Navigation only auto-hides its own default tab bar for that, a
@@ -32,70 +60,64 @@ export default function TabBar({ state, descriptors, navigation }) {
   const focusedOptions = descriptors[state.routes[state.index].key].options;
   if (focusedOptions.tabBarStyle?.display === 'none') return null;
 
-  return (
-    // Normal flex flow (not floating) — the navigator reserves this height,
-    // so screen content can never end up hidden behind it.
-    <View style={[styles.wrap, { paddingBottom: insets.bottom + spacing(1) }]}>
-      <BlurView intensity={60} tint="light" style={styles.glass}>
-        <Animated.View
-          style={[
-            styles.pill,
-            { transform: [{ translateX: pillX }], width: pillW, opacity: ready ? 1 : 0 },
-          ]}
-        />
-        {state.routes.map((route, index) => {
-          const focused = state.index === index;
-          const Icon = ICONS[route.name] ?? House;
+  const corner = (value) =>
+    value.interpolate({ inputRange: [0, 1], outputRange: [0, R], extrapolate: 'clamp' });
 
-          return (
-            <Pressable
-              key={route.key}
-              onLayout={(e) => {
-                const { x, width } = e.nativeEvent.layout;
-                layouts.current[index] = { x, width };
-                if (focused) animateToIndex(index);
-              }}
-              onPress={() => {
-                animateToIndex(index);
-                navigation.navigate(route.name);
-              }}
-              style={styles.tab}
+  return (
+    <View style={[styles.wrap, { paddingBottom: insets.bottom || spacing(1.5) }]}>
+      <View style={styles.glass}>
+        {segments.map(({ route, act, leftOpen, rightOpen }) => (
+          <Pressable
+            key={route.key}
+            onPress={() => {
+              Haptics.selectionAsync();
+              navigation.navigate(route.name);
+            }}
+          >
+            <Animated.View
+              style={[
+                styles.item,
+                {
+                  marginHorizontal: act.interpolate({ inputRange: [0, 1], outputRange: [0, GAP] }),
+                  backgroundColor: act.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [colors.surface, ACTIVE[route.name] ?? colors.blue],
+                  }),
+                  borderTopLeftRadius: corner(leftOpen),
+                  borderBottomLeftRadius: corner(leftOpen),
+                  borderTopRightRadius: corner(rightOpen),
+                  borderBottomRightRadius: corner(rightOpen),
+                },
+              ]}
             >
-              <Icon size={20} weight={focused ? 'fill' : 'regular'} color={focused ? '#fff' : colors.inkMuted} />
-              <Text style={[styles.label, focused && styles.labelActive]}>{route.name}</Text>
-            </Pressable>
-          );
-        })}
-      </BlurView>
+              <Animated.Text
+                style={[
+                  styles.label,
+                  {
+                    color: act.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [colors.inkMuted, colors.ink],
+                    }),
+                  },
+                ]}
+              >
+                {route.name.toLowerCase()}
+              </Animated.Text>
+            </Animated.View>
+          </Pressable>
+        ))}
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   wrap: { alignItems: 'center', paddingTop: spacing(1), backgroundColor: colors.bg },
-  glass: {
-    flexDirection: 'row',
-    borderRadius: 999,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(21,21,21,0.08)',
-    padding: 6,
-    backgroundColor: Platform.OS === 'android' ? 'rgba(255,255,255,0.92)' : 'transparent',
-  },
-  pill: {
-    position: 'absolute',
-    top: 6,
-    bottom: 6,
-    borderRadius: 999,
-    backgroundColor: colors.ink,
-  },
-  tab: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing(0.75),
-    paddingVertical: spacing(1.25),
-    paddingHorizontal: spacing(2.5),
-  },
-  label: { fontFamily: fonts.medium, fontSize: 15, color: colors.inkMuted },
-  labelActive: { color: '#fff' },
+  // No shell and no padding: the white segments fill the container, and the
+  // active item's side margins let the page show through as gaps.
+  glass: { flexDirection: 'row', alignItems: 'center', borderRadius: R, overflow: 'hidden' },
+  item: { paddingVertical: spacing(2.25), paddingHorizontal: spacing(3), alignItems: 'center' },
+  // One weight throughout — a weight swap on selection is a jump no spring can
+  // smooth over.
+  label: { ...type.label, fontFamily: fonts.semibold, fontSize: 15 },
 });
