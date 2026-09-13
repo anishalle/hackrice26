@@ -26,7 +26,10 @@ def seed():
             conn.execute(
                 text("""
                 INSERT INTO patients (id, record) VALUES (:id, CAST(:record AS jsonb))
-                ON CONFLICT (id) DO NOTHING
+                ON CONFLICT (id) DO UPDATE SET record =
+                    patients.record || jsonb_build_object('records',
+                        COALESCE(patients.record->'records',
+                                 EXCLUDED.record->'records'))
             """),
                 {"id": patient["id"], "record": json.dumps(patient)},
             )

@@ -1,8 +1,10 @@
-"""Read-only synthetic caseload API. Real clinical access needs server-side ACLs."""
+"""Synthetic caseload API. Real clinical access needs server-side ACLs."""
 
 from datetime import timedelta
+from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
@@ -16,6 +18,15 @@ METRICS = {
     "pause_seconds": ("Mean pause", "s", "speech", 2),
     "tap_accuracy": ("Tap accuracy", "%", "motor", 1),
 }
+
+
+class CapabilityProfile(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    vision: Literal[0, 1, 2, 3]
+    hearing: Literal[0, 1, 2, 3]
+    motor: Literal[0, 1, 2, 3]
+    speech: Literal[0, 1, 2, 3]
+    cognitive: Literal[0, 1, 2, 3]
 
 
 def weekly_rows(session: Session, patient_id: str | None = None):
@@ -63,7 +74,9 @@ def serialize_patient(patient: Patient, rows):
                         if delta is not None
                         else "No prior-week comparison"
                     ),
-                    tone="periwinkle",
+                    tone="amber"
+                    if delta is not None and round(delta, precision) != 0
+                    else "periwinkle",
                 )
             )
     record["checkins"] = [
@@ -87,6 +100,37 @@ def serialize_patient(patient: Patient, rows):
         )
         for week in weeks
     ]
+    # Preserve the demo's other record sections, but use the same database
+    # rollups for overlapping speech/motor charts on both screens.
+    if "records" in record:
+        records = dict(record["records"])
+        series = [
+            s
+            for s in records.get("series", [])
+            if s["id"] not in {"rate", "pause", "accuracy"}
+        ]
+        for metric, (label, unit, _axis, _precision) in METRICS.items():
+            points = sorted(
+                [r for r in rows if r["metric"] == metric], key=lambda r: r["week"]
+            )
+            series.append(
+                dict(
+                    id=metric,
+                    label=label,
+                    unit=unit,
+                    points=[round(r["mean"], _precision) for r in points],
+                    labels=[r["week"].strftime("%b %d") for r in points],
+                    tone="periwinkle",
+                    betterWhen="lower" if metric == "pause_seconds" else "higher",
+                    scope="signals",
+                    reading=(
+                        "Synthetic weekly means from Tiger Data; "
+                        "not a clinical assessment."
+                    ),
+                )
+            )
+        records["series"] = series
+        record["records"] = records
     return record
 
 
@@ -112,6 +156,16 @@ def get_patient(patient_id: str, session: Session = Depends(get_db)):
     return serialize_patient(
         required_patient(session, patient_id), weekly_rows(session, patient_id)
     )
+
+
+@router.put("/{patient_id}/profile")
+def save_profile(
+    patient_id: str, profile: CapabilityProfile, session: Session = Depends(get_db)
+):
+    patient = required_patient(session, patient_id)
+    patient.record = {**patient.record, "profile": profile.model_dump()}
+    session.commit()
+    return {"patient_id": patient_id, "profile": profile.model_dump()}
 
 
 @router.get("/{patient_id}/analytics")
