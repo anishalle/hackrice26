@@ -6,7 +6,9 @@ import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import { colors, accents, type, spacing, radii, tagPalette, tagGlyph, cardShadow, softShadow } from '../theme';
 import AgentBlob from '../components/AgentBlob';
+import TiltGaze from '../components/TiltGaze';
 import Icon from '../components/Icon';
+import BlobMark from '../components/BlobMark';
 
 const ACTIONS = [
   { key: 'Speech', label: 'Speech' },
@@ -18,20 +20,23 @@ const ACTIONS = [
 const HISTORY = [
   {
     id: 'h1',
+    skillId: 'voice-banking',
     tag: 'Speech',
     title: 'Voice banking',
     note: 'How many phrases should I record before my speech changes?',
-    author: 'mara',
+    author: 'sunay',
   },
   {
     id: 'h2',
+    skillId: 'transfer-playbook',
     tag: 'Mobility',
     title: 'Bathroom transfers',
-    note: 'Grab bars beat a ramp in a narrow hallway — here is the layout that worked.',
+    note: 'Grab bars beat a ramp in a narrow hallway. Here is the layout that worked.',
     author: 'sarahw',
   },
   {
     id: 'h3',
+    skillId: 'grip-kitchen',
     tag: 'Daily',
     title: 'Eating with weak grip',
     note: 'Weighted utensils and a plate guard bought me another eight months of eating alone.',
@@ -39,6 +44,7 @@ const HISTORY = [
   },
   {
     id: 'h4',
+    skillId: 'night-shift-split',
     tag: 'Care',
     title: 'Night shifts',
     note: 'What my partner and I split once I needed help turning at night.',
@@ -50,7 +56,7 @@ const FILTERS = ['All', 'Speech', 'Mobility', 'Daily', 'Care'];
 
 // Blobatar picks a hue from the seed; override the head so members land on the
 // four accents instead of anywhere on the wheel.
-const ACCENT_CYCLE = [accents.blue, accents.green, accents.purple, accents.agent];
+const ACCENT_CYCLE = [accents.blue, accents.green, accents.purple, accents.gold];
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
@@ -64,13 +70,18 @@ export default function HomeScreen() {
     navigation.navigate('Agents');
   };
 
+  const openMarketplace = (skillId) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    navigation.navigate('Marketplace', skillId ? { skillId } : undefined);
+  };
+
   return (
     <View style={styles.root}>
       <ScrollView contentContainerStyle={[styles.container, { paddingTop: insets.top + spacing(1.5) }]}>
         <View style={styles.topRow}>
           <View>
-            <Text style={styles.greeting}>Hi, Jasmin</Text>
-            <Text style={styles.greetingSub}>How can Axl help today?</Text>
+            <Text style={styles.greeting}>Hi, Anish</Text>
+            <Text style={styles.greetingSub}>How can I help?</Text>
           </View>
           <Pressable style={styles.bell} hitSlop={8}>
             <Icon name="bell" size={18} color={colors.ink} />
@@ -79,14 +90,16 @@ export default function HomeScreen() {
         </View>
 
         <Pressable style={styles.agentCard} onPress={openAgent}>
-          <View style={styles.agentFigure} pointerEvents="none">
-            <AgentBlob size={190} />
-          </View>
+          <TiltGaze style={styles.agentFigure}>
+            <AgentBlob size={248} animate={false} />
+          </TiltGaze>
+
           <View style={styles.agentCopy}>
             <Text style={styles.agentTitle}>Axl is tuned to where you are now</Text>
-            <View style={styles.agentBtn}>
-              <Text style={styles.agentBtnText}>Update stage</Text>
-            </View>
+            <Pressable style={styles.agentBtn} onPress={() => openMarketplace()}>
+              <Text style={styles.agentBtnText}>Explore</Text>
+              <Icon name="next" size={14} color={colors.ink} />
+            </Pressable>
           </View>
         </Pressable>
 
@@ -100,9 +113,12 @@ export default function HomeScreen() {
             const palette = tagPalette[a.key];
             return (
               <Pressable key={a.key} style={styles.tile} onPress={openAgent}>
-                <View style={[styles.tileMark, { backgroundColor: palette.bg }]}>
-                  <Icon name={tagGlyph[a.key]} size={18} color={palette.text} />
-                </View>
+                <BlobMark
+                  seed={a.key}
+                  fill={palette.bg}
+                  glyph={tagGlyph[a.key]}
+                  glyphColor={palette.text}
+                />
                 <Text style={styles.tileLabel}>{a.label}</Text>
               </Pressable>
             );
@@ -136,7 +152,7 @@ export default function HomeScreen() {
 
         <View style={styles.historyList}>
           {shown.map((h, i) => (
-            <Pressable key={h.id} style={styles.entry} onPress={openAgent}>
+            <Pressable key={h.id} style={styles.entry} onPress={() => openMarketplace(h.skillId)}>
               {/* Community members keep the deterministic blobatar, pinned round
                   so the list reads as one family with Axl. */}
               <Blobatar
@@ -160,7 +176,7 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.bg },
+  root: { flex: 1, backgroundColor: colors.page },
   container: { paddingHorizontal: spacing(2.5), paddingBottom: spacing(3), gap: spacing(2) },
 
   topRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
@@ -188,28 +204,32 @@ const styles = StyleSheet.create({
   },
 
   agentCard: {
-    minHeight: 158,
+    minHeight: 172,
     justifyContent: 'center',
     backgroundColor: colors.surface,
     borderRadius: radii.card,
     padding: spacing(2.5),
-    paddingLeft: spacing(16),
+    // Clears the blob, so the column below starts where he ends rather than
+    // running across him.
+    paddingLeft: spacing(18.5),
     overflow: 'hidden',
     ...cardShadow,
   },
   // Pushed past the card's edge so the rounded corner crops him.
-  agentFigure: { position: 'absolute', left: -34, bottom: -44 },
-  agentCopy: { gap: spacing(1) },
+  agentFigure: { position: 'absolute', left: -64, bottom: -76, zIndex: 0 },
+  agentCopy: { gap: spacing(1.5), zIndex: 1 },
   agentTitle: { ...type.bodyMedium, color: colors.ink },
   agentBtn: {
-    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing(0.75),
+    alignSelf: 'stretch',
     borderRadius: radii.pill,
-    borderWidth: 1,
-    borderColor: colors.ink,
-    paddingVertical: spacing(0.75),
-    paddingHorizontal: spacing(1.75),
+    backgroundColor: colors.green,
+    paddingVertical: spacing(1.75),
   },
-  agentBtnText: { ...type.label, color: colors.ink },
+  agentBtnText: { ...type.heading, color: colors.ink },
 
   tileScroll: { marginHorizontal: -spacing(2.5) },
   tileRow: { paddingHorizontal: spacing(2.5), gap: spacing(1.25) },
@@ -223,7 +243,6 @@ const styles = StyleSheet.create({
     padding: spacing(1.75),
     ...softShadow,
   },
-  tileMark: { width: 36, height: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   tileLabel: { ...type.bodyMedium, color: colors.ink },
 
   historyHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },

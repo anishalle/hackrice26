@@ -1,21 +1,23 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   View, Text, TextInput, Pressable, ScrollView, StyleSheet, useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import { colors, spacing, radii, tagPalette, tagGlyph, type, cardShadow, softShadow } from '../theme';
 import { SKILLS, CATEGORIES } from '../data/skills';
 import SkillCard from '../components/SkillCard';
+import SkillDetailScreen from './SkillDetailScreen';
 import Icon from '../components/Icon';
 
 const PAGE = 6;
 const FEATURED = SKILLS.filter((s) => s.featured);
 
-function FeaturedCard({ skill, width }) {
+function FeaturedCard({ skill, width, onOpen }) {
   const palette = tagPalette[skill.tags[0]];
   return (
-    <View style={[styles.featured, { backgroundColor: palette.bg, width }]}>
+    <Pressable style={[styles.featured, { backgroundColor: palette.bg, width }]} onPress={onOpen}>
       <View style={styles.featuredMark}>
         <Icon name={tagGlyph[skill.tags[0]]} size={24} color={palette.text} />
       </View>
@@ -27,17 +29,29 @@ function FeaturedCard({ skill, width }) {
           <Text style={styles.addText}>Add</Text>
         </Pressable>
       </View>
-    </View>
+    </Pressable>
   );
 }
 
 export default function MarketplaceScreen() {
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation();
+  const route = useRoute();
   const { width } = useWindowDimensions();
   const featuredW = Math.min(width - spacing(8), 320);
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState(null);
   const [shown, setShown] = useState(PAGE);
+  const [open, setOpen] = useState(null);
+
+  // Home routes here with a skill to open. The param is cleared as it is read,
+  // so coming back to the tab later lands on the list rather than reopening.
+  const requested = route.params?.skillId;
+  useEffect(() => {
+    if (!requested) return;
+    setOpen(SKILLS.find((s) => s.id === requested) ?? null);
+    navigation.setParams({ skillId: undefined });
+  }, [requested]);
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -51,7 +65,7 @@ export default function MarketplaceScreen() {
     );
   }, [query, category]);
 
-  // Featured is a browse affordance — it only gets in the way once the list
+  // Featured is a browse affordance. It only gets in the way once the list
   // has been narrowed down.
   const browsing = !query.trim() && !category;
 
@@ -62,6 +76,10 @@ export default function MarketplaceScreen() {
   };
 
   const visible = results.slice(0, shown);
+
+  // A detail page rather than a stack: one piece of state beats a navigator
+  // for a screen with a single way in and a single way out.
+  if (open) return <SkillDetailScreen skill={open} onBack={() => setOpen(null)} />;
 
   return (
     <View style={styles.root}>
@@ -131,7 +149,7 @@ export default function MarketplaceScreen() {
               style={styles.featuredScroll}
             >
               {FEATURED.map((s) => (
-                <FeaturedCard key={s.id} skill={s} width={featuredW} />
+                <FeaturedCard key={s.id} skill={s} width={featuredW} onOpen={() => setOpen(s)} />
               ))}
             </ScrollView>
           </View>
@@ -148,7 +166,7 @@ export default function MarketplaceScreen() {
           ) : (
             <View style={styles.grid}>
               {visible.map((s) => (
-                <SkillCard key={s.id} skill={s} style={styles.gridItem} />
+                <SkillCard key={s.id} skill={s} style={styles.gridItem} onPress={() => setOpen(s)} />
               ))}
               {/* An odd count would stretch the last tile to full width otherwise. */}
               {visible.length % 2 === 1 && <View style={styles.gridItem} />}
@@ -176,7 +194,7 @@ export default function MarketplaceScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.bg },
+  root: { flex: 1, backgroundColor: colors.page },
   container: { paddingHorizontal: spacing(2.5), paddingBottom: spacing(3), gap: spacing(2) },
   headerBlock: { gap: spacing(0.5) },
   title: { ...type.title, color: colors.ink },

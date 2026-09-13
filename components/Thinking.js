@@ -12,7 +12,7 @@ const STEPS = [
 
 const STEP_INTERVAL = 420;
 
-// Inline disclosure above the answer bubble — flat, no card, the way iOS
+// Inline disclosure above the answer bubble: flat, no card, the way iOS
 // surfaces secondary detail in a thread.
 export default function Thinking({ onComplete }) {
   const [open, setOpen] = useState(true);

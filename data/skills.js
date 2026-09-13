@@ -1,12 +1,12 @@
 // Resources people living with ALS have written up and shared with each other.
-// Icons are not stored here — they follow from the first tag, via `tagGlyph`.
+// Icons are not stored here. They follow from the first tag, via `tagGlyph`.
 export const CATEGORIES = ['Speech', 'Mobility', 'Daily', 'Care', 'Voice', 'Automation'];
 
 export const SKILLS = [
   {
     id: 'voice-banking',
     title: 'Voice Banking Coach',
-    author: '@mara',
+    author: '@sunay',
     tags: ['Voice', 'Speech'],
     karma: 214,
     featured: true,
@@ -73,7 +73,7 @@ export const SKILLS = [
   {
     id: 'clinic-questions',
     title: 'Clinic Question Bank',
-    author: '@mara',
+    author: '@sunay',
     tags: ['Care'],
     karma: 64,
     description: 'What to ask at each multidisciplinary visit, sorted by what changes between appointments.',
@@ -103,3 +103,59 @@ export const SKILLS = [
     description: 'Budgets the day into energy blocks and holds notifications until you have room for them.',
   },
 ];
+
+// Long-form docs for the one skill that has them. Everything else falls back
+// to its card description, which is what the detail page renders when a skill
+// has no entry here.
+export const SKILL_DOCS = {
+  'voice-banking': {
+    summary:
+      'Voice banking records your natural speech while you still have it, so a speech device can use your own voice later instead of a synthetic one. The hard part is not the recording. It is knowing what to say, how much is enough, and when to start. This walks you through all three.',
+    features: [
+      {
+        title: 'A script that sounds like you',
+        body: 'Starts from the phrases you actually use day to day, pulled from your own messages, not a generic word list.',
+      },
+      {
+        title: 'Short sittings, tracked',
+        body: 'Twenty minute blocks with a running count of what is banked and what is left. Stop whenever your voice tires.',
+      },
+      {
+        title: 'Quality checks as you go',
+        body: 'Flags takes with room noise, clipping, or a tired voice before they end up in your final bank.',
+      },
+      {
+        title: 'Hands off by design',
+        body: 'Runs on voice commands and a single switch, so it keeps working as grip and reach change.',
+      },
+    ],
+    why: [
+      'Starting early matters more than recording a lot. Most people get a usable bank from a few hundred phrases caught before speech changes.',
+      'A banked voice carries your rhythm and emphasis, which is what people who know you actually recognise.',
+      'Everything stays on device until you choose a speech-device vendor, so you are not locked to one before you have picked.',
+    ],
+    forum: [
+      {
+        id: 'q1',
+        asker: 'devonk',
+        question: 'My speech has already slurred a bit. Is it too late to start?',
+        answer:
+          'No. Banking still works with mild slurring, and the checker will tell you which takes are clean enough to keep. Start with your most-used phrases first in case you get fewer sittings than you hoped.',
+      },
+      {
+        id: 'q2',
+        asker: 'priya',
+        question: 'How many phrases before it is actually usable?',
+        answer:
+          'Around 400 gets you a bank that sounds like you in everyday conversation. 1500 or so is what vendors ask for a full synthetic voice. Both are useful, so do not wait until you can commit to the bigger number.',
+      },
+      {
+        id: 'q3',
+        asker: 'jules',
+        question: 'Does the room matter much?',
+        answer:
+          'More than the microphone does. A carpeted room with the door shut beats an expensive mic in a kitchen. Keep the same room across sittings if you can.',
+      },
+    ],
+  },
+};

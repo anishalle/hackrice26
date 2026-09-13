@@ -4,7 +4,7 @@ import Icon from './Icon';
 import { colors, spacing, radii, type, softShadow } from '../theme';
 
 const ANSWER =
-  'Most people bank phrases in short sittings rather than one long one — twenty minutes at a time, while your voice is still steady. Sarah recorded hers over three weeks and says the everyday lines mattered more than the long ones.';
+  'Most people bank phrases in short sittings rather than one long one. Twenty minutes at a time, while your voice is still steady. Sarah recorded hers over three weeks and says the everyday lines mattered more than the long ones.';
 const SOURCES = ['ALS Association', 'Community notes', 'Your care team'];
 const FOLLOW_UPS = ['Which phrases should I record first?', 'Show me what others recorded'];
 
@@ -25,7 +25,7 @@ export default function StreamingText({ onComplete }) {
 
   return (
     <View style={styles.wrap}>
-      {/* No bubble — Axl speaks straight onto the page. */}
+      {/* No bubble. Axl speaks straight onto the page. */}
       <Text style={styles.answer}>
         {words.slice(0, count).join(' ')}
         {!done && <Text style={styles.cursor}> ▍</Text>}

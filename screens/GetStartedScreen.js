@@ -48,7 +48,7 @@ export default function GetStartedScreen({ onStart }) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.bg, paddingHorizontal: spacing(2.5), alignItems: 'center' },
+  root: { flex: 1, backgroundColor: colors.page, paddingHorizontal: spacing(2.5), alignItems: 'center' },
   headline: {
     ...type.display,
     color: colors.ink,

@@ -2,7 +2,7 @@ import { Platform } from 'react-native';
 import { SymbolView } from 'expo-symbols';
 import {
   CaretLeft, CaretRight, CaretDown, CaretUp, ArrowRight, ArrowUp,
-  Microphone, Paperclip, MagnifyingGlass, X, Bell, Sparkle,
+  Microphone, Paperclip, MagnifyingGlass, X, Bell, Sparkle, Play, Pause,
   Waveform, Broadcast, ArrowsHorizontal, SquaresFour, ArrowsClockwise,
   SlidersHorizontal, Crosshair,
 } from 'phosphor-react-native';
@@ -10,7 +10,7 @@ import {
 // SF Symbols on iOS, phosphor everywhere else. Keyed by role so callers never
 // have to know which set they're getting.
 //
-// Outline glyphs only — no `.fill` variants. A filled symbol next to a chevron
+// Outline glyphs only, no `.fill` variants. A filled symbol next to a chevron
 // reads as a different family, and the chevrons are the weight everything else
 // is matched to.
 const ICONS = {
@@ -26,8 +26,10 @@ const ICONS = {
   search: ['magnifyingglass', MagnifyingGlass],
   clear: ['xmark.circle', X],
   bell: ['bell', Bell],
+  play: ['play', Play],
+  pause: ['pause', Pause],
 
-  // Category glyphs (see `tagGlyph` in the theme) — listed here so the
+  // Category glyphs (see `tagGlyph` in the theme), listed here so the
   // non-iOS fallback shows the right shape instead of a generic sparkle.
   waveform: ['waveform', Waveform],
   'dot.radiowaves.left.and.right': ['dot.radiowaves.left.and.right', Broadcast],

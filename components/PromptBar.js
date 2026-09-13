@@ -4,7 +4,7 @@ import * as Haptics from 'expo-haptics';
 import Icon from './Icon';
 import { colors, spacing, radii, type, cardShadow } from '../theme';
 
-export default function PromptBar({ onSubmit, editable = true }) {
+export default function PromptBar({ onSubmit, onVoice, editable = true }) {
   const [value, setValue] = useState('');
   const canSend = editable && value.trim().length > 0;
 
@@ -36,7 +36,7 @@ export default function PromptBar({ onSubmit, editable = true }) {
       />
 
       {/* One round accent button: mic until there is something to send. */}
-      <Pressable style={styles.action} hitSlop={8} onPress={send}>
+      <Pressable style={styles.action} hitSlop={8} onPress={canSend ? send : onVoice}>
         <Icon name={canSend ? 'send' : 'mic'} size={18} color="#fff" />
       </Pressable>
     </View>

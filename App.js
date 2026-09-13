@@ -23,7 +23,7 @@ const navTheme = {
   dark: false,
   colors: {
     primary: colors.indigo,
-    background: colors.bg,
+    background: colors.page,
     card: colors.surface,
     text: colors.ink,
     border: colors.border,

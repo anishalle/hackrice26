@@ -11,6 +11,8 @@ import Thinking from '../components/Thinking';
 import StreamingText from '../components/StreamingText';
 import TypingDots from '../components/TypingDots';
 import PromptBar from '../components/PromptBar';
+import VoiceRecorder from '../components/VoiceRecorder';
+import VoiceNote from '../components/VoiceNote';
 import AgentBlob from '../components/AgentBlob';
 import Bubble from '../components/Bubble';
 import Icon from '../components/Icon';
@@ -46,6 +48,7 @@ export default function AgentsScreen() {
   const isFocused = useIsFocused();
   const [turns, setTurns] = useState([]);
   const [keyboardUp, setKeyboardUp] = useState(false);
+  const [recording, setRecording] = useState(false);
   const scrollRef = useRef(null);
   const boot = useRef(new Animated.Value(0)).current;
   const busy = turns.some((t) => t.stage !== 'done');
@@ -80,11 +83,19 @@ export default function AgentsScreen() {
     setTurns((current) => current.map((t) => (t.id === id ? { ...t, stage } : t)));
   };
 
-  const submitPrompt = (text) => {
+  const addTurn = (turn) => {
     const id = `${Date.now()}`;
-    setTurns((current) => [...current, { id, prompt: text, stage: 'loading' }]);
+    setTurns((current) => [...current, { id, stage: 'loading', ...turn }]);
     setTimeout(() => advance(id, 'thinking'), LOADING_MS);
     requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }));
+  };
+
+  const submitPrompt = (text) => addTurn({ prompt: text });
+
+  // A spoken question gets a spoken answer back, with the transcript under it.
+  const submitVoice = (seconds) => {
+    setRecording(false);
+    addTurn({ voice: seconds });
   };
 
   return (
@@ -126,14 +137,21 @@ export default function AgentsScreen() {
           {turns.map((turn) => (
             <View key={turn.id} style={styles.turn}>
               <Bubble side="right">
-                <Text style={styles.promptText}>{turn.prompt}</Text>
+                {turn.voice ? (
+                  <VoiceNote seconds={turn.voice} tint="#fff" />
+                ) : (
+                  <Text style={styles.promptText}>{turn.prompt}</Text>
+                )}
               </Bubble>
 
               <AgentLine stage={turn.stage}>
                 {turn.stage === 'loading' && <TypingDots />}
                 {turn.stage === 'thinking' && <Thinking onComplete={() => advance(turn.id, 'streaming')} />}
                 {(turn.stage === 'streaming' || turn.stage === 'done') && (
-                  <StreamingText onComplete={() => advance(turn.id, 'done')} />
+                  <>
+                    {turn.voice ? <VoiceNote seconds={22} style={styles.agentVoice} /> : null}
+                    <StreamingText onComplete={() => advance(turn.id, 'done')} />
+                  </>
                 )}
               </AgentLine>
             </View>
@@ -141,7 +159,11 @@ export default function AgentsScreen() {
         </Animated.ScrollView>
 
         <View style={[styles.promptWrap, { paddingBottom: keyboardUp ? spacing(1) : insets.bottom + spacing(1) }]}>
-          <PromptBar onSubmit={submitPrompt} editable={!busy} />
+          {recording ? (
+            <VoiceRecorder onSend={submitVoice} onCancel={() => setRecording(false)} />
+          ) : (
+            <PromptBar onSubmit={submitPrompt} onVoice={() => setRecording(true)} editable={!busy} />
+          )}
         </View>
       </KeyboardAvoidingView>
     </View>
@@ -177,10 +199,11 @@ const styles = StyleSheet.create({
   byline: { flexDirection: 'row', alignItems: 'center', gap: spacing(0.75) },
   bylineName: { ...type.label, color: colors.ink },
   bylineTime: { ...type.footnote, fontSize: 11, color: colors.inkMuted },
-  // Answers are unboxed — only the person's own messages get a bubble.
+  // Answers are unboxed. Only the person's own messages get a bubble.
   agentBody: { gap: spacing(1), paddingRight: spacing(2) },
   agentText: { ...type.body, color: colors.ink },
 
   promptText: { ...type.body, color: '#fff' },
+  agentVoice: { marginBottom: spacing(0.5) },
   promptWrap: { paddingHorizontal: spacing(2.5), paddingTop: spacing(1) },
 });

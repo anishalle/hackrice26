@@ -1,22 +1,14 @@
-import { useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
-import * as Haptics from 'expo-haptics';
 import Icon from './Icon';
+import VoteRail from './VoteRail';
 import { colors, spacing, radii, tagPalette, tagGlyph, type, softShadow } from '../theme';
 
 // Compact marketplace tile: symbol, name, author, description, tag + karma.
-export default function SkillCard({ skill, style }) {
-  const [vote, setVote] = useState(null); // null | 'up' | 'down'
-  const karma = skill.karma + (vote === 'up' ? 1 : vote === 'down' ? -1 : 0);
-  const palette = tagPalette[skill.tags[0]] ?? { bg: colors.bg, text: colors.inkMuted };
-
-  const toggleVote = (direction) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setVote((current) => (current === direction ? null : direction));
-  };
+export default function SkillCard({ skill, style, onPress }) {
+  const palette = tagPalette[skill.tags[0]] ?? { bg: colors.page, text: colors.inkMuted };
 
   return (
-    <View style={[styles.card, style]}>
+    <Pressable style={[styles.card, style]} onPress={onPress}>
       <View style={[styles.mark, { backgroundColor: palette.bg }]}>
         <Icon name={tagGlyph[skill.tags[0]]} size={20} color={palette.text} />
       </View>
@@ -33,17 +25,9 @@ export default function SkillCard({ skill, style }) {
           <Text style={[styles.tagText, { color: palette.text }]}>{skill.tags[0]}</Text>
         </View>
 
-        <View style={styles.voteRail}>
-          <Pressable hitSlop={8} onPress={() => toggleVote('up')}>
-            <Icon name="voteUp" size={12} color={vote === 'up' ? colors.ink : colors.inkMuted} />
-          </Pressable>
-          <Text style={[styles.karma, vote === 'up' && { color: colors.ink }]}>{karma}</Text>
-          <Pressable hitSlop={8} onPress={() => toggleVote('down')}>
-            <Icon name="voteDown" size={12} color={vote === 'down' ? colors.ink : colors.inkMuted} />
-          </Pressable>
-        </View>
+        <VoteRail karma={skill.karma} />
       </View>
-    </View>
+    </Pressable>
   );
 }
 
@@ -63,6 +47,4 @@ const styles = StyleSheet.create({
   footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing(0.5) },
   tag: { borderRadius: radii.pill, paddingVertical: 3, paddingHorizontal: 8, flexShrink: 1 },
   tagText: { ...type.caption },
-  voteRail: { flexDirection: 'row', alignItems: 'center', gap: spacing(0.5) },
-  karma: { ...type.caption, color: colors.ink, minWidth: 22, textAlign: 'center' },
 });

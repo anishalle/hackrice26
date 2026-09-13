@@ -1,14 +1,18 @@
-// Four accents and nothing else. `blue` and `agent` are sampled straight from
-// Axl's two blobatars, so the mascot and the interface share their hues.
+// Four accents and nothing else. `blue` is sampled from blobatar's own ramp:
+// it is the colour Axl wears, so the mascot and the interface share a hue.
 export const accents = {
   blue: '#B6D3FF',
   green: '#C8FFB7',
   purple: '#E0CDFF',
-  agent: '#FFCB72',
+  gold: '#F5E68A',
 };
 
 export const colors = {
-  bg: '#FBFAF8',        // near-white ground; cards are pure white on top of it
+  // Two grounds. `page` is the app's lilac; `bg` stays the warmer near-white
+  // and belongs to the chat alone. Bubble's tail mask is painted in it, so
+  // the two have to agree or the tail shows a seam.
+  page: '#ECE9F8',
+  bg: '#FBFAF8',
   surface: '#FFFFFF',
   ink: '#151515',
   inkMuted: '#7A7A74',
@@ -16,20 +20,20 @@ export const colors = {
   ...accents,
 };
 
-// Categories cycle the four accents. Text is always ink — a fifth and sixth
+// Categories cycle the four accents. Text is always ink. A fifth and sixth
 // hue for "legible version of the fill" is exactly the randomness we dropped.
 export const tagPalette = {
-  Speech: { bg: accents.agent, text: colors.ink },
+  Speech: { bg: accents.gold, text: colors.ink },
   Mobility: { bg: accents.green, text: colors.ink },
   Daily: { bg: accents.blue, text: colors.ink },
   Care: { bg: accents.purple, text: colors.ink },
   Voice: { bg: accents.purple, text: colors.ink },
   Automation: { bg: accents.blue, text: colors.ink },
   Sight: { bg: accents.green, text: colors.ink },
-  Hearing: { bg: accents.agent, text: colors.ink },
+  Hearing: { bg: accents.gold, text: colors.ink },
 };
 
-// Abstract line glyphs, one per category — the same family as the chevrons and
+// Abstract line glyphs, one per category, the same family as the chevrons and
 // the waveform. A picture of an eye or a pair of lungs carries detail nothing
 // else here has, which is what made the set look borrowed.
 export const tagGlyph = {

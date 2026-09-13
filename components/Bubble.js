@@ -3,7 +3,7 @@ import { colors } from '../theme';
 
 // iMessage bubble. The tail is the classic two-shape trick: a rounded blob
 // bleeding out of the bottom corner, then a page-colored mask carving the
-// concave curve back out of it. No SVG, no clipping — just two Views.
+// concave curve back out of it. No SVG, no clipping, just two Views.
 export default function Bubble({ side = 'left', color, style, children }) {
   const mine = side === 'right';
   const fill = color ?? (mine ? colors.ink : colors.surface);
