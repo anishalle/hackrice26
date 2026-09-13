@@ -1,7 +1,7 @@
 import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
-import { colors, type, spacing, radii, cardShadow } from '../theme';
+import { colors, fonts, type, spacing, radii, cardShadow } from '../theme';
 import AgentBlob, { AXL_HERO_SEED } from '../components/AgentBlob';
 import Icon from '../components/Icon';
 
@@ -42,6 +42,21 @@ export default function GetStartedScreen({ onStart }) {
       >
         <Text style={styles.ctaText}>Get started</Text>
         <Icon name="forward" size={16} color={colors.ink} />
+      </Pressable>
+
+      <Pressable
+        style={styles.login}
+        hitSlop={8}
+        onPress={() => {
+          Haptics.selectionAsync();
+          // No auth yet, so this lands in the same place as Get started rather
+          // than being a dead control in a demo.
+          onStart?.();
+        }}
+      >
+        <Text style={styles.loginText}>
+          Already have an account? <Text style={styles.loginLink}>Log in</Text>
+        </Text>
       </Pressable>
     </View>
   );
@@ -106,4 +121,8 @@ const styles = StyleSheet.create({
     ...cardShadow,
   },
   ctaText: { ...type.heading, color: colors.ink },
+
+  login: { paddingTop: spacing(2), paddingBottom: spacing(0.5) },
+  loginText: { ...type.callout, color: colors.inkMuted },
+  loginLink: { fontFamily: fonts.semibold, color: colors.ink },
 });

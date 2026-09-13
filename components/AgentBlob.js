@@ -1,6 +1,6 @@
 import { AnimatedBlobatar } from '@blobatar/react-native/animated';
 import { useEffect, useState } from 'react';
-import { idle, thinking, happy, sleepy } from 'blobatar/expression';
+import { idle, thinking, happy, sleepy, smug } from 'blobatar/expression';
 import { accents } from '../theme';
 
 // Axl's face. Blobatar seeds, pinned round so he matches the community blobs
@@ -14,7 +14,25 @@ import { accents } from '../theme';
 export const AXL_SEED = 'sarahw';
 export const AXL_HERO_SEED = 'mara';
 
-const ROUND = { shape: 0.05 };
+// Trait overrides are positions in [0,1) inside blobatar's own ranges.
+//
+// `eye.ratio` and `eye.rx` size both eyes; `eye.scale` and `eye.stretch` only
+// touch the second one, which is what makes the pair uneven by default. So the
+// eyes get long through ratio/rx, `eye.scale` is tuned to the value that lands
+// the second eye on the first's height, and `eye.lean` is straightened: a
+// tilted capsule has a wider, shorter bounding box, which is what made them
+// read short and fat. Measured, not guessed: 6.6 x 21 against a 100-unit
+// viewBox, h/w 3.2.
+const FACE = {
+  shape: 0.05,
+  'eye.ratio': 1,
+  'eye.rx': 1,
+  'eye.scale': 0.85,
+  'eye.stretch': 0,
+  'eye.lean': 0.5,
+  'eye.dy': 0.5,
+  'eye.lean2': 0.5,
+};
 
 // The seed picks the silhouette; the head colour is pinned so Axl is the same
 // blue whichever of the two shapes he is wearing.
@@ -55,8 +73,10 @@ function useBlink(enabled) {
   return shut;
 }
 
+// He narrows his eyes the moment a prompt lands, then settles into the
+// thinking rock while he works.
 const STAGE_EXPRESSION = {
-  loading: thinking,
+  loading: smug,
   thinking: thinking,
   streaming: happy,
   done: happy,
@@ -70,7 +90,7 @@ export default function AgentBlob({ seed = AXL_SEED, size = 40, stage, animate =
     <AnimatedBlobatar
       name={seed}
       size={size}
-      traits={ROUND}
+      traits={FACE}
       palette={PALETTE}
       expression={pose}
       animate={animate}

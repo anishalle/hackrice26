@@ -13,8 +13,8 @@ import BlobMark from '../components/BlobMark';
 const ACTIONS = [
   { key: 'Speech', label: 'Speech' },
   { key: 'Mobility', label: 'Mobility' },
-  { key: 'Daily', label: 'Daily living' },
-  { key: 'Care', label: 'Caregiving' },
+  { key: 'Daily', label: 'Daily' },
+  { key: 'Care', label: 'Care' },
 ];
 
 const HISTORY = [
@@ -115,6 +115,8 @@ export default function HomeScreen() {
               <Pressable key={a.key} style={styles.tile} onPress={openAgent}>
                 <BlobMark
                   seed={a.key}
+                  size={56}
+                  glyphSize={22}
                   fill={palette.bg}
                   glyph={tagGlyph[a.key]}
                   glyphColor={palette.text}
@@ -234,16 +236,16 @@ const styles = StyleSheet.create({
   tileScroll: { marginHorizontal: -spacing(2.5) },
   tileRow: { paddingHorizontal: spacing(2.5), gap: spacing(1.25) },
   tile: {
-    width: 136,
-    height: 136,
+    width: 150,
+    height: 150,
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     backgroundColor: colors.surface,
     borderRadius: radii.tile,
-    padding: spacing(1.75),
+    padding: spacing(2),
     ...softShadow,
   },
-  tileLabel: { ...type.bodyMedium, color: colors.ink },
+  tileLabel: { ...type.title, fontSize: 26, lineHeight: 30, color: colors.ink },
 
   historyHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   sectionTitle: { ...type.heading, color: colors.ink },
