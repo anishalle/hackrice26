@@ -1,185 +1,188 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { motion, useReducedMotion } from "motion/react";
-import { AXES, AXIS_SPECS, type Axis } from "@/lib/capability";
-import { AUTHORS, POSTS, type Post } from "@/lib/fixtures";
-import { useSession } from "@/lib/session";
-import { Annotation, Button, Panel, Rule } from "@/components/primitives";
+import { useState } from "react";
+import Link from "next/link";
+import { GazingAvatar } from "@/components/avatar-gaze";
 import { Avatar } from "@/components/avatar";
-import { VoiceStage } from "@/components/voice-stage";
-import { IconCheck, IconComment, IconSolved } from "@/components/icons";
+import { useSession } from "@/lib/session";
+import { HOME_FILTERS, SKILL_NOTES, CATEGORY_TONE } from "@/lib/skills";
+import {
+  CATEGORY_ICONS,
+  IconArrowRight,
+  IconMotor,
+  IconShield,
+  IconSpeech,
+  IconWall,
+} from "@/components/icons";
 
 /**
- * The social half.
+ * Home: the check-in, the four things the app is for, and what other people's
+ * skills actually did for them.
  *
- * Sorted by relevance to the reader's own profile rather than by recency — the
- * value of this network is that someone plotted like you already solved this.
+ * Translated from the phone app's home screen. The order is the argument: the
+ * check-in comes first because it is the one thing the app asks of you, the
+ * category tiles are the shortcut for people who arrived knowing what they
+ * wanted, and the skill notes are last because they are browsing rather than
+ * doing.
  */
-export default function FeedPage() {
-  const { profile, adaptation, hydrated } = useSession();
-  const reduce = useReducedMotion();
-  const animate = !reduce && !adaptation.reduceMotion;
 
-  // Axes where the reader needs support are the axes whose posts matter.
-  const relevantAxes = useMemo<Axis[]>(() => AXES.filter((a) => profile[a] < 3), [profile]);
+const TILES = [
+  { key: "Speech", label: "Speech", Icon: IconSpeech, tone: "amber" },
+  { key: "Mobility", label: "Mobility", Icon: IconMotor, tone: "mint" },
+  { key: "Daily", label: "Daily", Icon: IconWall, tone: "periwinkle" },
+  { key: "Care", label: "Care", Icon: IconShield, tone: "peach" },
+] as const;
 
-  const posts = useMemo(() => {
-    const score = (p: Post) => p.axes.filter((a) => relevantAxes.includes(a)).length;
-    return [...POSTS].sort((a, b) => score(b) - score(a) || b.worked - a.worked);
-  }, [relevantAxes]);
+export default function HomePage() {
+  const { patient } = useSession();
+  const [filter, setFilter] = useState<string>("All");
+  const first = patient.name.split(" ")[0];
 
-  // One decision per screen when the pace axis asks for it.
-  const visible = adaptation.oneThingAtATime ? posts.slice(0, 1) : posts;
-
-  // Non-visual profiles get a different interface, not a bigger one.
-  if (adaptation.voiceFirst) {
-    return (
-      <VoiceStage
-        label="Feed"
-        emptyLabel="Nothing in the feed yet."
-        items={posts.map((p) => ({
-          id: p.id,
-          meta: `${AUTHORS[p.authorId].name} · ${p.ago} · ${p.worked} say it worked`,
-          title: p.problem,
-          body: p.solution,
-        }))}
-      />
-    );
-  }
+  const notes =
+    filter === "All" ? SKILL_NOTES : SKILL_NOTES.filter((n) => n.tag === filter);
 
   return (
-    <div>
-      <div className="max-w-[36rem]">
-        <h1 className="display-sm text-[clamp(1.875rem,4vw,2.75rem)] text-balance">
-          How people plotted like you are solving it.
-        </h1>
-        {hydrated && relevantAxes.length > 0 ? (
-          <Annotation className="mt-4">
-            sorted by overlap with your profile &middot;{" "}
-            {relevantAxes.map((a) => AXIS_SPECS[a].title.toLowerCase()).join(", ")}
-          </Annotation>
-        ) : (
-          <p className="mt-4 text-[0.9375rem] leading-[1.6] text-[var(--text-2)]">
-            Sorted by how many people it worked for. Set an axis on your profile
-            and this reorders around what you actually need.
-          </p>
-        )}
-      </div>
+    <>
+      <header className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-[2.25rem] font-light leading-tight tracking-[-0.02em]">
+            Hi, {first}
+          </h1>
+          <p className="mt-1 text-[1rem] text-[var(--text-2)]">How can I help?</p>
+        </div>
+        <Link
+          href="/agent"
+          aria-label="Open the agent"
+          className="btn-lift target inline-flex items-center justify-center rounded-full"
+          style={{ backgroundColor: "var(--surface)", width: 48, height: 48 }}
+        >
+          <Avatar
+            seed={patient.avatar.seed}
+            hue={patient.avatar.hue}
+            tone={patient.avatar.tone}
+            expression={patient.avatar.expression}
+            size={28}
+          />
+        </Link>
+      </header>
 
-      <div className="mt-10 grid gap-5">
-        {visible.map((post, i) => (
-          <motion.div
-            key={post.id}
-            initial={animate ? { opacity: 0, y: 8 } : false}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.32, delay: animate ? Math.min(i, 4) * 0.04 : 0, ease: [0.16, 1, 0.3, 1] }}
+      {/* The check-in. The one thing the app asks for, so it gets the largest
+          surface on the screen and the only filled button above the fold. */}
+      <section className="axl-card mt-7 flex items-center gap-4 p-5">
+        <GazingAvatar
+          seed={patient.avatar.seed}
+          hue={patient.avatar.hue}
+          tone={patient.avatar.tone}
+          expression={patient.avatar.expression}
+          size={96}
+          travel={6}
+          className="block shrink-0"
+        />
+        <div className="min-w-0">
+          <h2 className="text-[1.125rem] font-semibold leading-snug tracking-[-0.01em]">
+            Your weekly check-in takes two minutes
+          </h2>
+          <Link
+            href="/agent"
+            className="btn-lift target mt-4 inline-flex items-center gap-2 rounded-[var(--r-pill)] px-6 text-[1.0625rem] font-semibold"
+            style={{ backgroundColor: "var(--signal-mint)", color: "var(--text)" }}
           >
-            <PostCard post={post} relevantAxes={relevantAxes} dense={adaptation.density !== "full"} />
-          </motion.div>
+            Check in
+            <IconArrowRight width={18} height={18} />
+          </Link>
+        </div>
+      </section>
+
+      <div className="mt-5 -mx-5 flex gap-3 overflow-x-auto px-5 pb-2">
+        {TILES.map(({ key, label, Icon, tone }) => (
+          <Link
+            key={key}
+            href="/marketplace"
+            className="axl-tile btn-lift flex shrink-0 flex-col justify-between p-5"
+            style={{ width: 150, height: 150 }}
+          >
+            <span
+              aria-hidden
+              className="inline-flex items-center justify-center rounded-full"
+              style={{ backgroundColor: `var(--signal-${tone})`, width: 40, height: 40 }}
+            >
+              <Icon width={20} height={20} />
+            </span>
+            <span className="text-[1.375rem] font-light tracking-[-0.02em]">{label}</span>
+          </Link>
         ))}
       </div>
 
-      {adaptation.oneThingAtATime && posts.length > 1 && (
-        <div className="mt-6">
-          <Annotation>
-            {posts.length - 1} more waiting. Your pace setting shows one at a time.
-          </Annotation>
+      <section className="mt-9">
+        <div className="flex items-baseline justify-between">
+          <h2 className="text-[1.125rem] font-semibold tracking-[-0.01em]">
+            Skills others built
+          </h2>
+          <Link href="/marketplace" className="text-[0.9375rem] text-[var(--text-2)]">
+            View all
+          </Link>
         </div>
-      )}
-    </div>
-  );
-}
 
-function PostCard({
-  post,
-  relevantAxes,
-  dense,
-}: {
-  post: Post;
-  relevantAxes: Axis[];
-  dense: boolean;
-}) {
-  const author = AUTHORS[post.authorId];
-  const [open, setOpen] = useState(false);
-  const [worked, setWorked] = useState(false);
-  const matches = post.axes.filter((a) => relevantAxes.includes(a));
+        <div className="mt-4 -mx-5 flex gap-2 overflow-x-auto px-5 pb-2">
+          {HOME_FILTERS.map((f) => {
+            const on = f === filter;
+            return (
+              <button
+                key={f}
+                type="button"
+                aria-pressed={on}
+                onClick={() => setFilter(f)}
+                className="btn-lift target shrink-0 rounded-[var(--r-pill)] px-5 text-[0.9375rem] font-medium"
+                style={{
+                  backgroundColor: on ? "var(--signal-mint)" : "var(--surface)",
+                  color: "var(--text)",
+                }}
+              >
+                {f}
+              </button>
+            );
+          })}
+        </div>
 
-  return (
-    <Panel as="article" className="p-6 sm:p-7">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        {/* Decorative: the byline right beside it already names the author. */}
-        <Avatar seed={author.id} size={30} />
-        <span className="text-[0.9375rem] font-medium">{author.name}</span>
-        {author.attested.length > 0 && (
-          <span
-            className="inline-flex items-center gap-1 font-mono text-[0.6875rem] uppercase tracking-[0.08em]"
-            style={{ color: "var(--accent)" }}
-            title={`${author.attested.map((a) => AXIS_SPECS[a].title).join(", ")} attested by a provider`}
-          >
-            <IconCheck width={12} height={12} />
-            attested
-          </span>
-        )}
-        <span className="font-mono text-[0.75rem] text-[var(--text-2)]">{post.ago}</span>
-        {matches.length > 0 && (
-          <span className="ml-auto font-mono text-[0.6875rem] uppercase tracking-[0.08em] text-[var(--brand)]">
-            matches your {matches.map((a) => AXIS_SPECS[a].title.toLowerCase()).join(" + ")}
-          </span>
-        )}
-      </div>
-
-      <h2 className="mt-4 text-[1.125rem] font-medium leading-[1.35] text-balance">{post.problem}</h2>
-
-      <p className="mt-3 text-[0.9375rem] leading-[1.65] text-[var(--text-2)]" style={{ maxWidth: "70ch" }}>
-        {post.solution}
-      </p>
-
-      {!dense && <Rule className="mt-5" />}
-
-      <div className="mt-4 flex flex-wrap items-center gap-2">
-        <Button
-          variant="quiet"
-          onClick={() => setWorked((w) => !w)}
-          aria-pressed={worked}
-          className="h-10 px-3 text-[0.8125rem]"
-          style={worked ? { color: "var(--accent)" } : undefined}
-        >
-          <IconSolved width={16} height={16} />
-          <span className="tabular-nums">{post.worked + (worked ? 1 : 0)}</span>
-          <span>worked for them</span>
-        </Button>
-
-        {post.comments.length > 0 && (
-          <Button
-            variant="quiet"
-            onClick={() => setOpen((o) => !o)}
-            aria-expanded={open}
-            className="h-10 px-3 text-[0.8125rem]"
-          >
-            <IconComment width={16} height={16} />
-            <span className="tabular-nums">{post.comments.length}</span>
-            <span>{open ? "hide replies" : "replies"}</span>
-          </Button>
-        )}
-      </div>
-
-      {open && post.comments.length > 0 && (
-        <ul className="mt-4 grid gap-4 border-l pl-5" style={{ borderColor: "var(--line)" }}>
-          {post.comments.map((c) => (
-            <li key={c.id}>
-              <div className="flex flex-wrap items-center gap-x-2.5">
-                <Avatar seed={c.authorId} size={22} />
-                <span className="text-[0.875rem] font-medium">{AUTHORS[c.authorId].name}</span>
-                <span className="font-mono text-[0.6875rem] text-[var(--text-2)]">{c.ago}</span>
-              </div>
-              <p className="mt-1 text-[0.875rem] leading-[1.6] text-[var(--text-2)]" style={{ maxWidth: "68ch" }}>
-                {c.body}
-              </p>
+        <ul className="mt-4 grid gap-3">
+          {notes.map((n) => {
+            const Glyph = CATEGORY_ICONS[n.tag];
+            return (
+            <li key={n.id}>
+              <Link
+                href="/marketplace"
+                className="axl-tile btn-lift flex items-center gap-3.5 p-4"
+              >
+                <span
+                  aria-hidden
+                  className="inline-flex shrink-0 items-center justify-center rounded-full"
+                  style={{
+                    backgroundColor: `var(--signal-${CATEGORY_TONE[n.tag]})`,
+                    width: 36,
+                    height: 36,
+                  }}
+                >
+                  <Glyph width={17} height={17} />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[1.0625rem] font-semibold tracking-[-0.01em]">
+                    {n.title}
+                  </span>
+                  <span className="mt-0.5 block text-[0.9375rem] leading-snug text-[var(--text-2)]">
+                    {n.note}
+                  </span>
+                </span>
+                <IconArrowRight
+                  width={18}
+                  height={18}
+                  className="shrink-0 text-[var(--text-3)]"
+                />
+              </Link>
             </li>
-          ))}
+            );
+          })}
         </ul>
-      )}
-    </Panel>
+      </section>
+    </>
   );
 }

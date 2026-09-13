@@ -2,12 +2,13 @@
 
 import { ViewTransition } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { AXES, AXIS_SPECS, fingerprint, stopFor } from "@/lib/capability";
-import { adaptationNotes, hasAdaptations } from "@/lib/adaptation";
+import { adaptationNotes, deriveAdaptation, hasAdaptations } from "@/lib/adaptation";
 import { routeVerification, blockedCount } from "@/lib/verification";
+import { trendsForAxis, type Trend } from "@/lib/patients";
 import { useSession } from "@/lib/session";
-import { useAvatarChoice } from "@/components/avatar";
 import { GazingAvatar } from "@/components/avatar-gaze";
 import { AxisPlot } from "@/components/axis-plot";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -15,82 +16,129 @@ import { Annotation, ButtonLink, Panel, PlotLabel, Rule } from "@/components/pri
 import { IconArrowLeft, IconArrowRight, IconBlocked } from "@/components/icons";
 
 /**
- * The signature surface. The profile plots live and its consequences annotate
- * themselves in the margin — the product's whole argument in one interaction.
+ * The record: one patient, their measurements, and the profile derived from them.
+ *
+ * The screen's argument is the pairing. Each axis is a control the clinician
+ * moves, and directly under it sit the numbers this patient's check-ins
+ * actually produced for that axis. Moving the speech axis with "speaking rate
+ * 132 wpm, down 6 this week" sitting beneath it is a decision with a reason
+ * attached; the same move on a screen that only showed the control would not
+ * be. The margin then answers with what the interface does about it, so the
+ * whole causal chain (measured, decided, rendered) is visible at once.
+ *
+ * The clinician's own interface deliberately does not adapt here. See the note
+ * on `adaptation` in lib/session.tsx.
  */
 export default function ProfilePage() {
-  const { profile, setAxis, setProfileComplete, adaptation, hydrated } = useSession();
+  const router = useRouter();
+  const { patient, profile, setAxis, setPreviewing, adaptation, hydrated } = useSession();
   const reduce = useReducedMotion();
   const notes = adaptationNotes(profile);
   const verdicts = routeVerification(profile);
   const blocked = blockedCount(verdicts);
   const adapted = hasAdaptations(profile);
   const animate = !reduce && !adaptation.reduceMotion;
-  const avatarChoice = useAvatarChoice();
+
+  // What the patient's app becomes, which is not what this screen is rendered
+  // at. Derived straight from the profile rather than read off the session, so
+  // the summary below is honest even though the clinician is not in a preview.
+  const theirs = deriveAdaptation(profile);
+
+  const openPreview = () => {
+    setPreviewing(true);
+    router.push("/feed");
+  };
 
   return (
     <main className="paper min-h-dvh">
       <div className="mx-auto max-w-[72rem] py-6 px-[var(--pad-x)]">
         <header className="flex items-center justify-between">
           <Link
-            href="/avatar"
-            className="target -ml-3 inline-flex items-center gap-2 px-3 font-mono text-[0.8125rem] tracking-[0.18em] uppercase text-[var(--text-2)] transition-colors hover:text-[var(--text)]"
+            href="/clinician"
+            className="btn-lift target -ml-3 inline-flex items-center gap-2 px-3 font-mono text-[0.8125rem] tracking-[0.18em] uppercase text-[var(--text-2)] hover:text-[var(--text)]"
           >
             <IconArrowLeft width={16} height={16} />
-            Blobatar
+            Caseload
           </Link>
           <ThemeToggle />
         </header>
 
-        <div className="mt-14 flex flex-col gap-7 sm:flex-row sm:items-start sm:gap-10">
-          {/* Decorative. The page is addressed to "you" throughout, so the face
-              is not carrying any identity a screen reader needs read out.
-
-              Shares a view-transition name with the customiser's face, so the
-              browser morphs the one element between the two pages rather than
-              tearing one down and building another. The name has to be unique
-              on screen at any moment — there is exactly one of these per page,
-              which is what makes it safe. */}
-          <ViewTransition name="blobatar">
-            <GazingAvatar {...avatarChoice} size={248} className="block shrink-0" />
-          </ViewTransition>
-
+        {/* Column-reverse below lg so the face still sits above the copy when
+            this stacks, even though the copy now comes first in the DOM. */}
+        <div className="mt-6 flex flex-col-reverse gap-7 lg:flex-row lg:items-start lg:justify-between lg:gap-10">
           <div className="max-w-[34rem]">
-            <PlotLabel>Step 2 of 4</PlotLabel>
-            <h1 className="mt-3 display-sm text-[clamp(2rem,4.5vw,3rem)]">
-              Plot your profile.
-            </h1>
+            <PlotLabel>Patient record</PlotLabel>
+            <h1 className="mt-3 display-sm text-[clamp(2rem,4.5vw,3rem)]">{patient.name}</h1>
+            <p className="mt-3 font-mono text-[0.8125rem] text-[var(--text-3)]">
+              {patient.diagnosis} &middot; {patient.since}
+            </p>
             <p className="prose-lg mt-5 text-[var(--text-2)]">
-              Everything starts at full. Move only the axes that aren&rsquo;t
-              true for you. Each change is answered in the margin with what the
-              product will do differently.
+              Every axis starts where you last left it. The numbers under each
+              one are what this patient&rsquo;s check-ins measured, so you are
+              moving a control with its evidence in front of you.
             </p>
           </div>
+
+          {/* Decorative: the page names the patient in text, so the face is not
+              carrying identity a screen reader needs read out. That is also why
+              it can sit after the copy in the DOM and be moved right visually. */}
+          <ViewTransition name="blobatar">
+            <GazingAvatar
+              seed={patient.avatar.seed}
+              hue={patient.avatar.hue}
+              tone={patient.avatar.tone}
+              expression={patient.avatar.expression}
+              size={372}
+              travel={6}
+              className="block h-auto max-w-full shrink-0"
+            />
+          </ViewTransition>
         </div>
 
-        <div className="mt-12 grid gap-10 lg:grid-cols-[minmax(0,1fr)_21rem] lg:gap-14">
-          {/* The chart */}
+        <div className="mt-8 grid gap-10 lg:grid-cols-[minmax(0,1fr)_21rem] lg:gap-14">
+          {/* The chart: control and evidence, axis by axis */}
           <Panel className="p-6 sm:p-8">
             <div className="flex items-baseline justify-between">
               <PlotLabel>Capability chart</PlotLabel>
-              <PlotLabel className="text-[var(--brand)]">{hydrated ? fingerprint(profile) : "·"}</PlotLabel>
+              <PlotLabel className="text-[var(--brand)]">
+                {hydrated ? fingerprint(profile) : "·"}
+              </PlotLabel>
             </div>
             <Rule className="mt-3" />
 
             <div className="mt-7 grid gap-9">
-              {AXES.map((axis) => (
-                <AxisPlot
-                  key={axis}
-                  axis={axis}
-                  value={profile[axis]}
-                  onChange={(level) => setAxis(axis, level)}
-                />
-              ))}
+              {AXES.map((axis) => {
+                const trends = trendsForAxis(patient, axis);
+                return (
+                  <div key={axis}>
+                    <AxisPlot
+                      axis={axis}
+                      value={profile[axis]}
+                      onChange={(level) => setAxis(axis, level)}
+                    />
+                    {trends.length > 0 && (
+                      /* Offset to sit under the track rather than the axis
+                         label, matching AxisPlot's own two-column split, so
+                         the evidence lines up with the control it explains. */
+                      <div className="mt-3 sm:grid sm:grid-cols-[11rem_1fr] sm:gap-6">
+                        <div aria-hidden />
+                        <ul className="grid gap-1.5">
+                          {trends.map((t) => (
+                            <li key={t.id}>
+                              <TrendLine trend={t} />
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </Panel>
 
           {/* The margin: consequences, drawn as they're decided */}
-          <aside className="lg:sticky lg:top-8 lg:self-start">
+          <aside className="lg:sticky lg:top-8 lg:self-start lg:pt-[1.625rem]">
             <PlotLabel>What changes</PlotLabel>
             <Rule className="mt-3" />
 
@@ -125,11 +173,25 @@ export default function ProfilePage() {
                     className="font-mono text-[0.75rem] leading-[1.6] text-[var(--text-2)]"
                   >
                     Nothing yet. At full on every axis the interface stays as it
-                    is, which is the point: the profile only ever adds routes,
-                    it never removes them.
+                    is, which is the point: the profile only ever adds routes, it
+                    never removes them.
                   </motion.p>
                 )}
               </AnimatePresence>
+            </div>
+
+            {/* The concrete numbers the profile produces. The margin above says
+                what changes in words; this says it in the units the app is
+                actually built in, which is what makes the preview predictable
+                rather than a surprise. */}
+            <div className="mt-8">
+              <Rule />
+              <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-3">
+                <Metric label="Type scale" value={`${theirs.typeScale}×`} />
+                <Metric label="Target size" value={`${theirs.targetSize}px`} />
+                <Metric label="Density" value={theirs.density} />
+                <Metric label="Leads with" value={theirs.voiceFirst ? "voice" : "screen"} />
+              </dl>
             </div>
 
             {blocked > 0 && (
@@ -144,8 +206,8 @@ export default function ProfilePage() {
                   <IconBlocked width={16} height={16} className="mt-0.5 shrink-0 text-[var(--brand)]" />
                   <p className="text-[0.875rem] leading-[1.55]">
                     <span className="font-mono tabular-nums text-[var(--brand)]">{blocked}</span> of{" "}
-                    <span className="font-mono tabular-nums">{verdicts.length}</span> standard identity
-                    checks would lock you out. The next step routes around them.
+                    <span className="font-mono tabular-nums">{verdicts.length}</span> standard
+                    identity checks would lock {patient.name.split(" ")[0]} out.
                   </p>
                 </div>
               </motion.div>
@@ -153,18 +215,98 @@ export default function ProfilePage() {
           </aside>
         </div>
 
+        {/* The check-ins the numbers came from. Last, because it is the
+            provenance rather than the decision. */}
+        <div className="mt-14">
+          <div className="flex items-baseline justify-between">
+            <PlotLabel>Check-in history</PlotLabel>
+            <PlotLabel className="text-[var(--text-3)]">
+              {patient.checkins.length}{" "}
+              <span className="lowercase tracking-normal">recorded</span>
+            </PlotLabel>
+          </div>
+          <Rule className="mt-3" major />
+
+          <ul className="mt-6 grid gap-px overflow-hidden rounded-[var(--r)] border border-[var(--line)] bg-[var(--line)]">
+            {patient.checkins.map((c) => (
+              <li key={c.id} className="bg-[var(--bg)] p-5 sm:p-6">
+                <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                  <h3 className="text-[0.9375rem] font-medium">{c.title}</h3>
+                  <span className="font-mono text-[0.75rem] text-[var(--text-3)]">{c.date}</span>
+                </div>
+                <p className="mt-2 max-w-[60ch] text-[0.875rem] leading-[1.55] text-[var(--text-2)]">
+                  {c.summary}
+                </p>
+                <ul className="mt-3 grid gap-1.5">
+                  {c.flags.map((f, i) => (
+                    <li key={i} className="flex items-center gap-2.5">
+                      <span
+                        aria-hidden
+                        className="h-2 w-2 shrink-0 rounded-full"
+                        style={{ backgroundColor: `var(--signal-${f.tone})` }}
+                      />
+                      <span className="font-mono text-[0.75rem] leading-[1.5] text-[var(--text-2)]">
+                        {f.text}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </li>
+            ))}
+          </ul>
+        </div>
+
         <div className="mt-12 flex flex-wrap items-center gap-4">
-          <ButtonLink href="/identity" className="h-12" onClick={() => setProfileComplete(true)}>
-            Continue to verification
+          <button
+            type="button"
+            onClick={openPreview}
+            className="btn-lift target inline-flex h-12 items-center justify-center gap-2 rounded-[var(--r-pill)] bg-[var(--solid)] px-7 text-[0.9375rem] font-medium text-[var(--solid-ink)]"
+          >
+            Open the app as {patient.name.split(" ")[0]}
+            <IconArrowRight width={18} height={18} />
+          </button>
+          <ButtonLink href="/records" variant="secondary" className="h-12">
+            Full record
             <IconArrowRight width={18} height={18} />
           </ButtonLink>
+          <ButtonLink href="/clinician" variant="quiet" className="h-12">
+            Back to caseload
+          </ButtonLink>
           <p className="font-mono text-[0.75rem] text-[var(--text-2)]">
-            You can change any axis later without re-verifying.
+            The preview renders the real app at this profile. You can leave it at
+            any time.
           </p>
         </div>
 
         <div className="h-16" />
       </div>
     </main>
+  );
+}
+
+/** One measurement, tinted by how it is moving. */
+function TrendLine({ trend }: { trend: Trend }) {
+  return (
+    <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+      <span
+        aria-hidden
+        className="h-2 w-2 shrink-0 translate-y-[-1px] rounded-full"
+        style={{ backgroundColor: `var(--signal-${trend.tone})` }}
+      />
+      <span className="font-mono text-[0.75rem] text-[var(--text-2)]">{trend.label}</span>
+      <span className="font-mono text-[0.75rem] tabular-nums font-medium">{trend.value}</span>
+      <span className="font-mono text-[0.75rem] text-[var(--text-3)]">{trend.delta}</span>
+    </div>
+  );
+}
+
+function Metric({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <dt className="font-mono text-[0.625rem] uppercase tracking-[0.12em] text-[var(--text-3)]">
+        {label}
+      </dt>
+      <dd className="mt-1 font-mono text-[0.875rem] tabular-nums">{value}</dd>
+    </div>
   );
 }

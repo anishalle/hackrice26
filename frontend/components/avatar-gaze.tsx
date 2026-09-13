@@ -35,8 +35,12 @@ export function GazingAvatar({
   className,
 }: AvatarProps & { travel?: number }) {
   const { adaptation } = useSession();
-  const { ref, lookAt } = useGaze({ travel });
   const still = adaptation.reduceMotion;
+  // Declaring the target here rather than only aiming from the click handler
+  // below is the difference between eyes that follow the cursor from the moment
+  // the page loads and eyes that sit dead until you happen to click once. The
+  // driver is armed by mounting but aimed by asking, and nothing was asking.
+  const { ref, lookAt } = useGaze({ travel, lookAt: still ? null : "pointer" });
 
   // A brief expression that overrides the chosen one, then releases. Held in
   // a ref as well as state so an unmount mid-flash cannot fire setState on a
@@ -56,12 +60,18 @@ export function GazingAvatar({
     flashTimer.current = setTimeout(() => setFlash(null), 900);
   }, [still, clearFlash]);
 
-  // A click anywhere on the page pulls his attention to the spot, then hands
-  // him back to the cursor. Pointer events rather than mouse so a tap does the
-  // same thing, and passive because this never needs to preventDefault.
+  // A click anywhere on the page pulls his attention to the spot and startles
+  // him, then hands him back to the cursor. Both halves are deliberately
+  // page-wide: the startle used to be an onPointerDown on the face itself, so
+  // he only noticed clicks that landed on him. Pointer events rather than mouse
+  // so a tap does the same thing, and passive because this never needs to
+  // preventDefault.
   useEffect(() => {
     if (still) return;
-    const glance = (e: PointerEvent) => lookAt({ x: e.clientX, y: e.clientY });
+    const glance = (e: PointerEvent) => {
+      lookAt({ x: e.clientX, y: e.clientY });
+      poke();
+    };
     const release = () => lookAt("pointer");
     window.addEventListener("pointerdown", glance, { passive: true });
     window.addEventListener("pointerup", release, { passive: true });
@@ -69,7 +79,7 @@ export function GazingAvatar({
       window.removeEventListener("pointerdown", glance);
       window.removeEventListener("pointerup", release);
     };
-  }, [still, lookAt]);
+  }, [still, lookAt, poke]);
 
   const active = flash ?? expression;
   const shared = {
@@ -88,5 +98,5 @@ export function GazingAvatar({
   // and the face renders still. The profile that asks for calm gets calm.
   if (still) return <Blobatar {...shared} animate="hover" />;
 
-  return <Blobatar ref={ref} {...shared} animate="always" onPointerDown={poke} />;
+  return <Blobatar ref={ref} {...shared} animate="always" />;
 }

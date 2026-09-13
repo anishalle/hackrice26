@@ -137,6 +137,31 @@ export const IconSolved = (p: IconProps) => (
   </Icon>
 );
 
+export const IconSearch = (p: IconProps) => (
+  <Icon {...p}>
+    <circle cx="11" cy="11" r="6.5" />
+    <path d="m15.8 15.8 4 4" />
+  </Icon>
+);
+
+export const IconChevronUp = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="m6 14.5 6-6 6 6" />
+  </Icon>
+);
+
+export const IconChevronDown = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="m6 9.5 6 6 6-6" />
+  </Icon>
+);
+
+export const IconPlus = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M12 5v14M5 12h14" />
+  </Icon>
+);
+
 export const IconSun = (p: IconProps) => (
   <Icon {...p}>
     <circle cx="12" cy="12" r="5" />
@@ -173,6 +198,21 @@ export const IconWall = (p: IconProps) => (
     <rect x="13.5" y="13.5" width="7" height="7" rx="2" />
   </Icon>
 );
+
+/**
+ * One glyph per marketplace category, so a skill never has to choose an icon
+ * and the set stays visually closed. Mirrors the phone app's tag glyphs: the
+ * abstract line family rather than pictures of body parts, which is what made
+ * the earlier set look borrowed.
+ */
+export const CATEGORY_ICONS = {
+  Speech: IconSpeech,
+  Voice: IconMic,
+  Mobility: IconMotor,
+  Daily: IconWall,
+  Care: IconShield,
+  Automation: IconAgent,
+} as const;
 
 export const AXIS_ICONS = {
   vision: IconVision,

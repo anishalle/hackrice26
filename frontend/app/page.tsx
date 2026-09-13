@@ -127,8 +127,8 @@ export default function Home() {
           </p>
 
           <motion.div {...rise(0.34)} className="mt-10 flex">
-            <ButtonLink href="/avatar" className="h-13 rounded-full px-7 text-[1rem]">
-              Plot your profile
+            <ButtonLink href="/clinician" className="h-13 rounded-full px-7 text-[1rem]">
+              Open the clinician view
               <IconArrowRight width={18} height={18} />
             </ButtonLink>
           </motion.div>

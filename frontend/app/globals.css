@@ -65,6 +65,18 @@
   --duo-light: #f2effc;
   --duo-sun: #ffe3c4;
 
+  /* The companion app's four signal accents, carried across from the React
+     Native theme rather than re-picked here, so a clinician reading a trend and
+     the patient reading the same trend on their phone see one colour for it.
+     They sit in a narrow luminance band on purpose: no one signal is allowed to
+     shout over the others, because the clinician decides what matters, not the
+     palette. Peach is the only one that reads as an alarm, and it is reserved
+     for a signal that has already crossed. */
+  --signal-amber: #f8c98a;
+  --signal-mint: #a2e3c0;
+  --signal-periwinkle: #afc6f7;
+  --signal-peach: #f8b4a8;
+
   --type-scale: 1;
   --target: 44px;
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
@@ -538,6 +550,57 @@ a {
 [data-motion="reduced"] .btn-lift:hover,
 [data-motion="reduced"] .btn-lift:active {
   transform: none !important;
+}
+
+/* --- The companion app's surface ---------------------------------------------
+   A scoped retheme, not a second design system. Everything inside `.axl` is the
+   phone app translated to the web: the same lilac page, the same warm-white
+   cards, the same four accents, the same generous corner radii.
+
+   It is a token override rather than a parallel set of components, so a card in
+   here is still `.card` and a pill is still `--r-pill`. That is what keeps the
+   clinician's screens and the patient's screens from drifting into two
+   codebases that happen to share a repo.
+
+   Deliberately light-only. The phone app has no dark mode, and a themed version
+   of someone else's design is not the same design. The app shell drops the
+   theme toggle inside this scope for the same reason.
+   ---------------------------------------------------------------------------- */
+.axl {
+  --bg: #ece9f8;
+  --surface: #ffffff;
+  --surface-2: #fbfaf8;
+
+  --text: #151515;
+  --text-2: #6f6f6a;
+  --text-3: #9a9a94;
+
+  --line: #eceae4;
+  --line-soft: #f3f1ec;
+
+  --solid: #151515;
+  --solid-ink: #ffffff;
+
+  /* Corners are the loudest single thing about the phone app's look. */
+  --r: 28px;
+  --r-sm: 20px;
+
+  background-color: var(--bg);
+  color: var(--text);
+}
+
+/* The card shadow, carried across. Soft and low-contrast: it lifts a card off
+   the lilac without ever reading as a drop shadow. */
+.axl-card {
+  background-color: var(--surface);
+  border-radius: var(--r);
+  box-shadow: 0 8px 20px rgb(21 21 21 / 6%);
+}
+
+.axl-tile {
+  background-color: var(--surface);
+  border-radius: var(--r-sm);
+  box-shadow: 0 3px 10px rgb(21 21 21 / 4%);
 }
 
 /* --- Utilities ---------------------------------------------------------------- */

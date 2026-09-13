@@ -1,159 +1,194 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { AXES, AXIS_SPECS, type Axis } from "@/lib/capability";
-import { AGENT_TASKS, type AgentTask } from "@/lib/fixtures";
+import { useState } from "react";
+import Link from "next/link";
+import { GazingAvatar } from "@/components/avatar-gaze";
 import { useSession } from "@/lib/session";
-import { Annotation, Button, Panel, Rule } from "@/components/primitives";
-import { VoiceStage } from "@/components/voice-stage";
-import { IconAgent, IconArrowRight, IconCheck, IconMic } from "@/components/icons";
-
-type RunState = "idle" | "running" | "done";
+import { IconArrowLeft, IconArrowRight, IconMic, IconPlus } from "@/components/icons";
 
 /**
- * The assistive half. Tasks are ordered by how much this person's profile says
- * they'd want to hand off, and each names the axis that makes it worth
- * delegating — the agent explains why it is offering, not just what.
+ * Axl: the agent, as a conversation.
+ *
+ * Translated from the phone app's chat screen. The shape carries an argument
+ * about what an agent is allowed to be: the agent's turns are plain text with
+ * no bubble, and only the person's own words get a container. An agent that
+ * speaks in the same bubble as you are speaking in is presenting itself as a
+ * peer in the conversation, and this one is a tool that answers.
+ *
+ * Two things sit under an answer that used data. The sources it drew on, named
+ * rather than implied, and the actions it can take next. Both are the same
+ * move: the agent showing its work before it is trusted to act.
  */
-export default function AgentPage() {
-  const { profile, adaptation, hydrated } = useSession();
-  const reduce = useReducedMotion();
-  const animate = !reduce && !adaptation.reduceMotion;
 
-  const relevantAxes = useMemo<Axis[]>(() => AXES.filter((a) => profile[a] < 3), [profile]);
-
-  const tasks = useMemo(() => {
-    const score = (t: AgentTask) => t.axes.filter((a) => relevantAxes.includes(a)).length;
-    return [...AGENT_TASKS].sort((a, b) => score(b) - score(a));
-  }, [relevantAxes]);
-
-  const visible = adaptation.oneThingAtATime ? tasks.slice(0, 1) : tasks;
-
-  if (adaptation.voiceFirst) {
-    return (
-      <VoiceStage
-        label="Agent"
-        emptyLabel="No tasks available."
-        items={tasks.map((t) => ({
-          id: t.id,
-          meta: t.duration,
-          title: t.title,
-          body: t.detail,
-        }))}
-      />
-    );
-  }
-
-  return (
-    <div>
-      <div className="max-w-[36rem]">
-        <h1 className="display-sm text-[clamp(1.875rem,4vw,2.75rem)] text-balance">
-          Hand it the parts that used to be fast.
-        </h1>
-        <p className="mt-4 text-[0.9375rem] leading-[1.6] text-[var(--text-2)]">
-          {hydrated && adaptation.voiceInputUnavailable
-            ? "Every task here is startable without speaking. Your profile says voice input isn't a route we should rely on."
-            : "Start any of these by tapping, or hold anywhere on the page and just say it."}
-        </p>
-      </div>
-
-      <div className="mt-10 grid gap-4">
-        {visible.map((task, i) => (
-          <motion.div
-            key={task.id}
-            initial={animate ? { opacity: 0, y: 8 } : false}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.32, delay: animate ? Math.min(i, 4) * 0.04 : 0, ease: [0.16, 1, 0.3, 1] }}
-          >
-            <TaskRow task={task} relevantAxes={relevantAxes} animate={animate} />
-          </motion.div>
-        ))}
-      </div>
-
-      <div className="mt-10">
-        <Rule />
-        <div className="mt-5 flex gap-3">
-          <IconMic width={17} height={17} className="mt-0.5 shrink-0 text-[var(--text-2)]" />
-          <p className="max-w-[40rem] text-[0.875rem] leading-[1.6] text-[var(--text-2)]">
-            In voice-first mode the agent stops being a tab and becomes how the
-            whole app is operated. It reads the feed aloud, drafts replies in
-            your voice, and posts them when you say go.
-          </p>
-        </div>
-      </div>
-    </div>
-  );
+interface Turn {
+  id: string;
+  from: "axl" | "you";
+  at: string;
+  text: string;
+  sources?: string[];
+  actions?: string[];
 }
 
-function TaskRow({
-  task,
-  relevantAxes,
-  animate,
-}: {
-  task: AgentTask;
-  relevantAxes: Axis[];
-  animate: boolean;
-}) {
-  const [state, setState] = useState<RunState>("idle");
-  const matches = task.axes.filter((a) => relevantAxes.includes(a));
+export default function AgentPage() {
+  const { patient, previewing } = useSession();
+  const first = patient.name.split(" ")[0];
 
-  function start() {
-    setState("running");
-    window.setTimeout(() => setState("done"), 1400);
-  }
+  const [turns, setTurns] = useState<Turn[]>([
+    {
+      id: "t1",
+      from: "axl",
+      at: "2:25 am",
+      text: `Hi, I'm Axl.\n\nAsk me to handle something: a refill, a form, a ride. Or tell me how the week has gone and I will log it.`,
+    },
+  ]);
+  const [draft, setDraft] = useState("");
+
+  const send = (e: React.FormEvent) => {
+    e.preventDefault();
+    const text = draft.trim();
+    if (!text) return;
+    setDraft("");
+    setTurns((t) => [
+      ...t,
+      { id: `u${t.length}`, from: "you", at: "2:25 am", text },
+      {
+        id: `a${t.length}`,
+        from: "axl",
+        at: "2:25 am",
+        text: `Start now, in short sittings rather than one long one. Your check-in audio already gives me 1,240 phrases, and your rate has been flat for three weeks, so there is room. I can add Voice Bank Builder and have it record whenever your voice is steady, so you never schedule a sitting.`,
+        sources: ["Your check-ins", "Community skills", "ALS Association"],
+        actions: ["Add Voice Bank Builder", "Show me my speech trend"],
+      },
+    ]);
+  };
 
   return (
-    <Panel as="article" className="p-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2.5">
-            <IconAgent width={17} height={17} className="shrink-0 text-[var(--text-2)]" />
-            <h2 className="text-[1.0625rem] font-medium">{task.title}</h2>
-          </div>
-          <p className="mt-2 text-[0.9375rem] leading-[1.55] text-[var(--text-2)]" style={{ maxWidth: "62ch" }}>
-            {task.detail}
-          </p>
-          <p className="mt-2.5 font-mono text-[0.75rem] text-[var(--text-2)]">{task.duration}</p>
+    <div className="flex min-h-[calc(100dvh-10rem)] flex-col">
+      <header className="flex items-center gap-3">
+        <Link
+          href="/feed"
+          aria-label="Back"
+          className="btn-lift target inline-flex items-center justify-center rounded-full"
+          style={{ backgroundColor: "var(--surface)", width: 44, height: 44 }}
+        >
+          <IconArrowLeft width={18} height={18} />
+        </Link>
 
-          {matches.length > 0 && (
-            <Annotation className="mt-3">
-              offered because of your{" "}
-              {matches.map((a) => AXIS_SPECS[a].title.toLowerCase()).join(" and ")} axis
-            </Annotation>
-          )}
-        </div>
+        <h1 className="flex-1 text-center text-[1.125rem] font-semibold tracking-[-0.01em]">
+          Axl
+        </h1>
 
-        <div className="shrink-0">
-          <AnimatePresence mode="wait" initial={false}>
-            {state === "done" ? (
-              <motion.p
-                key="done"
-                initial={animate ? { opacity: 0, scale: 0.96 } : false}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
-                className="inline-flex h-11 items-center gap-2 px-2 font-mono text-[0.8125rem]"
-                style={{ color: "var(--accent)" }}
-              >
-                <IconCheck width={17} height={17} />
-                Started
-              </motion.p>
+        <span
+          className="inline-flex items-center rounded-[var(--r-pill)] px-4 py-2 text-[0.9375rem] font-medium"
+          style={{ backgroundColor: "var(--signal-mint)" }}
+        >
+          Gaze
+        </span>
+      </header>
+
+      <div className="mt-8 flex-1">
+        <ul className="grid gap-7">
+          {turns.map((t) =>
+            t.from === "axl" ? (
+              <li key={t.id}>
+                <div className="flex items-center gap-2.5">
+                  <GazingAvatar
+                    seed="axl-agent"
+                    hue={250}
+                    tone={0.6}
+                    expression="idle"
+                    size={34}
+                    travel={5}
+                    className="block shrink-0"
+                  />
+                  <span className="font-mono text-[0.8125rem] text-[var(--text-3)]">{t.at}</span>
+                </div>
+
+                <p className="mt-3 whitespace-pre-line text-[1.0625rem] leading-[1.55]">
+                  {t.text}
+                </p>
+
+                {t.sources && (
+                  <ul className="mt-4 flex flex-wrap gap-2">
+                    {t.sources.map((s) => (
+                      <li
+                        key={s}
+                        className="rounded-[var(--r-pill)] px-3.5 py-1.5 text-[0.875rem]"
+                        style={{ backgroundColor: "var(--surface)" }}
+                      >
+                        {s}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
+                {t.actions && (
+                  <ul className="mt-3 grid justify-end gap-2.5">
+                    {t.actions.map((a) => (
+                      <li key={a}>
+                        <button
+                          type="button"
+                          className="btn-lift target inline-flex items-center gap-3 rounded-[var(--r-pill)] px-5 text-[1rem] font-medium"
+                          style={{ backgroundColor: "var(--surface)" }}
+                        >
+                          {a}
+                          <IconArrowRight width={17} height={17} className="text-[var(--text-3)]" />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </li>
             ) : (
-              <motion.div key="idle" exit={animate ? { opacity: 0 } : undefined}>
-                <Button
-                  variant="secondary"
-                  onClick={start}
-                  disabled={state === "running"}
-                  className="h-11"
+              <li key={t.id} className="flex justify-end">
+                <p
+                  className="max-w-[80%] rounded-[1.5rem] px-5 py-3 text-[1.0625rem] leading-snug"
+                  style={{ backgroundColor: "var(--solid)", color: "var(--solid-ink)" }}
                 >
-                  {state === "running" ? "Starting…" : "Hand off"}
-                  {state === "idle" && <IconArrowRight width={17} height={17} />}
-                </Button>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+                  {t.text}
+                </p>
+              </li>
+            ),
+          )}
+        </ul>
       </div>
-    </Panel>
+
+      {/* Sits above the tab bar rather than pinned to the bottom of the window,
+          because the tab bar is already floating there. */}
+      <form onSubmit={send} className="sticky bottom-28 mt-8">
+        <div
+          className="flex items-center gap-2 rounded-[var(--r-pill)] py-2 pl-4 pr-2"
+          style={{ backgroundColor: "var(--surface)", boxShadow: "0 6px 18px rgb(21 21 21 / 7%)" }}
+        >
+          <button
+            type="button"
+            aria-label="Attach"
+            className="target inline-flex items-center justify-center text-[var(--text-3)]"
+          >
+            <IconPlus width={19} height={19} />
+          </button>
+
+          <label className="sr-only" htmlFor="axl-message">
+            Message Axl
+          </label>
+          <input
+            id="axl-message"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder={previewing ? `Message Axl as ${first}` : "Message Axl"}
+            className="min-w-0 flex-1 bg-transparent py-2 text-[1.0625rem] outline-none placeholder:text-[var(--text-3)]"
+          />
+
+          <button
+            type="submit"
+            aria-label="Send"
+            className="btn-lift inline-flex shrink-0 items-center justify-center rounded-full"
+            style={{ backgroundColor: "var(--solid)", color: "var(--solid-ink)", width: 44, height: 44 }}
+          >
+            <IconMic width={19} height={19} />
+          </button>
+        </div>
+      </form>
+    </div>
   );
 }

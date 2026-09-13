@@ -195,7 +195,10 @@ export function VoiceLayer() {
         onPointerUp={release}
         onPointerLeave={() => active.current && release()}
         aria-label="Hold to talk to the agent"
-        className="fixed bottom-6 right-6 z-40 flex h-14 items-center gap-3 px-5 text-[0.9375rem] font-medium shadow-[0_2px_16px_-4px_rgba(0,0,0,0.25)] transition-transform duration-150 active:scale-[0.97]"
+        /* bottom-28 clears the floating tab bar, which is centred at the foot of
+           every app screen. At bottom-6 the two overlapped and the hold-to-talk
+           button covered a whole tab. */
+        className="fixed bottom-28 right-6 z-40 flex h-14 items-center gap-3 px-5 text-[0.9375rem] font-medium shadow-[0_2px_16px_-4px_rgba(0,0,0,0.25)] transition-transform duration-150 active:scale-[0.97]"
         style={{ backgroundColor: "var(--brand)", color: "var(--surface)", borderRadius: 999 }}
       >
         <IconMic width={20} height={20} />

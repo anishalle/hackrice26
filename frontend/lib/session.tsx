@@ -3,9 +3,15 @@
 import { useCallback, useEffect, useMemo, useSyncExternalStore, type ReactNode } from "react";
 import { DEFAULT_PROFILE, type Attestation, type Axis, type Level, type Profile } from "./capability";
 import { deriveAdaptation, type Adaptation } from "./adaptation";
+import { DEFAULT_CLINICIAN_ID } from "./care";
+import { FOCUS_PATIENT_ID, resolvePatient, type Patient } from "./patients";
 import type { ModalityId } from "./verification";
 
-const STORAGE_KEY = "axis.session.v1";
+/* Bumped from axis.session.v1 with the rebrand, and again because the shape
+   changed: a single `profile` became per-patient overrides. An old payload
+   would have restored a `profile` key this no longer reads, leaving a session
+   that looked restored and behaved default. */
+const STORAGE_KEY = "aide.session.v2";
 
 /**
  * The chosen blobatar.
@@ -26,7 +32,34 @@ export interface AvatarChoice {
 export type ExpressionId = "idle" | "happy" | "sad" | "mad" | "surprised";
 
 export interface SessionState {
-  profile: Profile;
+  /**
+   * Which clinician is doing the looking.
+   *
+   * A real deployment reads this from the session the provider authenticated
+   * into and never lets the client choose it. Here it is switchable on purpose:
+   * the access rules are the product, and a demo that could only ever show one
+   * viewer's version of a record could not show them working.
+   */
+  viewerClinicianId: string;
+  /** Whose record the clinician currently has open. */
+  activePatientId: string;
+  /**
+   * Clinician edits layered over the fixture profiles, keyed by patient id.
+   * Sparse on purpose: a patient with no entry here reads as the profile they
+   * arrived with, so "not yet reviewed" and "reviewed and left alone" stay
+   * distinguishable.
+   */
+  patientProfiles: Record<string, Profile>;
+  /**
+   * Whether the viewer is currently seeing the app *as* the active patient.
+   *
+   * This is what keeps the clinician's own interface stable. The adaptation
+   * drives document-level type scale and target size, so a screen that followed
+   * the patient's profile unconditionally would grow the doctor's buttons every
+   * time they moved an axis. Previewing is entered deliberately and left the
+   * same way.
+   */
+  previewing: boolean;
   profileComplete: boolean;
   avatar: AvatarChoice;
   avatarChosen: boolean;
@@ -48,7 +81,10 @@ export const DEFAULT_AVATAR: AvatarChoice = {
 };
 
 const INITIAL: SessionState = {
-  profile: { ...DEFAULT_PROFILE },
+  viewerClinicianId: DEFAULT_CLINICIAN_ID,
+  activePatientId: FOCUS_PATIENT_ID,
+  patientProfiles: {},
+  previewing: false,
   profileComplete: false,
   avatar: { ...DEFAULT_AVATAR },
   avatarChosen: false,
@@ -114,6 +150,11 @@ function hydrate() {
     ...INITIAL,
     ...restored,
     avatar: { ...DEFAULT_AVATAR, ...(restored.avatar ?? {}) },
+    patientProfiles: { ...(restored.patientProfiles ?? {}) },
+    // Never restore into a preview. Previewing swaps the whole interface for
+    // someone else's, and coming back to a reloaded tab already inside one,
+    // with no memory of having entered it, reads as the app being broken.
+    previewing: false,
     hydrated: true,
   };
   emit();
@@ -122,7 +163,14 @@ function hydrate() {
 /* -------------------------------------------------------------------------- */
 
 export interface Session extends SessionState {
+  /** The patient whose record is open, resolved against the fixture set. */
+  patient: Patient;
+  /** That patient's profile including any clinician edits. */
+  profile: Profile;
   adaptation: Adaptation;
+  setActivePatient: (id: string) => void;
+  setViewerClinician: (id: string) => void;
+  setPreviewing: (v: boolean) => void;
   setAxis: (axis: Axis, level: Level) => void;
   setProfileComplete: (v: boolean) => void;
   setVerifiedWith: (m: ModalityId | null) => void;
@@ -158,8 +206,29 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 export function useSession(): Session {
   const snapshot = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
+  // Writes land on the active patient's overrides, seeded from the profile they
+  // arrived with so a single moved axis does not reset the other four to full.
   const setAxis = useCallback((axis: Axis, level: Level) => {
-    update((s) => ({ ...s, profile: { ...s.profile, [axis]: level } }));
+    update((s) => {
+      const target = resolvePatient(s.activePatientId);
+      const current = s.patientProfiles[target.id] ?? target.profile;
+      return {
+        ...s,
+        patientProfiles: { ...s.patientProfiles, [target.id]: { ...current, [axis]: level } },
+      };
+    });
+  }, []);
+
+  const setActivePatient = useCallback((id: string) => {
+    update((s) => ({ ...s, activePatientId: id, previewing: false }));
+  }, []);
+
+  const setViewerClinician = useCallback((id: string) => {
+    update((s) => ({ ...s, viewerClinicianId: id }));
+  }, []);
+
+  const setPreviewing = useCallback((v: boolean) => {
+    update((s) => ({ ...s, previewing: v }));
   }, []);
 
   const setProfileComplete = useCallback((v: boolean) => {
@@ -202,17 +271,44 @@ export function useSession(): Session {
   const reset = useCallback(() => {
     update(() => ({
       ...INITIAL,
-      profile: { ...DEFAULT_PROFILE },
+      patientProfiles: {},
       avatar: { ...DEFAULT_AVATAR },
       hydrated: true,
     }));
   }, []);
 
-  const adaptation = useMemo(() => deriveAdaptation(snapshot.profile), [snapshot.profile]);
+  const patient = useMemo(
+    () => resolvePatient(snapshot.activePatientId),
+    [snapshot.activePatientId],
+  );
+
+  const profile = useMemo(
+    () => snapshot.patientProfiles[patient.id] ?? patient.profile,
+    [snapshot.patientProfiles, patient],
+  );
+
+  /*
+   * Only a preview adapts the document.
+   *
+   * `adaptation` reaches the root as type scale, target size, density and
+   * contrast, so deriving it from the open patient unconditionally would mean a
+   * clinician's own buttons growing as they moved someone else's motor axis.
+   * Outside a preview the viewer gets the default interface; inside one they
+   * get the patient's, which is the entire point of entering it.
+   */
+  const adaptation = useMemo(
+    () => deriveAdaptation(snapshot.previewing ? profile : DEFAULT_PROFILE),
+    [snapshot.previewing, profile],
+  );
 
   return {
     ...snapshot,
+    patient,
+    profile,
     adaptation,
+    setActivePatient,
+    setViewerClinician,
+    setPreviewing,
     setAxis,
     setProfileComplete,
     setVerifiedWith,
