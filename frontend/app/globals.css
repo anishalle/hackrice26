@@ -1,0 +1,618 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* ---------------------------------------------------------------------------
+   Aide — light lilac paper, deep violet ink.
+
+   The paper started as river.ai's warm cream #F2E9D6 and their navy ink
+   #0E2F7E. The paper moved to lilac first, and the navy held on it — both are
+   cool — but held is not the same as belonging: a blue ink on a violet ground
+   reads as two decisions rather than one. So the ink now sits in the paper's
+   own hue family, dark enough to carry the same weight the navy did.
+
+   Persona's #3f48fd still carries the primary action. It is close to the ink in
+   hue now, which is fine because lightness is what separates them: the ink is
+   ~12:1 against the paper and the brand is a bright mid-tone, so the button
+   never reads as a run of text.
+
+   Measured against --bg #ece9f8:
+     --text 12.1:1 · --text-2 8.4:1 · --text-3 4.8:1 · --brand 4.9:1
+
+   The landing page does not use this palette — it is pinned dark. See the
+   scoped block below.
+   --------------------------------------------------------------------------- */
+
+:root,
+[data-theme="light"] {
+  --bg: #ece9f8;
+  --bg-deep: #ddd8f0;
+  --surface: #f6f4fd;
+  --surface-2: #e3dff5;
+  --line: #cbc4e7;
+  --line-soft: #ded9f1;
+
+  --text: #2f1a63;
+  --text-2: #4a3288;
+  /* 4.8:1 on --bg. This is the one that needs watching on every repaint — it
+     carries the eyebrows and meta lines, and it is the first to slip under AA
+     when the paper moves. */
+  --text-3: #6a5f95;
+
+  --brand: #3f48fd;
+  --brand-hover: #2f38ee;
+  --brand-ink: #ffffff;
+  --brand-soft: #b9bdfd;
+  --brand-dim: #d9dbfc;
+
+  /* Verified/attested. river.ai's sage, deepened to clear AA on paper. It now
+     also reads as the one warm-side hue on a cool page, which suits it. */
+  --accent: #2c6d5e;
+  --accent-soft: #6da89f;
+  --accent-dim: #d6e8e2;
+
+  --warn: #9a5518;
+
+  /* Maximum-contrast solid, for the primary pill. */
+  --solid: #2f1a63;
+  --solid-ink: #f1eefb;
+
+  --announce-bg: #2f1a63;
+  --announce-ink: #f1eefb;
+
+  /* Duotone ramp for .canyon-fallback: ink through to paper. */
+  --duo-shadow: #2f1a63;
+  --duo-mid: #8f8ac4;
+  --duo-light: #f2effc;
+  --duo-sun: #ffe3c4;
+
+  /* The companion app's four signal accents, carried across from the React
+     Native theme rather than re-picked here, so a clinician reading a trend and
+     the patient reading the same trend on their phone see one colour for it.
+     They sit in a narrow luminance band on purpose: no one signal is allowed to
+     shout over the others, because the clinician decides what matters, not the
+     palette. Peach is the only one that reads as an alarm, and it is reserved
+     for a signal that has already crossed. */
+  --signal-amber: #f8c98a;
+  --signal-mint: #a2e3c0;
+  --signal-periwinkle: #afc6f7;
+  --signal-peach: #f8b4a8;
+
+  --type-scale: 1;
+  --target: 44px;
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --r: 16px;
+  --r-sm: 10px;
+  --r-pill: 999px;
+
+  /* Layout, from river.ai's --grid / --body / --pad-x. */
+  --grid: 1440px;
+  --measure: 800px;
+  --pad-x: clamp(20px, 4vw, 56px);
+}
+
+/* Applied two ways, deliberately. On <html> it is the app's dark theme, driven
+   by the toggle. On the landing page's <main> it is a scope: that page is
+   always dark whatever the toggle says, because the canyon shader bakes
+   river.ai's own palette and runs a real day cycle, so the page around it has
+   to stay night-side for the hero to read as one image. Scoping the tokens
+   beats flipping data-theme on navigation — the app's toggle keeps its meaning
+   and there is no theme flash on first paint. */
+[data-theme="dark"] {
+  --bg: #150a2e;
+  --bg-deep: #0d0620;
+  --surface: #1e1140;
+  --surface-2: #2a1a52;
+  --line: #3b2a6b;
+  --line-soft: #2c1e55;
+
+  /* Cream, not a violet-white, and deliberately so. It is the one warm thing
+     on a cool page, it is what the canyon's sun is made of, and on the landing
+     it is the headline sitting directly over that sun. A cooler ink here would
+     match the frame and lose the picture. */
+  --text: #f2e9d6;
+  --text-2: #cfc4e4;
+  --text-3: #948aba;
+
+  --brand: #7d72ff;
+  --brand-hover: #9a91ff;
+  --brand-ink: #0d0620;
+  --brand-soft: #c8cbfe;
+  --brand-dim: #34246e;
+
+  --accent: #6da89f;
+  --accent-soft: #bcdad0;
+  --accent-dim: #163f3a;
+
+  --warn: #ffb27a;
+
+  --solid: #f2e9d6;
+  --solid-ink: #2f1a63;
+
+  --announce-bg: #241452;
+  --announce-ink: #ddd4f0;
+
+  --duo-shadow: #0d0620;
+  --duo-mid: #6a54a8;
+  --duo-light: #f2e9d6;
+  --duo-sun: #ffe3c4;
+}
+
+/* A scoped data-theme has to restate colour and background, not just the
+   tokens. `body { color: var(--text) }` resolves against body's own token set
+   and hands the resulting *computed colour* down by inheritance — redefining
+   --text further in does not retroactively change it. So any text inside the
+   scope that does not set its own colour keeps the app's navy ink, which on
+   the landing's dark ground is navy on navy. The hero only escaped this
+   because its headline and subhead carry explicit text-[var(--text)]. */
+[data-theme]:not(html) {
+  color: var(--text);
+  background-color: var(--bg);
+}
+
+/* The vision axis pushes ink and paper apart rather than recolouring. */
+[data-contrast="max"][data-theme="light"] {
+  --bg: #faf8ff;
+  --surface: #ffffff;
+  --surface-2: #f0edfb;
+  --line: #8b85b2;
+  --text: #1c0b45;
+  --text-2: #2e1a63;
+  --text-3: #4b3c7d;
+  --brand: #3a22c8;
+  --accent: #17493c;
+  --solid: #1c0b45;
+  --solid-ink: #ffffff;
+}
+
+/* The descendant form is what reaches the pinned-dark landing page, whose
+   data-theme lives on <main> rather than on <html> where data-contrast is.
+   Without it, raising contrast would silently skip the whole landing. */
+[data-contrast="max"][data-theme="dark"],
+[data-contrast="max"] [data-theme="dark"] {
+  --bg: #06020f;
+  --surface: #0d0620;
+  --surface-2: #170c33;
+  --line: #6250a0;
+  --text: #ffffff;
+  --text-2: #ece4ff;
+  --text-3: #c8bce6;
+  --brand: #b3a8ff;
+  --accent: #a9e6d8;
+  --solid: #ffffff;
+  --solid-ink: #06020f;
+}
+
+/* --- shadcn bridge ---------------------------------------------------------
+   shadcn components read these names. Mapping them onto the palette above
+   means a generated component inherits the design system instead of arriving
+   with neutral greys that have to be overridden one at a time.            */
+
+:root {
+  --background: var(--bg);
+  --foreground: var(--text);
+  --card: var(--surface);
+  --card-foreground: var(--text);
+  --popover: var(--surface);
+  --popover-foreground: var(--text);
+  --primary: var(--brand);
+  --primary-foreground: var(--brand-ink);
+  --secondary: var(--surface-2);
+  --secondary-foreground: var(--text);
+  --muted: var(--surface-2);
+  --muted-foreground: var(--text-3);
+  --accent-foreground: var(--brand-ink);
+  --destructive: var(--warn);
+  --destructive-foreground: #ffffff;
+  --border: var(--line);
+  --input: var(--line);
+  --ring: var(--brand);
+  --radius: var(--r);
+}
+
+@theme inline {
+  --color-background: var(--bg);
+  --color-foreground: var(--text);
+  --color-card: var(--surface);
+  --color-popover: var(--surface);
+  --color-primary: var(--brand);
+  --color-secondary: var(--surface-2);
+  --color-muted: var(--surface-2);
+  --color-muted-foreground: var(--text-3);
+  --color-border: var(--line);
+  --color-input: var(--line);
+  --color-ring: var(--brand);
+
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-text: var(--text);
+  --color-text-2: var(--text-2);
+  --color-text-3: var(--text-3);
+  --color-brand: var(--brand);
+  --color-accent: var(--accent);
+
+  --font-sans: var(--font-inter-tight);
+  --font-mono: var(--font-jetbrains-mono);
+
+  --radius-sm: calc(var(--r) * 0.6);
+  --radius-md: calc(var(--r) * 0.8);
+  --radius-lg: var(--r);
+  --radius-xl: calc(var(--r) * 1.4);
+}
+
+* {
+  border-color: var(--line);
+}
+
+html {
+  font-size: calc(16px * var(--type-scale));
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+
+[data-motion="reduced"] html {
+  scroll-behavior: auto;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: var(--font-inter-tight), ui-sans-serif, system-ui, sans-serif;
+  font-weight: 400;
+  font-feature-settings: "cv05" 1, "ss03" 1;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* --- Type ------------------------------------------------------------------
+   Measured: both references carry display on weight 300 with gentle negative
+   tracking. See reference/extracted-tokens.md.                             */
+
+.display {
+  font-weight: 300;
+  letter-spacing: -0.012em;
+  line-height: 1.06;
+  text-wrap: balance;
+}
+
+.display-sm {
+  font-weight: 300;
+  letter-spacing: -0.014em;
+  line-height: 1.14;
+  text-wrap: balance;
+}
+
+/* A 300 weight loses too much stroke for a low-vision profile, so max
+   contrast buys it back without disturbing the layout. */
+[data-contrast="max"] .display,
+[data-contrast="max"] .display-sm {
+  font-weight: 400;
+  letter-spacing: -0.008em;
+}
+
+/* Long-form body, after river.ai's 17px / 300 / 1.6. */
+.prose-lg {
+  font-size: 1.0625rem;
+  font-weight: 300;
+  line-height: 1.6;
+  max-width: 62ch;
+}
+
+[data-contrast="max"] .prose-lg {
+  font-weight: 400;
+}
+
+.eyebrow {
+  font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
+  font-size: 0.6875rem;
+  font-weight: 400;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.mono,
+[class*="font-mono"] {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* --- Paper -----------------------------------------------------------------
+   A faint fibre tooth, so the cream reads as stock rather than as a flat fill.
+   Two low-amplitude gradients, no image, invisible until you look for it.  */
+
+.paper {
+  background-color: var(--bg);
+  background-image:
+    repeating-linear-gradient(
+      92deg,
+      color-mix(in oklab, var(--line) 9%, transparent) 0 1px,
+      transparent 1px 3px
+    ),
+    repeating-linear-gradient(
+      2deg,
+      color-mix(in oklab, var(--line) 7%, transparent) 0 1px,
+      transparent 1px 4px
+    );
+}
+
+[data-theme="dark"] .paper,
+[data-contrast="max"] .paper {
+  background-image: none;
+}
+
+/* --- Surfaces --------------------------------------------------------------- */
+
+.card {
+  background-color: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+}
+
+/* Elevation is declared once. A border OR a shadow, never both competing. */
+.card-lift {
+  background-color: var(--surface);
+  border-radius: var(--r);
+  box-shadow:
+    0 1px 2px color-mix(in oklab, var(--text) 6%, transparent),
+    0 14px 34px -18px color-mix(in oklab, var(--text) 24%, transparent);
+}
+
+.glass {
+  background-color: color-mix(in oklab, var(--bg) 72%, transparent);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+}
+
+/* The pre-paint ground. #150a2e is gl.clearColor(0.082, 0.039, 0.18) written as
+   hex — the exact colour the canvas clears to — so the swap from CSS to the
+   first drawn frame cannot be seen. Change one and you must change the other.
+   Deliberately flat: anything with structure in it reads as a second, wrong
+   hero for the moment before the real one. */
+.canyon-ground {
+  background-color: #150a2e;
+}
+
+.canyon-fallback {
+  background:
+    radial-gradient(70% 46% at 58% 44%, color-mix(in oklab, var(--duo-light) 40%, transparent) 0%, transparent 62%),
+    linear-gradient(to bottom, var(--duo-shadow) 0%, var(--bg) 78%);
+}
+
+.announce {
+  background-color: var(--announce-bg);
+  color: var(--announce-ink);
+}
+
+/* Three blinks, then solid. An indefinite blink would trip WCAG 2.2.2. */
+.cursor-block::after {
+  content: "";
+  display: inline-block;
+  width: 0.5em;
+  height: 1.05em;
+  margin-left: 0.14em;
+  vertical-align: -0.18em;
+  background-color: var(--text-2);
+  animation: cursor-blink 1.15s steps(1) 3;
+}
+
+@keyframes cursor-blink {
+  0%, 45% { opacity: 1; }
+  50%, 95% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+[data-motion="reduced"] .cursor-block::after {
+  animation: none;
+  opacity: 0.55;
+}
+
+/* Chrome sitting on the hero. The landing is pinned dark, so --text is already
+   paper here; this pins it to the literal value anyway, so the header cannot
+   be knocked into navy-on-navy by a future change to the scope above. What it
+   does NOT protect against is the sky itself going pale at dawn and dusk —
+   that is the scrim's job, in app/page.tsx. */
+.on-hero,
+.on-hero .eyebrow {
+  color: #f2e9d6;
+}
+
+.on-hero a:not(.no-invert),
+.on-hero button:not(.no-invert) {
+  color: color-mix(in oklab, #f2e9d6 82%, transparent);
+}
+
+.on-hero a:not(.no-invert):hover,
+.on-hero button:not(.no-invert):hover {
+  color: #f2e9d6;
+}
+
+/* --- Browser surfaces, themed ----------------------------------------------- */
+
+::selection {
+  background-color: color-mix(in oklab, var(--brand) 26%, transparent);
+  color: var(--text);
+}
+
+:root {
+  caret-color: var(--brand);
+  accent-color: var(--brand);
+  scrollbar-color: var(--line) transparent;
+  scrollbar-width: thin;
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background-color: var(--line);
+  border: 3px solid var(--bg);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover { background-color: var(--text-3); }
+
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+a {
+  text-underline-offset: 0.2em;
+  text-decoration-thickness: 1px;
+}
+
+/* --- View transitions --------------------------------------------------------
+   The blobatar morphs between the customiser and the profile page. Given its
+   own timing because the default 250ms crossfade reads as a dissolve at this
+   size; it needs long enough to be seen travelling, on the same easing curve
+   as everything else that moves in the app.
+
+   The reduced-motion rules are not redundant with the blanket `*` rule below.
+   View-transition pseudo-elements hang off the root's own tree, so a
+   descendant selector never reaches them — they have to be named directly, and
+   both the OS preference and the capability profile have to be able to stop a
+   148px face flying across the screen. */
+
+::view-transition-group(blobatar) {
+  animation-duration: 460ms;
+  animation-timing-function: var(--ease);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+
+[data-motion="reduced"]::view-transition-group(*),
+[data-motion="reduced"]::view-transition-old(*),
+[data-motion="reduced"]::view-transition-new(*) {
+  animation: none !important;
+}
+
+/* --- Motion ----------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+[data-motion="reduced"] *,
+[data-motion="reduced"] *::before,
+[data-motion="reduced"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}
+
+/* Buttons lift a pixel under the cursor and settle under the press. Small on
+   purpose: the point is that the control feels physical, not that anything
+   moves. The transition is declared here rather than per-button so every
+   control that opts in gets the same curve.
+
+   Both reduced-motion rules above only zero the transition *duration*, which
+   would leave the offsets snapping into place instantly — a jump is a worse
+   answer than stillness for someone who asked for less motion. So the
+   transforms themselves are dropped, not merely un-animated. */
+.btn-lift {
+  transition-property: background-color, color, border-color, opacity, transform;
+  transition-duration: 150ms;
+  transition-timing-function: var(--ease);
+}
+
+.btn-lift:hover {
+  transform: translateY(-1px);
+}
+
+.btn-lift:active {
+  transform: translateY(0) scale(0.98);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn-lift:hover,
+  .btn-lift:active {
+    transform: none !important;
+  }
+}
+
+[data-motion="reduced"] .btn-lift:hover,
+[data-motion="reduced"] .btn-lift:active {
+  transform: none !important;
+}
+
+/* --- The companion app's surface ---------------------------------------------
+   A scoped retheme, not a second design system. Everything inside `.axl` is the
+   phone app translated to the web: the same lilac page, the same warm-white
+   cards, the same four accents, the same generous corner radii.
+
+   It is a token override rather than a parallel set of components, so a card in
+   here is still `.card` and a pill is still `--r-pill`. That is what keeps the
+   clinician's screens and the patient's screens from drifting into two
+   codebases that happen to share a repo.
+
+   Deliberately light-only. The phone app has no dark mode, and a themed version
+   of someone else's design is not the same design. The app shell drops the
+   theme toggle inside this scope for the same reason.
+   ---------------------------------------------------------------------------- */
+.axl {
+  --bg: #ece9f8;
+  --surface: #ffffff;
+  --surface-2: #fbfaf8;
+
+  --text: #151515;
+  --text-2: #6f6f6a;
+  --text-3: #9a9a94;
+
+  --line: #eceae4;
+  --line-soft: #f3f1ec;
+
+  --solid: #151515;
+  --solid-ink: #ffffff;
+
+  /* Corners are the loudest single thing about the phone app's look. */
+  --r: 28px;
+  --r-sm: 20px;
+
+  background-color: var(--bg);
+  color: var(--text);
+}
+
+/* The card shadow, carried across. Soft and low-contrast: it lifts a card off
+   the lilac without ever reading as a drop shadow. */
+.axl-card {
+  background-color: var(--surface);
+  border-radius: var(--r);
+  box-shadow: 0 8px 20px rgb(21 21 21 / 6%);
+}
+
+.axl-tile {
+  background-color: var(--surface);
+  border-radius: var(--r-sm);
+  box-shadow: 0 3px 10px rgb(21 21 21 / 4%);
+}
+
+/* --- Utilities ---------------------------------------------------------------- */
+
+.target { min-height: var(--target); min-width: var(--target); }
+
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
