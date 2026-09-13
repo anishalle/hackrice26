@@ -138,9 +138,12 @@ export default function CheckInScreen({ onDone }) {
         // line read: stay put with the error showing, so Start tries again.
         if (failed.current && !heardRef.current) return;
         if (take.uri || take.blob) {
+          // A take that fails to save is still a line read, so the check-in
+          // carries on; but the reason shows, rather than a bank that stays
+          // silently empty.
           saveTake({ ...take, phrase })
             .then((sample) => { if (sample && alive.current) setSaved((n) => n + 1); })
-            .catch(() => {});
+            .catch((e) => { if (alive.current) setError(`That take did not reach your voice bank: ${e.message}`); });
         }
         setTimeout(advance, heardRef.current ? SETTLE_MS : 0);
       },

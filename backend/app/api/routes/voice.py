@@ -32,9 +32,12 @@ from app.services.voice_preservation import (
     VoiceSampleEncryptionError,
     add_voice_sample,
     create_elevenlabs_clone,
+    delete_all_voice_samples,
+    delete_elevenlabs_clone,
     delete_voice_sample,
     get_voice_profile,
     list_voice_samples,
+    sample_is_usable,
     setup_voice_profile,
     synthesize_elevenlabs_speech,
 )
@@ -102,6 +105,18 @@ async def upload_voice_sample(
     return _sample_response(sample)
 
 
+@router.delete("/profile/samples", status_code=204)
+def remove_all_voice_samples(
+    owner_subject: str = Header(alias="X-Voice-Owner-Subject"),
+    session: Session = Depends(get_db),
+) -> None:
+    """Permanently remove every recording owned by the current user."""
+    try:
+        delete_all_voice_samples(session, owner_subject=owner_subject)
+    except VoiceProfileNotFoundError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+
+
 @router.delete("/profile/samples/{sample_id}", status_code=204)
 def remove_voice_sample(
     sample_id: UUID,
@@ -128,6 +143,7 @@ async def create_voice_clone(
             owner_subject=owner_subject,
             description=request.description,
             remove_background_noise=request.remove_background_noise,
+            replace_existing=request.replace_existing,
         )
     except ElevenLabsNotConfiguredError as error:
         raise HTTPException(status_code=503, detail=str(error)) from error
@@ -153,6 +169,30 @@ async def create_voice_clone(
         provider_status=("verification_required" if requires_verification else "ready"),
         requires_verification=requires_verification,
     )
+
+
+@router.delete("/profile/clone", status_code=204)
+async def remove_voice_clone(
+    owner_subject: str = Header(alias="X-Voice-Owner-Subject"),
+    session: Session = Depends(get_db),
+) -> None:
+    """Delete the provider voice; saved recordings stay so it can be rebuilt."""
+    try:
+        await delete_elevenlabs_clone(session, owner_subject=owner_subject)
+    except ElevenLabsNotConfiguredError as error:
+        raise HTTPException(status_code=503, detail=str(error)) from error
+    except ElevenLabsProviderError as error:
+        raise HTTPException(
+            status_code=_provider_response_status(error.status_code), detail=str(error)
+        ) from error
+    except VoiceProfileNotFoundError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+    except ValueError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+    except httpx.HTTPError as error:
+        raise HTTPException(
+            status_code=502, detail="ElevenLabs could not delete the voice"
+        ) from error
 
 
 @router.post("/profile/speech")
@@ -196,6 +236,8 @@ def _profile_response(session: Session, profile) -> VoiceProfileResponse:
         provider_voice_id=profile.provider_voice_id,
         provider_status=profile.provider_status,
         sample_count=len(samples),
+        usable_sample_count=sum(1 for sample in samples if sample_is_usable(sample)),
+        min_sample_seconds=settings.VOICE_SAMPLE_MIN_SECONDS,
         samples=[_sample_response(sample) for sample in samples],
     )
 
@@ -207,6 +249,8 @@ def _sample_response(sample) -> VoiceSampleResponse:
         content_type=sample.content_type,
         byte_size=sample.byte_size,
         phrase_hint=sample.phrase_hint,
+        duration_seconds=sample.duration_seconds,
+        usable=sample_is_usable(sample),
         created_at=sample.created_at,
     )
 

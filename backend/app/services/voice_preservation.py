@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import struct
 from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
@@ -25,6 +26,18 @@ _ALLOWED_AUDIO_TYPES = {
     "audio/webm",
     "audio/x-m4a",
     "audio/x-wav",
+}
+
+# Platform spellings of the same formats. iOS derives a file's type from its
+# extension through UTType, whose preferred name for WAV is audio/vnd.wave, and
+# browsers label MediaRecorder output video/webm even when it is audio only.
+_AUDIO_TYPE_ALIASES = {
+    "audio/vnd.wave": "audio/wav",
+    "audio/wave": "audio/wav",
+    "audio/x-pn-wav": "audio/wav",
+    "audio/aac": "audio/m4a",
+    "audio/x-mp4": "audio/mp4",
+    "video/webm": "audio/webm",
 }
 
 
@@ -131,6 +144,7 @@ def add_voice_sample(
         phrase_hint=(
             phrase_hint.strip() if phrase_hint and phrase_hint.strip() else None
         ),
+        duration_seconds=audio_duration_seconds(audio_data, normalized_type),
         audio_data=_voice_sample_cipher().encrypt(audio_data),
     )
     session.add(sample)
@@ -147,6 +161,24 @@ def list_voice_samples(session: Session, profile: VoiceProfile) -> list[VoiceSam
             .order_by(VoiceSample.created_at.desc())
         )
     )
+
+
+def sample_is_usable(sample: VoiceSample) -> bool:
+    """Whether the provider will accept this take. Unmeasured takes are tried."""
+    return (
+        sample.duration_seconds is None
+        or sample.duration_seconds >= settings.VOICE_SAMPLE_MIN_SECONDS
+    )
+
+
+def delete_all_voice_samples(session: Session, *, owner_subject: str) -> int:
+    """Empty the owner's recording bank. The profile and any built voice stay."""
+    profile = _required_profile(session, owner_subject)
+    samples = list_voice_samples(session, profile)
+    for sample in samples:
+        session.delete(sample)
+    session.commit()
+    return len(samples)
 
 
 def delete_voice_sample(
@@ -171,22 +203,36 @@ async def create_elevenlabs_clone(
     owner_subject: str,
     description: str | None,
     remove_background_noise: bool,
+    replace_existing: bool = False,
 ) -> tuple[str, bool]:
     """Send the user's saved recordings to ElevenLabs only after explicit action."""
     if settings.ELEVENLABS_API_KEY is None:
         raise ElevenLabsNotConfiguredError("ELEVENLABS_API_KEY is not configured")
 
     profile = _required_profile(session, owner_subject)
-    if profile.provider_voice_id is not None:
-        raise ValueError("A voice has already been created for this profile")
-
     samples = list_voice_samples(session, profile)
     if not samples:
         raise ValueError("Save at least one recording before creating a voice")
+    samples = [sample for sample in samples if sample_is_usable(sample)]
+    if not samples:
+        raise ValueError(
+            "Every saved recording is shorter than "
+            f"{settings.VOICE_SAMPLE_MIN_SECONDS:g} seconds; record a longer line"
+        )
+    if profile.provider_voice_id is not None:
+        if not replace_existing:
+            raise ValueError("A voice has already been created for this profile")
+        # Rebuilding: free the provider slot first so the new clone can be
+        # made from every recording saved since the last one.
+        await _delete_provider_voice(profile.provider_voice_id)
+        profile.provider_voice_id = None
+        profile.provider_status = "collecting"
+        profile.cloned_at = None
+        session.commit()
 
     files = [
         (
-            "files[]",
+            "files",
             (
                 sample.original_filename,
                 _decrypt_voice_sample(sample.audio_data),
@@ -221,6 +267,33 @@ async def create_elevenlabs_clone(
     profile.cloned_at = datetime.now(UTC)
     session.commit()
     return str(voice_id), requires_verification
+
+
+async def delete_elevenlabs_clone(session: Session, *, owner_subject: str) -> None:
+    """Remove the provider voice and return the profile to collecting samples."""
+    if settings.ELEVENLABS_API_KEY is None:
+        raise ElevenLabsNotConfiguredError("ELEVENLABS_API_KEY is not configured")
+
+    profile = _required_profile(session, owner_subject)
+    if not profile.provider_voice_id:
+        raise ValueError("No voice has been created for this profile")
+
+    await _delete_provider_voice(profile.provider_voice_id)
+    profile.provider_voice_id = None
+    profile.provider_status = "collecting"
+    profile.cloned_at = None
+    session.commit()
+
+
+async def _delete_provider_voice(voice_id: str) -> None:
+    """Delete a voice at ElevenLabs; a voice already gone there is not an error."""
+    url = f"{str(settings.ELEVENLABS_API_BASE_URL).rstrip('/')}/voices/{voice_id}"
+    headers = {"xi-api-key": settings.ELEVENLABS_API_KEY.get_secret_value()}
+    async with httpx.AsyncClient(timeout=30) as client:
+        response = await client.delete(url, headers=headers)
+        if response.status_code == 404:
+            return
+        _raise_for_elevenlabs_error(response)
 
 
 async def synthesize_elevenlabs_speech(
@@ -259,6 +332,39 @@ async def synthesize_elevenlabs_speech(
     return response.content
 
 
+def audio_duration_seconds(audio_data: bytes, content_type: str) -> float | None:
+    """Measure a WAV take from its RIFF header; other containers return None.
+
+    Native check-in takes are WAV, which carries its byte rate and data length
+    in plain chunks. Compressed containers would need a decoder, so they are
+    left unmeasured rather than guessed, and unmeasured takes remain usable.
+    """
+    if content_type not in {"audio/wav", "audio/x-wav"}:
+        return None
+    if len(audio_data) < 12 or audio_data[:4] != b"RIFF" or audio_data[8:12] != b"WAVE":
+        return None
+
+    byte_rate: int | None = None
+    offset = 12
+    while offset + 8 <= len(audio_data):
+        chunk_id = audio_data[offset : offset + 4]
+        (chunk_size,) = struct.unpack("<I", audio_data[offset + 4 : offset + 8])
+        body = offset + 8
+        if chunk_id == b"fmt " and chunk_size >= 16:
+            (byte_rate,) = struct.unpack("<I", audio_data[body + 8 : body + 12])
+        elif chunk_id == b"data":
+            if not byte_rate:
+                return None
+            # A streaming writer may leave the data size unset (0 or 0xFFFFFFFF);
+            # everything after the header is audio in that case.
+            data_size = chunk_size
+            if data_size in (0, 0xFFFFFFFF) or body + data_size > len(audio_data):
+                data_size = len(audio_data) - body
+            return round(data_size / byte_rate, 3)
+        offset = body + chunk_size + (chunk_size & 1)
+    return None
+
+
 def _required_profile(session: Session, owner_subject: str) -> VoiceProfile:
     profile = get_voice_profile(session, _validated_owner_subject(owner_subject))
     if profile is None:
@@ -276,7 +382,8 @@ def _validated_owner_subject(owner_subject: str) -> str:
 
 
 def _validated_audio_type(content_type: str | None) -> str:
-    normalized = (content_type or "").split(";", maxsplit=1)[0].lower()
+    normalized = (content_type or "").split(";", maxsplit=1)[0].strip().lower()
+    normalized = _AUDIO_TYPE_ALIASES.get(normalized, normalized)
     if normalized not in _ALLOWED_AUDIO_TYPES:
         raise ValueError("Use WAV, M4A, MP3, OGG, or WebM audio")
     return normalized
@@ -331,6 +438,14 @@ def _elevenlabs_error_message(response: httpx.Response) -> str:
     detail = payload.get("detail") if isinstance(payload, dict) else None
     if isinstance(detail, dict):
         detail = detail.get("message") or detail.get("status")
+    elif isinstance(detail, list):
+        # Request-validation errors arrive as a list of {loc, msg} entries.
+        detail = "; ".join(
+            f"{'.'.join(str(part) for part in item.get('loc', [])[1:])}: "
+            f"{item.get('msg')}"
+            for item in detail
+            if isinstance(item, dict)
+        )
     if not isinstance(detail, str) or not detail.strip():
         detail = "The provider did not include an error explanation"
 

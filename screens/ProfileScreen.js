@@ -1,6 +1,7 @@
-import { useState } from 'react';
-import { View, Text, Pressable, ScrollView, Switch, StyleSheet } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { View, Text, Pressable, ScrollView, Switch, StyleSheet, ActivityIndicator, Alert, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useIsFocused } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import { colors, accents, type, spacing, radii, softShadow } from '../theme';
 import { PROFILE, ACCESS, INPUTS, TARGET_STEPS, TEXT_STEPS, TRENDS } from '../data/profile';
@@ -8,6 +9,170 @@ import AgentBlob from '../components/AgentBlob';
 import BlobMark from '../components/BlobMark';
 import Icon from '../components/Icon';
 import { useAccess } from '../components/AccessMode';
+import { VOICE_STATUS, clearRecordings, cloneBlocker, createVoice, ensureVoiceProfile, hasVoice, removeVoice, speakInVoice } from '../lib/voice';
+
+const PREVIEW_LINE = 'Hi, this is my voice. Axl can speak for me with it.';
+
+// Yes/no the same way on every platform: the web has no Alert sheet.
+function confirm(title, message, onYes) {
+  if (Platform.OS === 'web') {
+    if (window.confirm(`${title}\n\n${message}`)) onYes();
+    return;
+  }
+  Alert.alert(title, message, [
+    { text: 'Cancel', style: 'cancel' },
+    { text: 'Continue', style: 'destructive', onPress: onYes },
+  ]);
+}
+
+// The banked voice: how many recordings the check-ins have saved, whether a
+// voice has been built from them yet, and the one button that builds it.
+// The count is live from the backend, not a demo number, so the button can
+// say why it is disabled.
+function VoiceSection() {
+  const focused = useIsFocused();
+  const [profile, setProfile] = useState(null);
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(null); // 'load' | 'clone' | 'preview' | 'remove'
+
+  const load = useCallback(async () => {
+    setBusy('load');
+    setError('');
+    try {
+      setProfile(await ensureVoiceProfile());
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setBusy(null);
+    }
+  }, []);
+
+  // Refetch on every visit: the count changes after each check-in.
+  useEffect(() => {
+    if (focused) load();
+  }, [focused, load]);
+
+  const run = async (kind, work) => {
+    if (busy) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setBusy(kind);
+    setError('');
+    try {
+      await work();
+      if (kind !== 'preview') setProfile(await ensureVoiceProfile());
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (e) {
+      setError(e.message);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const ready = hasVoice(profile);
+  const blocker = cloneBlocker(profile);
+  const count = profile?.sample_count ?? 0;
+  const usable = profile?.usable_sample_count ?? 0;
+  const short = count - usable;
+  const status = profile ? VOICE_STATUS[profile.provider_status] ?? profile.provider_status : 'Loading';
+
+  const build = () => run('clone', () => createVoice({ replace: !!profile?.provider_voice_id }));
+  const rebuild = () => confirm(
+    'Rebuild your voice?',
+    `The current voice is replaced with one made from your ${usable} usable ${usable === 1 ? 'recording' : 'recordings'}.`,
+    build
+  );
+  const remove = () => confirm(
+    'Remove your voice?',
+    'Your recordings stay. Axl will not be able to speak as you until a new voice is built.',
+    () => run('remove', removeVoice)
+  );
+  // The bank is per install, so this is how a shared or handed-down phone
+  // starts over. The voice already built from it is left alone.
+  const clear = () => confirm(
+    'Clear your recordings?',
+    `All ${count} ${count === 1 ? 'recording is' : 'recordings are'} deleted from this phone's bank. A voice already built stays until you remove it.`,
+    () => run('clear', clearRecordings)
+  );
+
+  // How the count reads: the usable number is the one that matters, and the
+  // short takes are named rather than silently missing from it.
+  const countNote = count === 0
+    ? 'Nothing saved yet'
+    : short === 0
+      ? `${count === 1 ? 'One line' : `${count} lines`} saved, all long enough`
+      : `${usable} long enough · ${short} under ${profile.min_sample_seconds}s, kept but not used`;
+
+  return (
+    <Section title="Your voice" hint="Built from the check-in lines you have read. It lives at ElevenLabs; only its id is kept here.">
+      <View style={styles.row}>
+        <View style={styles.rowText}>
+          <Text style={styles.rowLabel}>Recordings banked</Text>
+          <Text style={styles.meta}>{countNote}{profile?.samples?.[0] ? ` · latest ${new Date(profile.samples[0].created_at).toLocaleDateString()}` : ''}</Text>
+        </View>
+        {busy === 'load' ? <ActivityIndicator color={colors.inkMuted} /> : <Text style={styles.value}>{count}</Text>}
+        {count > 0 && (
+          <Pressable
+            onPress={clear}
+            disabled={!!busy}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Clear all recordings"
+            style={[styles.clearBtn, busy && styles.voiceBtnBusy]}
+          >
+            {busy === 'clear' ? <ActivityIndicator color={colors.ink} /> : <Icon name="clear" size={15} color={colors.ink} />}
+          </Pressable>
+        )}
+      </View>
+      <View style={[styles.row, styles.divided]}>
+        <BlobMark seed="voice" size={10} fill={ready ? accents.mint : accents.amber} />
+        <View style={styles.rowText}>
+          <Text style={styles.rowLabel}>{status}</Text>
+          <Text style={styles.meta}>
+            {ready ? 'Axl can speak for you in gaze mode' : blocker ?? 'Tap below and Axl builds it from your recordings'}
+          </Text>
+        </View>
+      </View>
+
+      <View style={[styles.voiceActions, styles.divided]}>
+        {ready ? (
+          <>
+            <Pressable
+              style={[styles.voiceBtn, styles.voiceBtnPrimary, busy && styles.voiceBtnBusy]}
+              onPress={() => run('preview', () => speakInVoice(PREVIEW_LINE))}
+              disabled={!!busy}
+              accessibilityRole="button"
+            >
+              {busy === 'preview' ? <ActivityIndicator color={colors.ink} /> : <Icon name="waveform" size={15} color={colors.ink} />}
+              <Text style={styles.voiceBtnText}>{busy === 'preview' ? 'Speaking' : 'Hear it'}</Text>
+            </Pressable>
+            <Pressable style={[styles.voiceBtn, busy && styles.voiceBtnBusy]} onPress={rebuild} disabled={!!busy} accessibilityRole="button">
+              {busy === 'clone' ? <ActivityIndicator color={colors.ink} /> : null}
+              <Text style={styles.voiceBtnText}>{busy === 'clone' ? 'Rebuilding' : 'Rebuild'}</Text>
+            </Pressable>
+            <Pressable style={[styles.voiceBtn, busy && styles.voiceBtnBusy]} onPress={remove} disabled={!!busy} accessibilityRole="button" accessibilityLabel="Remove voice">
+              {busy === 'remove' ? <ActivityIndicator color={colors.ink} /> : <Icon name="clear" size={15} color={colors.ink} />}
+            </Pressable>
+          </>
+        ) : (
+          <Pressable
+            style={[styles.voiceBtn, styles.voiceBtnPrimary, (blocker || busy) && styles.voiceBtnBusy]}
+            onPress={build}
+            disabled={!!blocker || !!busy}
+            accessibilityRole="button"
+            accessibilityState={{ disabled: !!blocker || !!busy }}
+          >
+            {busy === 'clone' ? <ActivityIndicator color={colors.ink} /> : <Icon name="waveform" size={15} color={colors.ink} />}
+            <Text style={styles.voiceBtnText}>
+              {busy === 'clone' ? 'Building your voice' : profile?.provider_voice_id ? 'Rebuild voice' : `Generate voice from ${usable} ${usable === 1 ? 'recording' : 'recordings'}`}
+            </Text>
+          </Pressable>
+        )}
+      </View>
+      {error ? <Text style={styles.voiceError}>{error}</Text> : null}
+    </Section>
+  );
+}
 
 const TONE = { amber: accents.amber, periwinkle: accents.periwinkle, mint: accents.mint, peach: accents.peach };
 
@@ -56,12 +221,11 @@ function Stepper({ label, steps, value, onChange }) {
 
 export default function ProfileScreen({ onBack }) {
   const insets = useSafeAreaInsets();
-  const { gaze, setMode } = useAccess();
+  const { gaze, setMode, speakReplies: speak, setSpeakReplies: setSpeak } = useAccess();
   const [inputs, setInputs] = useState(ACCESS.inputs);
   const [target, setTarget] = useState(ACCESS.target);
   const [text, setText] = useState(ACCESS.text);
   const [adaptive, setAdaptive] = useState(ACCESS.adaptive);
-  const [speak, setSpeak] = useState(ACCESS.speakReplies);
   const [motion, setMotion] = useState(ACCESS.reduceMotion);
 
   const toggleInput = (id) => {
@@ -99,6 +263,8 @@ export default function ProfileScreen({ onBack }) {
           </View>
           <Icon name="check" size={15} color={colors.ink} />
         </View>
+
+        <VoiceSection />
 
         <Section title="How you use the app" hint="Pick as many as you use. Axl keeps all of them live.">
           {INPUTS.map((i, n) => {
@@ -150,7 +316,7 @@ export default function ProfileScreen({ onBack }) {
           <View style={[styles.row, styles.divided]}>
             <View style={styles.rowText}>
               <Text style={styles.rowLabel}>Speak replies in my banked voice</Text>
-              <Text style={styles.meta}>1,240 phrases banked</Text>
+              <Text style={styles.meta}>In gaze mode, Axl reads its answers out in your voice</Text>
             </View>
             <Switch value={speak} onValueChange={setSpeak} />
           </View>
@@ -275,4 +441,39 @@ const styles = StyleSheet.create({
   stepOn: { backgroundColor: colors.ink },
   stepText: { ...type.label, color: colors.inkMuted },
   stepTextOn: { color: '#fff' },
+
+  voiceActions: {
+    flexDirection: 'row',
+    gap: spacing(1),
+    paddingVertical: spacing(1.5),
+    paddingHorizontal: spacing(2),
+  },
+  voiceBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing(0.75),
+    minHeight: 48,
+    paddingHorizontal: spacing(2),
+    borderRadius: radii.pill,
+    backgroundColor: colors.page,
+  },
+  voiceBtnPrimary: { flex: 1, backgroundColor: colors.mint },
+  clearBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.page,
+  },
+  voiceBtnBusy: { opacity: 0.5 },
+  voiceBtnText: { ...type.label, color: colors.ink },
+  voiceError: {
+    ...type.footnote,
+    color: colors.ink,
+    backgroundColor: accents.peach,
+    paddingVertical: spacing(1),
+    paddingHorizontal: spacing(2),
+  },
 });

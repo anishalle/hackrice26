@@ -32,6 +32,9 @@ class Settings(BaseSettings):
     ELEVENLABS_API_BASE_URL: HttpUrl = "https://api.elevenlabs.io/v1"
     ELEVENLABS_TTS_MODEL_ID: str = "eleven_multilingual_v2"
     VOICE_SAMPLE_MAX_BYTES: int = 10_000_000
+    # ElevenLabs instant cloning rejects shorter takes. Shorter recordings are
+    # still stored; they are just left out when the voice is built.
+    VOICE_SAMPLE_MIN_SECONDS: float = 4.6
     VOICE_SAMPLE_ENCRYPTION_KEY: SecretStr | None = None
 
     @field_validator("EMBEDDING_DIMENSIONS")

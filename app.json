@@ -35,7 +35,8 @@
           "microphonePermission": "Axl records your weekly check-in lines so it can follow your speech over time.",
           "speechRecognitionPermission": "Axl follows along as you read each check-in line."
         }
-      ]
+      ],
+      "expo-audio"
     ]
   }
 }

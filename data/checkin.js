@@ -7,9 +7,6 @@
 // dictation model reaches for a homophone on. Five lines is under a minute of
 // speech, which leaves room for the pauses in the two minutes the card promises.
 export const CHECK_IN_LINES = [
-  'Good morning. My voice sounds like me today.',
-  'The kettle is on, and the window is open.',
-  'Please pass me the blue cup from the table.',
-  'The doctor visit is on Tuesday afternoon.',
-  'The rain has stopped, so we can go outside.',
+  'Good morning. My voice sounds like me today. I\'m feeling great and ready to tackle the day.',
+  'The kettle is on, and the window is open. I really wish that I had more tokens',
 ];

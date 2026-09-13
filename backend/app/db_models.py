@@ -15,6 +15,7 @@ from pgvector.sqlalchemy import VECTOR
 from sqlalchemy import (
     Boolean,
     DateTime,
+    Float,
     ForeignKey,
     Index,
     Integer,
@@ -115,6 +116,8 @@ class VoiceSample(CreatedAtMixin, Base):
     byte_size: Mapped[int] = mapped_column(Integer)
     sha256: Mapped[str] = mapped_column(String(64))
     phrase_hint: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # None when the container could not be measured; such takes stay usable.
+    duration_seconds: Mapped[float | None] = mapped_column(Float, nullable=True)
     audio_data: Mapped[bytes] = mapped_column(LargeBinary)
 
 

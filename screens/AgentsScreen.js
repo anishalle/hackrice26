@@ -26,7 +26,16 @@ import Icon from '../components/Icon';
 import BlobMark from '../components/BlobMark';
 import GazeComposer from '../components/GazeComposer';
 import { useAccess } from '../components/AccessMode';
+import { speakInVoice } from '../lib/voice';
 import { CHECK_IN, REPLIES } from '../data/phrases';
+
+// Plays `text` in the banked voice; the words are already on screen, so a
+// failure only changes the note under them, never the reply itself.
+const NO_VOICE = 'No voice yet. Build one from your recordings in Profile.';
+const sayAloud = (text) => speakInVoice(text).then(
+  () => null,
+  (error) => (error.status === 409 || error.status === 404 ? NO_VOICE : error.message)
+);
 
 
 // Axl's two sizes in the gaze header. One render, scaled between them.
@@ -71,7 +80,7 @@ export default function AgentsScreen() {
   const navigation = useNavigation();
   const route = useRoute();
   const isFocused = useIsFocused();
-  const { gaze, t: access, setMode: setAccessMode } = useAccess();
+  const { gaze, t: access, setMode: setAccessMode, speakReplies } = useAccess();
   // In gaze mode the thread is a script: Axl asks, and the composer offers the
   // answers. `step` is where in the check-in we are.
   const [step, setStep] = useState(0);
@@ -249,36 +258,47 @@ export default function AgentsScreen() {
   const answer = (option) => {
     const current = CHECK_IN[step];
     const key = [`${current.id}-${option.id}`, option.id, current.id].find((k) => REPLIES[k]);
+    const reply = REPLIES[key] ?? 'Noted.';
     setTurns((all) => [
       ...all,
       {
         id: `${Date.now()}`,
         stage: 'done',
         prompt: option.say ?? option.label,
-        answer: REPLIES[key] ?? 'Noted.',
+        answer: reply,
       },
     ]);
     setStep((n) => Math.min(n + 1, CHECK_IN.length - 1));
     requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: access.motion }));
+    // Read out in the banked voice when the profile asks for it. Best effort:
+    // the reply is already on screen, and a missing voice is not a failure
+    // of the check-in.
+    if (speakReplies) sayAloud(reply);
   };
 
   // A phrase off the board is said rather than asked: it goes out in the
-  // banked voice, so it is the person's own voice in the room.
+  // banked voice, so it is the person's own voice in the room. The turn lands
+  // at once, and the note under it settles when the audio has played.
   const speak = (phrase) => {
+    const id = `${Date.now()}`;
     setTurns((all) => [
       ...all,
-      { id: `${Date.now()}`, stage: 'done', prompt: phrase, answer: 'Said out loud in your voice.', via: 'voice' },
+      { id, stage: 'loading', prompt: phrase, answer: '', via: 'voice' },
     ]);
     requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: access.motion }));
+    sayAloud(phrase).then((problem) => {
+      setTurns((all) => all.map((turn) => (turn.id === id
+        ? { ...turn, stage: 'done', answer: problem ? '' : 'Said out loud in your voice.', error: problem ?? undefined }
+        : turn)));
+    });
   };
 
-  // A spoken question gets a spoken answer back, with the transcript under it.
-  const submitVoice = () => {
+  // Dictation goes in as the prompt it transcribed to. An empty take (the
+  // recogniser heard nothing, or the card was closed on an error) just
+  // returns to the bar rather than sending a blank turn.
+  const submitVoice = (transcript) => {
     setRecording(false);
-    setTurns((current) => [...current, {
-      id: `${Date.now()}`, prompt: 'Voice message', stage: 'done', tools: [], answer: '',
-      error: 'Voice transcription is not connected yet. Please type your request.',
-    }]);
+    if (transcript) submitPrompt(transcript);
   };
 
   const today = () => {

@@ -70,6 +70,9 @@ class VoiceSampleResponse(BaseModel):
     content_type: str
     byte_size: int
     phrase_hint: str | None
+    duration_seconds: float | None
+    # Long enough for the voice provider; short takes are kept but not sent.
+    usable: bool
     created_at: datetime
 
 
@@ -81,12 +84,16 @@ class VoiceProfileResponse(BaseModel):
     provider_voice_id: str | None
     provider_status: str
     sample_count: int
+    usable_sample_count: int
+    min_sample_seconds: float
     samples: list[VoiceSampleResponse]
 
 
 class CreateVoiceCloneRequest(BaseModel):
     description: str | None = Field(default=None, max_length=500)
     remove_background_noise: bool = False
+    # Delete the existing provider voice and rebuild it from every saved sample.
+    replace_existing: bool = False
 
 
 class CreateVoiceCloneResponse(BaseModel):

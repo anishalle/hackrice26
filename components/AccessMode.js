@@ -31,6 +31,10 @@ const AccessContext = createContext(null);
 
 export function AccessProvider({ children, initial = START_MODE }) {
   const [mode, setMode] = useState(initial);
+  // Whether Axl's replies are read out in the banked voice while in gaze mode.
+  // Phrases off the "Speak for me" board always are: that is the person
+  // talking, and the switch is only about Axl's side of the thread.
+  const [speakReplies, setSpeakReplies] = useState(true);
 
   // ponytail: in-memory for now. A care partner sets this once, so it wants to
   // survive a restart — add AsyncStorage when the demo stops being a demo.
@@ -41,8 +45,10 @@ export function AccessProvider({ children, initial = START_MODE }) {
       t: TOKENS[mode],
       setMode,
       toggle: () => setMode((m) => (m === 'gaze' ? 'standard' : 'gaze')),
+      speakReplies,
+      setSpeakReplies,
     }),
-    [mode]
+    [mode, speakReplies]
   );
 
   return <AccessContext.Provider value={value}>{children}</AccessContext.Provider>;
@@ -58,6 +64,8 @@ export function useAccess() {
       t: TOKENS.standard,
       setMode: () => {},
       toggle: () => {},
+      speakReplies: false,
+      setSpeakReplies: () => {},
     }
   );
 }
