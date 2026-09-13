@@ -66,7 +66,7 @@ async def start_guided_browser(website_url: str, mode: str) -> dict[str, str]:
         "proxyCountryCode": "us",
         "timeout": 15,
         "browserScreenWidth": 1280,
-        "browserScreenHeight": 720,
+        "browserScreenHeight": 960,
     }
     url = "https://api.browser-use.com/api/v4/browsers"
 

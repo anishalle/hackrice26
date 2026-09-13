@@ -179,7 +179,7 @@ export function GuidedBrowser({ websiteUrl, mode }: GuidedBrowserProps) {
           <iframe
             title="Live guided browser"
             src={liveView.live_url}
-            className="aspect-video w-full bg-muted"
+            className="aspect-[4/3] w-full bg-muted"
             allow="autoplay"
           />
           <div className="p-3 text-xs text-muted-foreground">
