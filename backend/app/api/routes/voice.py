@@ -35,6 +35,7 @@ from app.services.voice_preservation import (
     delete_voice_sample,
     get_voice_profile,
     list_voice_samples,
+    rebuild_elevenlabs_clone,
     setup_voice_profile,
     synthesize_elevenlabs_speech,
 )
@@ -144,6 +145,46 @@ async def create_voice_clone(
     except httpx.HTTPError as error:
         raise HTTPException(
             status_code=502, detail="ElevenLabs could not create the voice"
+        ) from error
+    except RuntimeError as error:
+        raise HTTPException(status_code=502, detail=str(error)) from error
+
+    return CreateVoiceCloneResponse(
+        provider_voice_id=voice_id,
+        provider_status=("verification_required" if requires_verification else "ready"),
+        requires_verification=requires_verification,
+    )
+
+
+@router.post("/profile/rebuild", response_model=CreateVoiceCloneResponse)
+async def rebuild_voice_clone(
+    request: CreateVoiceCloneRequest,
+    owner_subject: str = Header(alias="X-Voice-Owner-Subject"),
+    session: Session = Depends(get_db),
+) -> CreateVoiceCloneResponse:
+    """Create a replacement clone from every recording currently saved by the user."""
+    try:
+        voice_id, requires_verification = await rebuild_elevenlabs_clone(
+            session,
+            owner_subject=owner_subject,
+            description=request.description,
+            remove_background_noise=request.remove_background_noise,
+        )
+    except ElevenLabsNotConfiguredError as error:
+        raise HTTPException(status_code=503, detail=str(error)) from error
+    except ElevenLabsProviderError as error:
+        raise HTTPException(
+            status_code=_provider_response_status(error.status_code), detail=str(error)
+        ) from error
+    except VoiceProfileNotFoundError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+    except ValueError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+    except VoiceSampleEncryptionError as error:
+        raise HTTPException(status_code=503, detail=str(error)) from error
+    except httpx.HTTPError as error:
+        raise HTTPException(
+            status_code=502, detail="ElevenLabs could not rebuild the voice"
         ) from error
     except RuntimeError as error:
         raise HTTPException(status_code=502, detail=str(error)) from error

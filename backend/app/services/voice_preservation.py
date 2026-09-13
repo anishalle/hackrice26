@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import logging
 from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
@@ -26,6 +27,7 @@ _ALLOWED_AUDIO_TYPES = {
     "audio/x-m4a",
     "audio/x-wav",
 }
+logger = logging.getLogger(__name__)
 
 
 class ElevenLabsNotConfiguredError(RuntimeError):
@@ -173,12 +175,50 @@ async def create_elevenlabs_clone(
     remove_background_noise: bool,
 ) -> tuple[str, bool]:
     """Send the user's saved recordings to ElevenLabs only after explicit action."""
+    return await _create_or_rebuild_elevenlabs_clone(
+        session,
+        owner_subject=owner_subject,
+        description=description,
+        remove_background_noise=remove_background_noise,
+        replace_existing=False,
+    )
+
+
+async def rebuild_elevenlabs_clone(
+    session: Session,
+    *,
+    owner_subject: str,
+    description: str | None,
+    remove_background_noise: bool,
+) -> tuple[str, bool]:
+    """Replace a clone with a new one made from every current saved sample."""
+    return await _create_or_rebuild_elevenlabs_clone(
+        session,
+        owner_subject=owner_subject,
+        description=description,
+        remove_background_noise=remove_background_noise,
+        replace_existing=True,
+    )
+
+
+async def _create_or_rebuild_elevenlabs_clone(
+    session: Session,
+    *,
+    owner_subject: str,
+    description: str | None,
+    remove_background_noise: bool,
+    replace_existing: bool,
+) -> tuple[str, bool]:
+    """Create a clone from all saved samples and atomically make it active."""
     if settings.ELEVENLABS_API_KEY is None:
         raise ElevenLabsNotConfiguredError("ELEVENLABS_API_KEY is not configured")
 
     profile = _required_profile(session, owner_subject)
-    if profile.provider_voice_id is not None:
+    prior_voice_id = profile.provider_voice_id
+    if prior_voice_id is not None and not replace_existing:
         raise ValueError("A voice has already been created for this profile")
+    if prior_voice_id is None and replace_existing:
+        raise ValueError("Create a voice before rebuilding it")
 
     samples = list_voice_samples(session, profile)
     if not samples:
@@ -222,6 +262,10 @@ async def create_elevenlabs_clone(
     )
     profile.cloned_at = datetime.now(UTC)
     session.commit()
+
+    if prior_voice_id is not None:
+        await _delete_replaced_elevenlabs_voice(prior_voice_id)
+
     return str(voice_id), requires_verification
 
 
@@ -342,3 +386,18 @@ def _elevenlabs_error_message(response: httpx.Response) -> str:
         f"ElevenLabs rejected this request (HTTP {response.status_code}): "
         f"{detail[:400]}"
     )
+
+
+async def _delete_replaced_elevenlabs_voice(voice_id: str) -> None:
+    """Best-effort cleanup after the new clone is safely active in our database."""
+    if settings.ELEVENLABS_API_KEY is None:
+        return
+
+    url = f"{str(settings.ELEVENLABS_API_BASE_URL).rstrip('/')}/voices/{voice_id}"
+    headers = {"xi-api-key": settings.ELEVENLABS_API_KEY.get_secret_value()}
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            response = await client.delete(url, headers=headers)
+            _raise_for_elevenlabs_error(response)
+    except (ElevenLabsProviderError, httpx.HTTPError):
+        logger.warning("Could not remove an obsolete ElevenLabs voice after rebuild")
