@@ -9,9 +9,11 @@ type Status = "preparing" | "ready" | "opening" | "error";
 
 export function PersonaVerification({
   onBack,
+  onSkip,
   returnPath,
 }: {
   onBack: () => void;
+  onSkip: () => void;
   returnPath?: string;
 }) {
   const [status, setStatus] = useState<Status>("preparing");
@@ -104,6 +106,14 @@ export function PersonaVerification({
               </Button>
             )}
           </div>
+          <button
+            type="button"
+            onClick={onSkip}
+            disabled={status === "opening"}
+            className="target mt-4 inline-flex min-h-11 items-center px-2 text-sm text-[var(--text-2)] underline underline-offset-4 hover:text-[var(--text)] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Skip for now
+          </button>
           <p className="mt-5 font-mono text-xs text-[var(--text-3)]">Sandbox demo · No identity result is saved in Aide.</p>
         </div>
       </div>

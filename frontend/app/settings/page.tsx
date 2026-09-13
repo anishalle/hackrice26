@@ -14,6 +14,7 @@ function SettingsContent() {
   return (
     <PersonaVerification
       onBack={() => router.replace(returnPath)}
+      onSkip={() => router.replace(returnPath)}
       returnPath={returnPath}
     />
   );
