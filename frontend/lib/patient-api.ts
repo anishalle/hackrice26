@@ -16,17 +16,19 @@ const snapshot = () => catalog;
 const serverSnapshot = () => initial;
 
 export async function reloadPatients() {
-  if (pending) return;
+  if (pending) return false;
   pending = true;
-  catalog = { ...catalog, status: "loading", error: null };
+  catalog = { ...catalog, status: catalog.patients.length ? "ready" : "loading", error: null };
   listeners.forEach((notify) => notify());
   try {
     const response = await fetch(`${patientApiUrl()}/api/v1/patients`, { cache: "no-store" });
     if (!response.ok) throw new Error(`Patient database request failed (${response.status}).`);
     const patients = await response.json() as Patient[];
     catalog = { patients, status: "ready", error: null };
+    return true;
   } catch (error) {
     catalog = { ...catalog, status: "error", error: error instanceof Error ? error.message : "Patient database unavailable." };
+    return false;
   } finally {
     pending = false;
     listeners.forEach((notify) => notify());

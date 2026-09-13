@@ -173,6 +173,7 @@ export interface Session extends SessionState {
   setViewerClinician: (id: string) => void;
   setPreviewing: (v: boolean) => void;
   setAxis: (axis: Axis, level: Level) => void;
+  acknowledgeSavedProfile: (patientId: string, saved: Profile) => void;
   setProfileComplete: (v: boolean) => void;
   setVerifiedWith: (m: ModalityId | null) => void;
   setAttestation: (a: Attestation | null) => void;
@@ -207,6 +208,17 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 export function useSession(): Session {
   const snapshot = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   const catalog = usePatients();
+
+  const acknowledgeSavedProfile = useCallback((patientId: string, saved: Profile) => {
+    update((s) => {
+      const current = s.patientProfiles[patientId];
+      // Preserve any edits made while the save request was in flight.
+      if (!current || Object.keys(saved).some((axis) => current[axis as Axis] !== saved[axis as Axis])) return s;
+      const patientProfiles = { ...s.patientProfiles };
+      delete patientProfiles[patientId];
+      return { ...s, patientProfiles };
+    });
+  }, []);
 
   // Writes land on the active patient's overrides, seeded from the profile they
   // arrived with so a single moved axis does not reset the other four to full.
@@ -280,7 +292,7 @@ export function useSession(): Session {
   }, []);
 
   const patient = useMemo(
-    () => catalog.patients.find((p) => p.id === snapshot.activePatientId) ?? resolvePatient(snapshot.activePatientId),
+    () => catalog.patients.find((p) => p.id === snapshot.activePatientId) ?? catalog.patients[0] ?? resolvePatient(snapshot.activePatientId),
     [snapshot.activePatientId, catalog.patients],
   );
 
@@ -312,6 +324,7 @@ export function useSession(): Session {
     setViewerClinician,
     setPreviewing,
     setAxis,
+    acknowledgeSavedProfile,
     setProfileComplete,
     setVerifiedWith,
     setAttestation,

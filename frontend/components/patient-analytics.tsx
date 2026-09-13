@@ -33,7 +33,7 @@ export function PatientAnalyticsPanel({ patientId }: { patientId: string }) {
           <h2 id="patient-analytics-title" className="mt-3 text-2xl font-medium">Change over time.</h2>
         </div>
         <label className="text-sm">Window
-          <select value={weeks} onChange={(event) => setWeeks(Number(event.target.value))}
+          <select aria-label="Analytics window" value={weeks} onChange={(event) => setWeeks(Number(event.target.value))}
             className="target ml-3 rounded-[var(--r-pill)] border border-[var(--line)] bg-[var(--surface)] px-4">
             <option value={4}>4 weeks</option><option value={8}>8 weeks</option><option value={14}>14 weeks</option>
           </select>

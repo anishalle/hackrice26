@@ -3,10 +3,12 @@
 import { useState } from "react";
 import type { Profile } from "@/lib/capability";
 import { patientApiUrl, reloadPatients } from "@/lib/patient-api";
+import { useSession } from "@/lib/session";
 
 export function SavePatientProfile({ patientId, profile }: { patientId: string; profile: Profile }) {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const { acknowledgeSavedProfile } = useSession();
   async function save() {
     setSaving(true); setMessage("");
     try {
@@ -15,7 +17,7 @@ export function SavePatientProfile({ patientId, profile }: { patientId: string; 
       });
       if (!response.ok) throw new Error(`Could not save profile (${response.status}).`);
       setMessage("Profile saved to PostgreSQL.");
-      void reloadPatients();
+      if (await reloadPatients()) acknowledgeSavedProfile(patientId, profile);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Could not save profile.");
     } finally { setSaving(false); }

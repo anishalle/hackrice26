@@ -46,8 +46,8 @@ export default function RecordsPage() {
 
   const gate = (scope: RecordScopeId) => canRead(viewer.id, patient.id, scope);
 
-  if (catalog.status !== "ready") return <main className="paper min-h-dvh p-8">
-    <p role={catalog.error ? "alert" : "status"}>{catalog.error ?? "Loading patient record from PostgreSQL…"}</p>
+  if (catalog.status !== "ready" || !catalog.patients.length) return <main className="paper min-h-dvh p-8">
+    <p role={catalog.error ? "alert" : "status"}>{catalog.error ?? (catalog.status === "ready" ? "No synthetic patients seeded yet." : "Loading patient record from PostgreSQL…")}</p>
     {catalog.error && <button className="target underline" onClick={() => void catalog.retry()}>Retry</button>}
     <Link href="/clinician" className="block mt-4 underline">Back to caseload</Link>
   </main>;
