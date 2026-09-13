@@ -1,5 +1,6 @@
 import { DEFAULT_PROFILE, type Axis, type Profile } from "./capability";
 import type { ExpressionId } from "./session";
+import type { PatientRecords } from "./records";
 
 /**
  * The clinician's caseload.
@@ -57,6 +58,7 @@ export interface PatientAvatar {
 }
 
 export interface Patient {
+  records?: PatientRecords;
   id: string;
   name: string;
   /** How long they have been checking in, in words. */

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePatients } from "@/lib/patient-api";
 import {
   canRead,
   careTeamFor,
@@ -12,7 +13,6 @@ import {
 } from "@/lib/care";
 import {
   formatDuration,
-  hasFullRecord,
   recordsFor,
   type Recording,
 } from "@/lib/records";
@@ -38,12 +38,19 @@ import { IconArrowLeft, IconBlocked, IconLock } from "@/components/icons";
  */
 export default function RecordsPage() {
   const { patient, viewerClinicianId, setViewerClinician } = useSession();
+  const catalog = usePatients();
   const viewer = CLINICIANS[viewerClinicianId] ?? CLINICIAN_LIST[0];
   const assigned = isAssigned(viewer.id, patient.id);
-  const records = recordsFor(patient.id);
+  const records = patient.records ?? recordsFor(patient.id);
   const team = careTeamFor(patient.id);
 
   const gate = (scope: RecordScopeId) => canRead(viewer.id, patient.id, scope);
+
+  if (catalog.status !== "ready") return <main className="paper min-h-dvh p-8">
+    <p role={catalog.error ? "alert" : "status"}>{catalog.error ?? "Loading patient record from PostgreSQL…"}</p>
+    {catalog.error && <button className="target underline" onClick={() => void catalog.retry()}>Retry</button>}
+    <Link href="/clinician" className="block mt-4 underline">Back to caseload</Link>
+  </main>;
 
   return (
     <main className="paper min-h-dvh">
@@ -124,7 +131,7 @@ export default function RecordsPage() {
             empty record, so it takes the whole page rather than each section. */}
         {!assigned ? (
           <NoRelationship patientName={patient.name} viewerName={viewer.name} team={team} />
-        ) : !hasFullRecord(patient.id) ? (
+        ) : !records.series.length && !records.recordings.length ? (
           <Panel className="mt-10 p-8">
             <p className="text-[0.9375rem] text-[var(--text-2)]">
               No long record on file for {patient.name.split(" ")[0]} yet. The

@@ -1,6 +1,9 @@
 "use client";
 
 import { ViewTransition } from "react";
+import { usePatients } from "@/lib/patient-api";
+import { PatientAnalyticsPanel } from "@/components/patient-analytics";
+import { SavePatientProfile } from "@/components/save-patient-profile";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
@@ -33,6 +36,7 @@ export default function ProfilePage() {
   const router = useRouter();
   const { patient, profile, setAxis, setPreviewing, adaptation, hydrated } = useSession();
   const reduce = useReducedMotion();
+  const catalog = usePatients();
   const notes = adaptationNotes(profile);
   const verdicts = routeVerification(profile);
   const blocked = blockedCount(verdicts);
@@ -48,6 +52,12 @@ export default function ProfilePage() {
     setPreviewing(true);
     router.push("/feed");
   };
+
+  if (catalog.status !== "ready") return <main className="paper min-h-dvh p-8">
+    <p role={catalog.error ? "alert" : "status"}>{catalog.error ?? "Loading patient record from PostgreSQL…"}</p>
+    {catalog.error && <button className="target underline" onClick={() => void catalog.retry()}>Retry</button>}
+    <Link href="/clinician" className="block mt-4 underline">Back to caseload</Link>
+  </main>;
 
   return (
     <main className="paper min-h-dvh">
@@ -217,6 +227,9 @@ export default function ProfilePage() {
 
         {/* The check-ins the numbers came from. Last, because it is the
             provenance rather than the decision. */}
+        <SavePatientProfile key={`${patient.id}:${fingerprint(profile)}`} patientId={patient.id} profile={profile} />
+        <PatientAnalyticsPanel key={patient.id} patientId={patient.id} />
+
         <div className="mt-14">
           <div className="flex items-baseline justify-between">
             <PlotLabel>Check-in history</PlotLabel>

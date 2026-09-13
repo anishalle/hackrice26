@@ -6,6 +6,7 @@ import { deriveAdaptation, type Adaptation } from "./adaptation";
 import { DEFAULT_CLINICIAN_ID } from "./care";
 import { FOCUS_PATIENT_ID, resolvePatient, type Patient } from "./patients";
 import type { ModalityId } from "./verification";
+import { cachedPatient, usePatients } from "./patient-api";
 
 /* Bumped from axis.session.v1 with the rebrand, and again because the shape
    changed: a single `profile` became per-patient overrides. An old payload
@@ -205,12 +206,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
 export function useSession(): Session {
   const snapshot = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const catalog = usePatients();
 
   // Writes land on the active patient's overrides, seeded from the profile they
   // arrived with so a single moved axis does not reset the other four to full.
   const setAxis = useCallback((axis: Axis, level: Level) => {
     update((s) => {
-      const target = resolvePatient(s.activePatientId);
+      const target = cachedPatient(s.activePatientId) ?? resolvePatient(s.activePatientId);
       const current = s.patientProfiles[target.id] ?? target.profile;
       return {
         ...s,
@@ -278,8 +280,8 @@ export function useSession(): Session {
   }, []);
 
   const patient = useMemo(
-    () => resolvePatient(snapshot.activePatientId),
-    [snapshot.activePatientId],
+    () => catalog.patients.find((p) => p.id === snapshot.activePatientId) ?? resolvePatient(snapshot.activePatientId),
+    [snapshot.activePatientId, catalog.patients],
   );
 
   const profile = useMemo(

@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AXES, fingerprint, type Profile } from "@/lib/capability";
-import { flaggedTrendCount, PATIENTS, type Patient } from "@/lib/patients";
+import { flaggedTrendCount, type Patient } from "@/lib/patients";
+import { usePatients } from "@/lib/patient-api";
 import { useSession } from "@/lib/session";
 import { Avatar } from "@/components/avatar";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -31,6 +32,7 @@ import { IconArrowLeft, IconArrowRight } from "@/components/icons";
  */
 export default function ClinicianPage() {
   const router = useRouter();
+  const { patients, status, error, retry } = usePatients();
   const { setActivePatient, setPreviewing, patientProfiles, hydrated } = useSession();
 
   const open = (id: string) => {
@@ -79,21 +81,24 @@ export default function ClinicianPage() {
           className="mt-8 max-w-[38rem] rounded-[var(--r)] p-4 font-mono text-[0.75rem] leading-[1.6] text-[var(--text-2)]"
           style={{ backgroundColor: "var(--surface-2)", border: "1px solid var(--line)" }}
         >
-          Simulated. Every patient, measurement and check-in below is fixture
-          data. No real medical record is read or written, and no provider was
-          consulted.
+          Synthetic demo data stored in PostgreSQL on Tiger Data. Weekly trends
+          are computed from simulated measurements, not real patient recordings.
+          This is not a diagnostic or validated clinical system.
         </p>
 
         <div className="mt-10 flex items-baseline justify-between">
           <PlotLabel>Patients</PlotLabel>
           <PlotLabel className="text-[var(--text-3)]">
-            {PATIENTS.length} <span className="lowercase tracking-normal">on file</span>
+            {patients.length} <span className="lowercase tracking-normal">on file</span>
           </PlotLabel>
         </div>
         <Rule className="mt-3" major />
+        {status === "loading" && <p role="status" className="mt-6">Loading patients from PostgreSQL…</p>}
+        {error && <p role="alert" className="mt-6">{error} <button className="underline target" onClick={() => void retry()}>Retry</button></p>}
+        {status === "ready" && !patients.length && <p className="mt-6">No synthetic patients seeded yet.</p>}
 
         <ul className="mt-6 grid gap-3">
-          {PATIENTS.map((p) => (
+          {patients.map((p) => (
             <li key={p.id}>
               <PatientRow
                 patient={p}
