@@ -31,11 +31,12 @@ const CONFIRM_SHIFT = 'flex-end';
 // a target, and a fifth option costs a scan of the whole screen to find it.
 const PAGE = 4;
 
-// Options wear the four accents in order. Colour is a second channel on top of
-// the label: these accents sit within 1.2:1 of each other so colour alone
-// could never carry meaning, but paired with a fixed position it makes a
-// repeated question recognisable before it is read.
-const FILLS = [accents.periwinkle, accents.mint, accents.amber, accents.peach];
+// Options wear the mode's four accents in order. Colour is a second channel on
+// top of the label: any four accents this close in lightness sit within about
+// 1.2:1 of each other, so colour alone could never carry meaning, but paired
+// with a fixed position it makes a repeated question recognisable before it is
+// read.
+const fillsFor = (a) => [a.periwinkle, a.mint, a.amber, a.peach];
 
 function Target({ label, hint, tone, height, gap, wide, onPress, disabled }) {
   return (
@@ -64,6 +65,7 @@ function Target({ label, hint, tone, height, gap, wide, onPress, disabled }) {
 
 export default function GazeComposer({ step, onAnswer, onSpeak, onSpell, onExit, openBoard, onMode }) {
   const { t } = useAccess();
+  const FILLS = fillsFor(t.accents);
   const [resting, setResting] = useState(false);
   const [confirming, setConfirming] = useState(null);
   // Arriving from "Say something" on the gaze home lands on the board itself,
@@ -114,7 +116,7 @@ export default function GazeComposer({ step, onAnswer, onSpeak, onSpell, onExit,
           height={t.target}
           gap={0}
           wide
-          tone={accents.mint}
+          tone={t.accents.mint}
           onPress={() => {
             Haptics.selectionAsync();
             setResting(false);
@@ -251,7 +253,7 @@ export default function GazeComposer({ step, onAnswer, onSpeak, onSpell, onExit,
               height={t.target}
               gap={t.gap}
               wide
-              tone={accents.mint}
+              tone={t.accents.mint}
               onPress={() => {
                 Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                 onAnswer(confirming);

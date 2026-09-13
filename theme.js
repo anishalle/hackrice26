@@ -18,6 +18,31 @@ export const accents = {
   periwinkle: '#AFC6F7',
 };
 
+// Gaze mode gets its own four hues, not a variant of these.
+//
+// Nothing in the gaze research cares which hue a target is, only how bright
+// the screen is, so keeping the palette continuous across modes was habit
+// rather than a constraint — and continuity buys nothing here, since gaze mode
+// shows no tags, no marketplace and no skill cards. What it can buy instead is
+// separation: these four sit at hue 41, 174, 257 and 337, roughly evenly
+// spaced around the wheel, where the standard set crowds three of its four
+// into the warm quarter.
+//
+// The warm one is a marigold rather than a lime. A yellow-green at this
+// saturation reads as radioactive next to the aqua, and it was the weakest
+// against the ground at 1.12:1; pulling the hue down to 41 makes it the warm
+// anchor the other three needed and lifts it to 1.33:1.
+//
+// Bright rather than deep: luminance 0.70-0.88 against the standard set's
+// 0.76-0.83, so the mode is livelier and the screen no darker. Ink clears
+// 8.8:1 on all four.
+export const liveAccents = {
+  mint: '#6FE8DC',       // aqua
+  amber: '#FFCC5C',      // marigold
+  peach: '#FF9FC4',      // pink
+  periwinkle: '#BFA6FF', // violet
+};
+
 export const colors = {
   // Two grounds. `page` is the app's lilac; `bg` stays the warmer near-white
   // and belongs to the chat alone. Bubble's tail mask is painted in it, so
@@ -26,7 +51,7 @@ export const colors = {
   bg: '#FBFAF8',
   surface: '#FFFFFF',
   ink: '#151515',
-  inkMuted: '#7A7A74',
+  inkMuted: '#575751',
   border: '#ECEAE4',
   ...accents,
 };

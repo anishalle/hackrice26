@@ -105,7 +105,7 @@ export default function GazeHomeScreen() {
         {/* Still, and blinking slowly: `calm` pins the blink and saccade
             periods to the top of their range, and no idle layer means nothing
             here ever pulls a gaze off a target. */}
-        <AgentBlob size={104} animate={false} calm />
+        <AgentBlob size={104} animate={false} calm head={t.accents.peach} />
         <View style={styles.headText}>
           <Text style={styles.greeting}>Hi, {PROFILE.name.split(' ')[0]}</Text>
         </View>
@@ -131,7 +131,7 @@ export default function GazeHomeScreen() {
             label="Speak for me"
             hint="Your phrases, in your banked voice"
             icon="waveform"
-            tone={accents.mint}
+            tone={t.accents.mint}
             height={t.target}
             onPress={() => go('Agents', { board: true })}
           />
@@ -141,14 +141,14 @@ export default function GazeHomeScreen() {
           <BigTarget
             label="Talk to Axl"
             hint="Check in or ask for something"
-            tone={accents.periwinkle}
+            tone={t.accents.periwinkle}
             height={t.target}
             onPress={() => go('Agents')}
           />
           <BigTarget
             label={called ? 'Elena is coming' : `Call ${partner?.name.split(' ')[0] ?? 'for help'}`}
             hint={called ? 'Sent just now' : 'Sends an alert straight away'}
-            tone={called ? colors.surface : accents.peach}
+            tone={called ? colors.surface : t.accents.peach}
             height={t.target}
             onPress={() => {
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -161,7 +161,7 @@ export default function GazeHomeScreen() {
           <BigTarget
             label="My week"
             hint="What Axl has tracked"
-            tone={accents.amber}
+            tone={t.accents.amber}
             height={t.target * 0.7}
             onPress={() => go('Profile')}
           />

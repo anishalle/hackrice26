@@ -6,7 +6,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useIsFocused, useNavigation, useRoute } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
-import { colors, accents, spacing, radii, type, softShadow } from '../theme';
+import { colors, accents, liveAccents, spacing, radii, type, softShadow } from '../theme';
 import { DAYS, CLINICIANS } from '../data/days';
 import Thinking from '../components/Thinking';
 import StreamingText from '../components/StreamingText';
@@ -14,7 +14,7 @@ import TypingDots from '../components/TypingDots';
 import PromptBar from '../components/PromptBar';
 import VoiceRecorder from '../components/VoiceRecorder';
 import VoiceNote from '../components/VoiceNote';
-import AgentBlob from '../components/AgentBlob';
+import AgentBlob, { VOICE_SEED } from '../components/AgentBlob';
 import AgentSidebar from '../components/AgentSidebar';
 import ClinicianSheet from '../components/ClinicianSheet';
 import Bubble from '../components/Bubble';
@@ -31,6 +31,10 @@ const GREETING = [
   { id: 'g2', text: 'Ask me to handle something: a refill, a form, a ride. Or tell me how the week has gone and I will log it.' },
 ];
 
+// The voice agent's pink, taken from the gaze palette but fixed rather than
+// per-mode: it identifies a handler, not a screen.
+const VOICE_HEAD = liveAccents.peach;
+
 const FLAG_TINT = {
   amber: accents.amber,
   periwinkle: accents.periwinkle,
@@ -43,11 +47,11 @@ const clock = () =>
 
 // Axl's byline sits with each answer rather than in the nav bar, so a long
 // thread always says who is speaking.
-function AgentLine({ stage, time, children }) {
+function AgentLine({ stage, time, head, seed, children }) {
   return (
     <View style={styles.agentTurn}>
       <View style={styles.byline}>
-        <AgentBlob size={44} stage={stage} />
+        <AgentBlob size={44} stage={stage} head={head} seed={seed} />
         <Text style={styles.bylineTime}>{time ?? clock()}</Text>
       </View>
       <View style={styles.agentBody}>{children}</View>
@@ -151,7 +155,7 @@ export default function AgentsScreen() {
   const speak = (phrase) => {
     setTurns((all) => [
       ...all,
-      { id: `${Date.now()}`, stage: 'done', prompt: phrase, answer: 'Said out loud in your voice.' },
+      { id: `${Date.now()}`, stage: 'done', prompt: phrase, answer: 'Said out loud in your voice.', via: 'voice' },
     ]);
     requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: access.motion }));
   };
@@ -178,61 +182,103 @@ export default function AgentsScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: gaze ? access.ground : colors.bg }]}>
-      <View style={[styles.navBar, { paddingTop: insets.top + spacing(0.5) }]}>
-        {/* The tab bar is hidden on this screen, so leaving Axl has to be one
-            tap in the nav bar. Back goes home; the sidebar sits beside it. */}
-        <View style={[styles.navCluster, gaze && { width: access.target * 2 + spacing(1) }]}>
+      {/* Gaze mode gets its own header: Axl centred at the top, three times
+          the size of the two controls flanking him. The name is redundant next
+          to his face, and a title is one more thing to read on a screen built
+          to be read as little as possible. */}
+      {gaze ? (
+        <View style={[styles.gazeHeader, { paddingTop: insets.top + spacing(0.5) }]}>
+          <View style={styles.navBlobBig}>
+            {/* The mode's pink up here, where he is presence rather than a
+                speaker: the blue byline below is what marks a question. */}
+            <AgentBlob size={180} animate={false} calm head={access.accents.peach} />
+          </View>
+
+          {/* Pinned to the corners rather than laid out in a row with him: in
+              a flex row a 180pt blob drags both controls down to its centre. */}
           <Pressable
-            style={[styles.navBtn, gaze && { width: access.target, height: access.target, borderRadius: access.target / 2 }]}
+            style={[styles.navBtn, styles.navBtnGaze, styles.gazeLeft, { top: insets.top + spacing(0.5) }]}
             hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel="Back to home"
             onPress={() => {
               Haptics.selectionAsync();
               setDay(null);
               navigation.navigate('Home');
             }}
           >
-            <Icon name="back" size={17} color={colors.ink} />
+            <Icon name="back" size={20} color={colors.ink} />
           </Pressable>
+
           <Pressable
-            style={[styles.navBtn, gaze && { width: access.target, height: access.target, borderRadius: access.target / 2 }]}
+            style={[styles.navBtn, styles.navBtnGaze, styles.gazeRight, { top: insets.top + spacing(0.5) }]}
             hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel="Open menu"
             onPress={() => {
               Haptics.selectionAsync();
               setSidebar(true);
             }}
           >
-            <Icon name="sidebar" size={17} color={colors.ink} />
+            <Icon name="sidebar" size={20} color={colors.ink} />
           </Pressable>
         </View>
-
-        {!gaze && (
-          <Pressable
-            style={styles.offer}
-            accessibilityRole="button"
-            accessibilityLabel="Switch to gaze mode"
-            onPress={() => {
-              Haptics.selectionAsync();
-              setMode('gaze');
-            }}
-          >
-            <Text style={styles.offerText}>Gaze</Text>
-          </Pressable>
-        )}
-
-        <View style={styles.navTitleWrap}>
-          <Text style={styles.navTitle}>{reviewing ? reviewing.date : 'Axl'}</Text>
-          {reviewing && <Text style={styles.navSub}>check-in</Text>}
-        </View>
-
-        {/* Matches the left cluster's width so the title stays centred. */}
-        <View style={styles.navCluster}>
-          {reviewing && (
-            <Pressable style={[styles.navBtn, styles.navBtnEnd]} hitSlop={10} onPress={() => setSheet(reviewing)}>
-              <Icon name="paperplane" size={16} color={colors.ink} />
+      ) : (
+        <View style={[styles.navBar, { paddingTop: insets.top + spacing(0.5) }]}>
+          {/* The tab bar is hidden on this screen, so leaving Axl has to be one
+              tap in the nav bar. Back goes home; the sidebar sits beside it. */}
+          <View style={styles.navCluster}>
+            <Pressable
+              style={styles.navBtn}
+              hitSlop={10}
+              onPress={() => {
+                Haptics.selectionAsync();
+                setDay(null);
+                navigation.navigate('Home');
+              }}
+            >
+              <Icon name="back" size={17} color={colors.ink} />
             </Pressable>
-          )}
+            <Pressable
+              style={styles.navBtn}
+              hitSlop={10}
+              onPress={() => {
+                Haptics.selectionAsync();
+                setSidebar(true);
+              }}
+            >
+              <Icon name="sidebar" size={17} color={colors.ink} />
+            </Pressable>
+          </View>
+
+          <View style={styles.navTitleWrap}>
+            <Text style={styles.navTitle}>{reviewing ? reviewing.date : 'Axl'}</Text>
+            {reviewing && <Text style={styles.navSub}>check-in</Text>}
+          </View>
+
+          {/* Same width as the left cluster, so the title is centred on the
+              screen rather than on whatever is left over. */}
+          <View style={[styles.navCluster, styles.navClusterEnd]}>
+            {reviewing ? (
+              <Pressable style={styles.navBtn} hitSlop={10} onPress={() => setSheet(reviewing)}>
+                <Icon name="paperplane" size={16} color={colors.ink} />
+              </Pressable>
+            ) : (
+              <Pressable
+                style={styles.offer}
+                accessibilityRole="button"
+                accessibilityLabel="Switch to gaze mode"
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  setMode('gaze');
+                }}
+              >
+                <Text style={styles.offerText}>Gaze</Text>
+              </Pressable>
+            )}
+          </View>
         </View>
-      </View>
+      )}
 
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <Animated.ScrollView
@@ -311,7 +357,11 @@ export default function AgentsScreen() {
                     )}
                   </Bubble>
 
-                  <AgentLine stage={turn.stage}>
+                  <AgentLine
+                    stage={turn.stage}
+                    seed={turn.via === 'voice' ? VOICE_SEED : undefined}
+                    head={turn.via === 'voice' ? VOICE_HEAD : gaze ? accents.periwinkle : undefined}
+                  >
                     {turn.answer ? (
                       <Text style={styles.agentText}>{turn.answer}</Text>
                     ) : null}
@@ -333,7 +383,7 @@ export default function AgentsScreen() {
                   answers and the eye never travels up the screen to re-read
                   what it is answering. */}
               {gaze && composerMode === 'asking' && (
-                <AgentLine stage="done">
+                <AgentLine stage="done" head={gaze ? accents.periwinkle : undefined}>
                   <Text style={[styles.agentText, styles.agentTextBig]}>{CHECK_IN[step].ask}</Text>
                 </AgentLine>
               )}
@@ -424,6 +474,15 @@ const styles = StyleSheet.create({
     ...softShadow,
   },
   navCluster: { flexDirection: 'row', alignItems: 'center', gap: spacing(1), width: 84 },
+  navClusterEnd: { justifyContent: 'flex-end' },
+  // Smaller than the composer's targets on purpose: these are secondary in
+  // gaze mode, and the blob between them has to be the largest thing up here.
+  navBtnGaze: { width: 60, height: 60, borderRadius: 30 },
+  gazeHeader: { paddingBottom: spacing(0.5) },
+  // Lifted, because the silhouette leaves a band of empty box above it.
+  navBlobBig: { alignItems: 'center', marginTop: -spacing(4.5) },
+  gazeLeft: { position: 'absolute', left: spacing(2) },
+  gazeRight: { position: 'absolute', right: spacing(2) },
   navBtnEnd: { marginLeft: 'auto' },
   navTitleWrap: { flex: 1 },
   offer: {

@@ -1,4 +1,5 @@
 import { createContext, useContext, useMemo, useState } from 'react';
+import { accents, liveAccents } from '../theme';
 
 // Two input models, one piece of state. `standard` is touch; `gaze` is the mode
 // for someone driving the phone with iOS Eye Tracking and Dwell Control, or
@@ -14,8 +15,8 @@ import { createContext, useContext, useMemo, useState } from 'react';
 // Reduced smooth-pursuit gain and impaired suppression of reflexive saccades
 // mean a moving element both cannot be tracked and pulls the eye off target.
 export const TOKENS = {
-  standard: { target: 48, gap: 12, dwellMs: null, motion: true, ground: '#ECE9F8' },
-  gaze: { target: 88, gap: 24, dwellMs: 600, motion: false, ground: '#F6F1E8' },
+  standard: { target: 48, gap: 12, dwellMs: null, motion: true, ground: '#ECE9F8', accents },
+  gaze: { target: 88, gap: 24, dwellMs: 600, motion: false, ground: '#F6F1E8', accents: liveAccents },
 };
 
 // Which mode the app starts in. 'gaze' boots straight to the gaze home, which

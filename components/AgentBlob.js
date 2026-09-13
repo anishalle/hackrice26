@@ -12,6 +12,11 @@ import { accents, colors } from '../theme';
 // Reanimated, so a blob per message costs no React renders. The community
 // avatars stay still on purpose; four idling faces in a list is noise.
 export const AXL_SEED = 'sarahw';
+
+// The voice agent: the one that speaks a phrase out loud in the banked voice.
+// It answers a different question than Axl does, so it gets its own face and
+// its own colour rather than being Axl in a different hat.
+export const VOICE_SEED = 'vox-carrier';
 export const AXL_HERO_SEED = 'mara';
 
 // Trait overrides are positions in [0,1) inside blobatar's own ranges.
@@ -137,7 +142,7 @@ const STAGE_EXPRESSION = {
 // a face that is present without ever pulling the eye off a target.
 const CALM = { ...FACE, 'motion.blink': 1, 'motion.saccade': 1 };
 
-export default function AgentBlob({ seed = AXL_SEED, size = 40, stage, animate = true, calm = false }) {
+export default function AgentBlob({ seed = AXL_SEED, size = 40, stage, animate = true, calm = false, head }) {
   const rest = useRest(!animate, calm);
   const pose = rest ?? STAGE_EXPRESSION[stage] ?? idle;
 
@@ -146,7 +151,7 @@ export default function AgentBlob({ seed = AXL_SEED, size = 40, stage, animate =
       name={seed}
       size={size}
       traits={calm ? CALM : FACE}
-      palette={PALETTE}
+      palette={head ? { head, eye: EYE } : PALETTE}
       expression={pose}
       animate={animate}
       title="Axl"
