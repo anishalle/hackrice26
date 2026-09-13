@@ -1,10 +1,7 @@
 // The person, and the settings that decide how the app meets them. Everything
 // under `access` is what the adaptive UI reads: Axl proposes a change when the
 // tracking says one is due, and this is where it lands once accepted.
-//
-// Hardcoded sign-in for the demo. Not a secret — there is no account behind it,
-// and the app never sends these anywhere.
-export const DEMO_LOGIN = { email: 'jordan@aide.app', password: 'velocity' };
+// Every demo login uses this same profile, regardless of the entered credentials.
 
 export const PROFILE = {
   name: 'Jordan Fields',
