@@ -151,6 +151,21 @@ def list_voice_samples(session: Session, profile: VoiceProfile) -> list[VoiceSam
     )
 
 
+def read_voice_sample(
+    session: Session, *, owner_subject: str, sample_id: UUID
+) -> tuple[bytes, str]:
+    """Decrypt one recording belonging to the requested profile for playback."""
+    profile = _required_profile(session, owner_subject)
+    sample = session.scalar(
+        select(VoiceSample).where(
+            VoiceSample.id == sample_id, VoiceSample.voice_profile_id == profile.id
+        )
+    )
+    if sample is None:
+        raise VoiceProfileNotFoundError("Voice sample not found")
+    return _decrypt_voice_sample(sample.audio_data), sample.content_type
+
+
 def delete_voice_sample(
     session: Session, *, owner_subject: str, sample_id: UUID
 ) -> None:

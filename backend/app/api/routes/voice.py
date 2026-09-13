@@ -35,6 +35,7 @@ from app.services.voice_preservation import (
     delete_voice_sample,
     get_voice_profile,
     list_voice_samples,
+    read_voice_sample,
     rebuild_elevenlabs_clone,
     setup_voice_profile,
     synthesize_elevenlabs_speech,
@@ -101,6 +102,29 @@ async def upload_voice_sample(
     finally:
         await file.close()
     return _sample_response(sample)
+
+
+@router.get("/profile/samples/{sample_id}/audio")
+def recording_audio(
+    sample_id: UUID,
+    owner_subject: str = Header(alias="X-Voice-Owner-Subject"),
+    session: Session = Depends(get_db),
+) -> Response:
+    try:
+        audio, content_type = read_voice_sample(
+            session, owner_subject=owner_subject, sample_id=sample_id
+        )
+    except VoiceProfileNotFoundError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+    except VoiceSampleEncryptionError as error:
+        raise HTTPException(status_code=503, detail=str(error)) from error
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+    return Response(
+        content=audio,
+        media_type=content_type,
+        headers={"Cache-Control": "private, no-store"},
+    )
 
 
 @router.delete("/profile/samples/{sample_id}", status_code=204)
