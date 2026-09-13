@@ -13,7 +13,10 @@ from uuid import UUID, uuid4
 
 from pgvector.sqlalchemy import VECTOR
 from sqlalchemy import (
+    Boolean,
+    CheckConstraint,
     DateTime,
+    Float,
     ForeignKey,
     Index,
     Integer,
@@ -32,6 +35,37 @@ from app.core.config import settings
 
 class Base(DeclarativeBase):
     """Base metadata consumed by Alembic migrations."""
+
+
+class Patient(Base):
+    """Synthetic demo identities; never linked to real voice-bank accounts."""
+
+    __tablename__ = "patients"
+    __table_args__ = (CheckConstraint("is_synthetic"),)
+    id: Mapped[str] = mapped_column(Text, primary_key=True)
+    record: Mapped[dict[str, Any]] = mapped_column(JSONB)
+    is_synthetic: Mapped[bool] = mapped_column(Boolean, server_default="true")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+
+class PatientMeasurement(Base):
+    """Time partitioning and aggregate views are managed explicitly by Alembic."""
+
+    __tablename__ = "patient_measurements"
+    __table_args__ = (
+        CheckConstraint("is_synthetic"),
+        CheckConstraint("value >= 0 AND value < 'Infinity'::float8"),
+        CheckConstraint("metric IN ('speaking_rate', 'pause_seconds', 'tap_accuracy')"),
+    )
+    patient_id: Mapped[str] = mapped_column(ForeignKey("patients.id"), primary_key=True)
+    recorded_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), primary_key=True
+    )
+    metric: Mapped[str] = mapped_column(Text, primary_key=True)
+    value: Mapped[float] = mapped_column(Float)
+    is_synthetic: Mapped[bool] = mapped_column(Boolean, server_default="true")
 
 
 class CreatedAtMixin:

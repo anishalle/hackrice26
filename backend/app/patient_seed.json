@@ -1,0 +1,142 @@
+[
+  {
+    "id": "anish",
+    "name": "Anish A.",
+    "since": "Week 14 of check-ins",
+    "diagnosis": "Limb-onset ALS, diagnosed Nov 2024",
+    "focus": true,
+    "profile": {
+      "vision": 3,
+      "hearing": 3,
+      "motor": 2,
+      "speech": 2,
+      "cognitive": 3
+    },
+    "avatar": {
+      "seed": "anish-aide",
+      "hue": 268,
+      "tone": 0.52,
+      "expression": "idle"
+    },
+    "attested": [
+      "speech",
+      "motor"
+    ]
+  },
+  {
+    "id": "dea",
+    "name": "Dea M.",
+    "since": "Week 31 of check-ins",
+    "diagnosis": "Bulbar-onset ALS, diagnosed Mar 2024",
+    "focus": false,
+    "profile": {
+      "vision": 3,
+      "hearing": 3,
+      "motor": 0,
+      "speech": 1,
+      "cognitive": 3
+    },
+    "avatar": {
+      "seed": "dea-aide",
+      "hue": 12,
+      "tone": 0.6,
+      "expression": "idle"
+    },
+    "attested": [
+      "motor",
+      "speech"
+    ]
+  },
+  {
+    "id": "ilse",
+    "name": "Ilse V.",
+    "since": "Week 22 of check-ins",
+    "diagnosis": "Limb-onset ALS, diagnosed Jul 2024",
+    "focus": false,
+    "profile": {
+      "vision": 3,
+      "hearing": 3,
+      "motor": 1,
+      "speech": 3,
+      "cognitive": 3
+    },
+    "avatar": {
+      "seed": "ilse-aide",
+      "hue": 150,
+      "tone": 0.45,
+      "expression": "idle"
+    },
+    "attested": [
+      "motor"
+    ]
+  },
+  {
+    "id": "kwesi",
+    "name": "Kwesi A.",
+    "since": "Week 9 of check-ins",
+    "diagnosis": "Limb-onset ALS, diagnosed Dec 2024",
+    "focus": false,
+    "profile": {
+      "vision": 3,
+      "hearing": 0,
+      "motor": 3,
+      "speech": 3,
+      "cognitive": 3
+    },
+    "avatar": {
+      "seed": "kwesi-aide",
+      "hue": 210,
+      "tone": 0.55,
+      "expression": "idle"
+    },
+    "attested": [
+      "hearing"
+    ]
+  },
+  {
+    "id": "tam",
+    "name": "Tam R.",
+    "since": "Week 17 of check-ins",
+    "diagnosis": "Limb-onset ALS, diagnosed Sep 2024",
+    "focus": false,
+    "profile": {
+      "vision": 2,
+      "hearing": 3,
+      "motor": 3,
+      "speech": 3,
+      "cognitive": 1
+    },
+    "avatar": {
+      "seed": "tam-aide",
+      "hue": 44,
+      "tone": 0.5,
+      "expression": "idle"
+    },
+    "attested": [
+      "cognitive"
+    ]
+  },
+  {
+    "id": "rune",
+    "name": "Rune O.",
+    "since": "Week 40 of check-ins",
+    "diagnosis": "Limb-onset ALS, diagnosed Jan 2024",
+    "focus": false,
+    "profile": {
+      "vision": 0,
+      "hearing": 3,
+      "motor": 3,
+      "speech": 3,
+      "cognitive": 3
+    },
+    "avatar": {
+      "seed": "rune-aide",
+      "hue": 320,
+      "tone": 0.48,
+      "expression": "idle"
+    },
+    "attested": [
+      "vision"
+    ]
+  }
+]
