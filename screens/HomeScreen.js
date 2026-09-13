@@ -78,6 +78,13 @@ export default function HomeScreen() {
     navigation.navigate('Agents');
   };
 
+  // The card is the check-in, not a door to the chat: the reading lives on
+  // its own screen so the line has the whole page.
+  const openCheckIn = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    navigation.navigate('CheckIn');
+  };
+
   const openMarketplace = (skillId) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     navigation.navigate('Marketplace', skillId ? { skillId } : undefined);
@@ -118,14 +125,14 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        <Pressable style={styles.agentCard} onPress={openAgent}>
+        <Pressable style={styles.agentCard} onPress={openCheckIn}>
           <TiltGaze style={styles.agentFigure}>
             <AgentBlob size={248} animate={false} />
           </TiltGaze>
 
           <View style={styles.agentCopy}>
             <Text style={styles.agentTitle}>Your weekly check-in takes two minutes</Text>
-            <Pressable style={styles.agentBtn} onPress={openAgent}>
+            <Pressable style={styles.agentBtn} onPress={openCheckIn}>
               <Text style={styles.agentBtnText}>Check in</Text>
               <Icon name="next" size={14} color={colors.ink} />
             </Pressable>

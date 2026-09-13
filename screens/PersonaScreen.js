@@ -7,7 +7,7 @@ import Icon from '../components/Icon';
 import { openPersona, preparePersona } from '../lib/persona';
 import { cardShadow, colors, radii, softShadow, spacing, type } from '../theme';
 
-export default function PersonaScreen({ onDone, onBack }) {
+export default function PersonaScreen({ onDone, onBack, onSkip }) {
   const insets = useSafeAreaInsets();
   const [status, setStatus] = useState('preparing');
   const [error, setError] = useState('');
@@ -64,6 +64,13 @@ export default function PersonaScreen({ onDone, onBack }) {
             {!loading && <Icon name="forward" size={16} color={colors.ink} />}
           </Pressable>
           {!success && <Text style={styles.note}>Sandbox demo · No identity check is saved.</Text>}
+          {/* The demo's back door: same weight as the note above it, so it
+              reads as a footnote rather than a second button. */}
+          {!success && (
+            <Pressable onPress={onSkip} disabled={status === 'opening'} hitSlop={8} accessibilityRole="button" accessibilityLabel="Skip the Persona check" style={({ pressed }) => [styles.skip, pressed && { opacity: 0.4 }]}>
+              <Text style={styles.skipText}>Skip for now</Text>
+            </Pressable>
+          )}
         </View>
       </View>
     </ScrollView>
@@ -81,4 +88,6 @@ const styles = StyleSheet.create({
   cta: { minHeight: 60, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing(1.25), padding: spacing(2), marginTop: spacing(3), backgroundColor: colors.surface, borderRadius: radii.pill, ...cardShadow },
   ctaText: { ...type.heading, color: colors.ink },
   note: { ...type.footnote, color: colors.inkMuted, textAlign: 'center', marginTop: spacing(0.5) },
+  skip: { alignSelf: 'center', paddingVertical: spacing(0.5), paddingHorizontal: spacing(1), opacity: 0.6 },
+  skipText: { ...type.caption, color: colors.inkMuted },
 });

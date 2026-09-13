@@ -5,6 +5,7 @@ import GetStartedScreen from '../screens/GetStartedScreen';
 import LoginScreen from '../screens/LoginScreen';
 import SignupScreen from '../screens/SignupScreen';
 import PersonaScreen from '../screens/PersonaScreen';
+import CheckInScreen from '../screens/CheckInScreen';
 import { colors } from '../theme';
 import { AvatarContext } from './AuthAvatar';
 
@@ -30,6 +31,20 @@ export default function AuthFlow({ onLogin }) {
 
   const navigate = (next) => {
     if (locked.current) return;
+    // Persona hands over to the check-in on a plain cross-fade: no avatar to
+    // carry, and the check mark has just landed, so nothing should move.
+    if (next === 'checkin' && !reduced.current) {
+      locked.current = true;
+      animation.current = Animated.timing(opacity, { toValue: 0, duration: 320, easing: Easing.inOut(Easing.cubic), useNativeDriver: true });
+      animation.current.start(({ finished }) => {
+        if (!finished) { locked.current = false; return; }
+        current.current = null;
+        setScreen(next);
+        animation.current = Animated.timing(opacity, { toValue: 1, duration: 360, easing: Easing.out(Easing.cubic), useNativeDriver: true });
+        animation.current.start(() => { locked.current = false; });
+      });
+      return;
+    }
     if (screen !== 'start' || !current.current || reduced.current) {
       current.current = null;
       setScreen(next);
@@ -96,8 +111,9 @@ export default function AuthFlow({ onLogin }) {
             />
           )
             : screen === 'signup' ? <SignupScreen onDone={() => navigate('start')} onBack={() => navigate('start')} onLogin={() => navigate('login')} />
-              : screen === 'persona' ? <PersonaScreen onDone={onLogin} onBack={() => navigate('login')} />
-                : <LoginScreen onDone={() => navigate('persona')} onBack={() => navigate('start')} onSignup={() => navigate('signup')} />}
+              : screen === 'persona' ? <PersonaScreen onDone={() => navigate('checkin')} onSkip={() => navigate('checkin')} onBack={() => navigate('login')} />
+                : screen === 'checkin' ? <CheckInScreen onDone={onLogin} />
+                  : <LoginScreen onDone={() => navigate('persona')} onBack={() => navigate('start')} onSignup={() => navigate('signup')} />}
         </Animated.View>
       </AvatarContext.Provider>
       {from && (

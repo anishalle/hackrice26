@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, useIsFocused } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import {
@@ -15,6 +15,7 @@ import HomeScreen from './screens/HomeScreen';
 import AgentsScreen from './screens/AgentsScreen';
 import MarketplaceScreen from './screens/MarketplaceScreen';
 import ProfileScreen from './screens/ProfileScreen';
+import CheckInScreen from './screens/CheckInScreen';
 import TabBar from './components/TabBar';
 import AuthFlow from './components/AuthFlow';
 import { AccessProvider, useAccess } from './components/AccessMode';
@@ -79,7 +80,24 @@ function Shell() {
         <Tab.Screen name="Profile" options={{ tabBarStyle: { display: 'none' }, tabBarHidden: true }}>
           {({ navigation }) => <ProfileScreen onBack={() => navigation.navigate('Home')} />}
         </Tab.Screen>
+        {/* The Home card's Check in. Off the bar for the same reason as
+            Profile, and it also runs on the way in, after Persona. */}
+        <Tab.Screen name="CheckIn" options={{ tabBarStyle: { display: 'none' }, tabBarHidden: true }}>
+          {({ navigation }) => <CheckInTab onDone={() => navigation.navigate('Home')} />}
+        </Tab.Screen>
       </Tab.Navigator>
     </NavigationContainer>
   );
+}
+
+// Tab screens stay mounted, so a finished check-in would otherwise still be
+// showing its check mark the next time the card is tapped. Remounting while
+// it is out of view starts it fresh, and drops the microphone with it.
+function CheckInTab({ onDone }) {
+  const focused = useIsFocused();
+  const [generation, setGeneration] = useState(0);
+  useEffect(() => {
+    if (!focused) setGeneration((n) => n + 1);
+  }, [focused]);
+  return <CheckInScreen key={generation} onDone={onDone} />;
 }
