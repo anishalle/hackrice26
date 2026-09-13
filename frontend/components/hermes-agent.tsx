@@ -19,7 +19,9 @@ const STARTERS = [
 ];
 
 function suggestedWebsite(content: string): string | null {
-  const match = content.match(/Suggested website:\s*(https?:\/\/[^\s)\]]+)/i);
+  const match = content.match(
+    /(?:Suggested website:\s*)?(https?:\/\/[^\s)\]]+)/i
+  );
   return match?.[1] ?? null;
 }
 
