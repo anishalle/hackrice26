@@ -12,6 +12,7 @@ import { CHATS, SUGGESTIONS } from '../data/chats';
 import { CLINICIANS } from '../data/days';
 import Icon from './Icon';
 import AgentBlob from './AgentBlob';
+import { useAccess } from './AccessMode';
 import BlobMark from './BlobMark';
 
 // Axl's sidebar. Three things live here that the thread has no room for: the
@@ -142,7 +143,11 @@ export default function AgentSidebar({
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const { width } = useWindowDimensions();
-  const panelW = Math.min(302, width * 0.86);
+  const { gaze, t } = useAccess();
+  // Wider in gaze mode, and it arrives from the right because that is the side
+  // the menu button lives on: a panel that slides in from under your hand is
+  // a panel you do not have to re-find.
+  const panelW = gaze ? Math.min(400, width * 0.94) : Math.min(302, width * 0.86);
 
   const slide = useRef(new Animated.Value(0)).current;
   const [market, setMarket] = useState(null);
@@ -192,12 +197,18 @@ export default function AgentSidebar({
       <Animated.View
         style={[
           styles.panel,
+          gaze ? styles.panelRight : styles.panelLeft,
           {
             width: panelW,
             paddingTop: insets.top + spacing(1),
             paddingBottom: insets.bottom + spacing(1.5),
             transform: [
-              { translateX: slide.interpolate({ inputRange: [0, 1], outputRange: [-panelW - 24, 0] }) },
+              {
+                translateX: slide.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [gaze ? panelW + 24 : -panelW - 24, 0],
+                }),
+              },
             ],
           },
         ]}
@@ -220,6 +231,56 @@ export default function AgentSidebar({
           </Pressable>
         </View>
 
+        {gaze ? (
+          <View style={styles.gazeBody}>
+            <Pressable
+              style={({ pressed }) => [styles.gazeRow, pressed && styles.rowOn]}
+              onPress={() => leave(() => navigation.navigate('Marketplace'))}
+            >
+              <Icon name="store" size={22} color={colors.ink} />
+              <Text style={styles.gazeRowText}>Marketplace</Text>
+            </Pressable>
+
+            {SUGGESTED.slice(0, 2).map(({ id, why, skill }) => (
+              <Pressable
+                key={id}
+                style={({ pressed }) => [styles.gazeRow, pressed && styles.rowOn]}
+                onPress={() => leave(() => navigation.navigate('Marketplace', { skillId: id }))}
+              >
+                <BlobMark seed={id} size={18} fill={t.accents.mint} />
+                <View style={styles.gazeRowStack}>
+                  <Text style={styles.gazeRowText}>{skill.title}</Text>
+                  <Text style={styles.gazeRowSub}>{why}</Text>
+                </View>
+              </Pressable>
+            ))}
+
+            {RELEVANT_CHATS.slice(0, 2).map((c) => (
+              <Pressable
+                key={c.id}
+                style={({ pressed }) => [styles.gazeRow, pressed && styles.rowOn]}
+                onPress={() => leave(onNewChat)}
+              >
+                <BlobMark seed={c.id} size={18} fill={t.accents.periwinkle} />
+                <View style={styles.gazeRowStack}>
+                  <Text style={styles.gazeRowText} numberOfLines={1}>{c.title}</Text>
+                  <Text style={styles.gazeRowSub}>{c.when}</Text>
+                </View>
+              </Pressable>
+            ))}
+
+            <Pressable
+              style={({ pressed }) => [styles.gazeRow, pressed && styles.rowOn]}
+              onPress={() => leave(() => onSend(null))}
+            >
+              <BlobMark seed="clinician" size={18} fill={t.accents.peach} />
+              <View style={styles.gazeRowStack}>
+                <Text style={styles.gazeRowText}>Send to clinician</Text>
+                <Text style={styles.gazeRowSub}>{CLINICIANS[0].name}</Text>
+              </View>
+            </Pressable>
+          </View>
+        ) : (
         <ScrollView
           style={styles.flex}
           contentContainerStyle={styles.body}
@@ -432,14 +493,17 @@ export default function AgentSidebar({
             </View>
           </View>
         </ScrollView>
+        )}
 
-        <Pressable
-          onPress={() => leave(() => onSend(null))}
-          style={({ pressed }) => [styles.footer, pressed && { opacity: 0.85 }]}
-        >
-          <Icon name="paperplane" size={14} color="#fff" />
-          <Text style={styles.footerText}>Send to clinician</Text>
-        </Pressable>
+        {!gaze && (
+          <Pressable
+            onPress={() => leave(() => onSend(null))}
+            style={({ pressed }) => [styles.footer, pressed && { opacity: 0.85 }]}
+          >
+            <Icon name="paperplane" size={14} color="#fff" />
+            <Text style={styles.footerText}>Send to clinician</Text>
+          </Pressable>
+        )}
       </Animated.View>
     </View>
   );
@@ -451,15 +515,28 @@ const styles = StyleSheet.create({
 
   panel: {
     position: 'absolute',
-    left: 0,
     top: 0,
     bottom: 0,
     backgroundColor: colors.surface,
-    borderTopRightRadius: 28,
-    borderBottomRightRadius: 28,
     paddingHorizontal: spacing(1),
     ...cardShadow,
   },
+  panelLeft: { left: 0, borderTopRightRadius: 28, borderBottomRightRadius: 28 },
+  panelRight: { right: 0, borderTopLeftRadius: 28, borderBottomLeftRadius: 28 },
+
+  gazeBody: { flex: 1, justifyContent: 'center', gap: spacing(1.25), paddingHorizontal: spacing(0.5) },
+  gazeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing(1.5),
+    minHeight: 88,
+    paddingHorizontal: spacing(2),
+    borderRadius: radii.tile,
+    backgroundColor: colors.page,
+  },
+  gazeRowStack: { flex: 1, gap: 2 },
+  gazeRowText: { ...type.bodyMedium, fontSize: 20, lineHeight: 26, color: colors.ink },
+  gazeRowSub: { ...type.callout, color: colors.inkMuted },
 
   head: {
     flexDirection: 'row',

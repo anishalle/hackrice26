@@ -26,6 +26,10 @@ import { CHECK_IN, REPLIES } from '../data/phrases';
 
 const LOADING_MS = 1100;
 
+// Axl's two sizes in the gaze header. One render, scaled between them.
+const BLOB_BIG = 180;
+const BLOB_SMALL = 120;
+
 const GREETING = [
   { id: 'g1', text: "Hi, I'm Axl." },
   { id: 'g2', text: 'Ask me to handle something: a refill, a form, a ride. Or tell me how the week has gone and I will log it.' },
@@ -72,6 +76,10 @@ export default function AgentsScreen() {
   // nothing fits, and never on the main path.
   const [spelling, setSpelling] = useState(false);
   const [composerMode, setComposerMode] = useState('asking');
+  // The board and the narrowing step are taller than the thread and the big
+  // header can both afford, so while one is up the screen gives them the room.
+  const speaking = gaze && composerMode === 'speaking';
+  const shrink = useRef(new Animated.Value(0)).current;
   const [turns, setTurns] = useState([]);
   const [keyboardUp, setKeyboardUp] = useState(false);
   const [recording, setRecording] = useState(false);
@@ -107,6 +115,25 @@ export default function AgentsScreen() {
       useNativeDriver: true,
     }).start();
   }, [isFocused, access.motion]);
+
+  // He eases between his two sizes on the curve the web app uses for its press
+  // settle, cubic-bezier(0.16, 1, 0.3, 1): fast out of the gate and slow into
+  // the end, so the shrink reads as one move rather than a cut.
+  //
+  // This is the one animation gaze mode keeps. The rule against motion is about
+  // ambient movement and anything a person has to track; a 220ms transition on
+  // a control that just changed is the alternative to a jump, and a jump is
+  // also a change the eye has to absorb.
+  useEffect(() => {
+    Animated.timing(shrink, {
+      toValue: speaking ? 1 : 0,
+      duration: 220,
+      easing: Easing.bezier(0.16, 1, 0.3, 1),
+      // Height cannot go on the native driver, and the scale has to stay in
+      // lockstep with it, so both ride the JS one.
+      useNativeDriver: false,
+    }).start();
+  }, [speaking]);
 
   // `behavior="padding"` already pads past the home indicator, so keeping the
   // bottom inset on the composer leaves exactly that much dead space under it.
@@ -188,11 +215,30 @@ export default function AgentsScreen() {
           to be read as little as possible. */}
       {gaze ? (
         <View style={[styles.gazeHeader, { paddingTop: insets.top + spacing(0.5) }]}>
-          <View style={styles.navBlobBig}>
-            {/* The mode's pink up here, where he is presence rather than a
-                speaker: the blue byline below is what marks a question. */}
-            <AgentBlob size={180} animate={false} calm head={access.accents.peach} />
-          </View>
+          {/* He shrinks in place rather than being re-laid-out: the box height
+              is what gives the board its room, and the blob inside stays a
+              single 180pt render scaled from its own top edge. Re-rendering him
+              at a smaller size would recentre him in a shorter box, which
+              reads as a jump up the screen rather than a shrink. */}
+          <Animated.View
+            style={[
+              styles.navBlobBig,
+              { height: shrink.interpolate({ inputRange: [0, 1], outputRange: [BLOB_BIG, BLOB_SMALL] }) },
+            ]}
+          >
+            <Animated.View
+              style={{
+                transform: [
+                  { scale: shrink.interpolate({ inputRange: [0, 1], outputRange: [1, BLOB_SMALL / BLOB_BIG] }) },
+                ],
+                transformOrigin: 'top center',
+              }}
+            >
+              {/* The mode's pink up here, where he is presence rather than a
+                  speaker: the blue byline below is what marks a question. */}
+              <AgentBlob size={BLOB_BIG} animate={false} calm head={access.accents.peach} />
+            </Animated.View>
+          </Animated.View>
 
           {/* Pinned to the corners rather than laid out in a row with him: in
               a flex row a 180pt blob drags both controls down to its centre. */}
@@ -281,6 +327,27 @@ export default function AgentsScreen() {
       )}
 
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        {speaking ? (
+          // Bottom of the gap rather than the top: it sits just above the
+          // phrases it refers to, so confirming what was last said costs a
+          // glance instead of a trip up the screen.
+          <View style={[styles.flex, styles.lastSaidWrap]}>
+            {turns.length > 0 && (
+              <View style={styles.lastSaid}>
+                <AgentBlob
+                  size={30}
+                  animate={false}
+                  calm
+                  seed={turns[turns.length - 1].via === 'voice' ? VOICE_SEED : undefined}
+                  head={turns[turns.length - 1].via === 'voice' ? VOICE_HEAD : accents.periwinkle}
+                />
+                <Text style={styles.lastSaidText} numberOfLines={2}>
+                  {turns[turns.length - 1].prompt}
+                </Text>
+              </View>
+            )}
+          </View>
+        ) : (
         <Animated.ScrollView
           ref={scrollRef}
           style={[
@@ -390,6 +457,7 @@ export default function AgentsScreen() {
             </>
           )}
         </Animated.ScrollView>
+        )}
 
         <View style={[styles.promptWrap, { paddingBottom: keyboardUp ? spacing(1) : insets.bottom + spacing(1) }]}>
           {reviewing ? (
@@ -480,7 +548,7 @@ const styles = StyleSheet.create({
   navBtnGaze: { width: 60, height: 60, borderRadius: 30 },
   gazeHeader: { paddingBottom: spacing(0.5) },
   // Lifted, because the silhouette leaves a band of empty box above it.
-  navBlobBig: { alignItems: 'center', marginTop: -spacing(4.5) },
+  navBlobBig: { alignItems: 'center', marginTop: -spacing(3), overflow: 'hidden' },
   gazeLeft: { position: 'absolute', left: spacing(2) },
   gazeRight: { position: 'absolute', right: spacing(2) },
   navBtnEnd: { marginLeft: 'auto' },
@@ -509,6 +577,16 @@ const styles = StyleSheet.create({
   agentText: { ...type.body, color: colors.ink },
   // The question in gaze mode is read from a propped phone at arm's length.
   agentTextBig: { fontSize: 21, lineHeight: 28 },
+  // The one line the board keeps: what was last said, so the screen is not
+  // blank above it and there is something to check against.
+  lastSaidWrap: { justifyContent: 'flex-end', paddingBottom: spacing(2) },
+  lastSaid: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing(1),
+    marginHorizontal: spacing(2.5),
+  },
+  lastSaidText: { flex: 1, ...type.bodyMedium, fontSize: 16, color: colors.inkMuted },
 
   promptText: { ...type.body, color: '#fff' },
   agentVoice: { marginBottom: spacing(0.5) },

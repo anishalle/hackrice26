@@ -38,7 +38,7 @@ const PAGE = 4;
 // read.
 const fillsFor = (a) => [a.periwinkle, a.mint, a.amber, a.peach];
 
-function Target({ label, hint, tone, height, gap, wide, onPress, disabled }) {
+function Target({ label, hint, tone, height, gap, wide, third, onPress, disabled }) {
   return (
     <Pressable
       onPress={onPress}
@@ -51,7 +51,7 @@ function Target({ label, hint, tone, height, gap, wide, onPress, disabled }) {
           minHeight: height,
           marginBottom: gap,
           backgroundColor: tone ?? colors.surface,
-          width: wide ? '100%' : `${(100 - 4) / 2}%`,
+          width: wide ? '100%' : third ? `${(100 - 8) / 3}%` : `${(100 - 4) / 2}%`,
         },
         pressed && styles.pressed,
         disabled && styles.disabled,
@@ -198,7 +198,8 @@ export default function GazeComposer({ step, onAnswer, onSpeak, onSpell, onExit,
         <View style={styles.grid}>
           <Target
             label="Show more"
-            height={t.target * 0.8}
+            third
+            height={t.target * 0.75}
             gap={0}
             onPress={() => {
               Haptics.selectionAsync();
@@ -209,24 +210,25 @@ export default function GazeComposer({ step, onAnswer, onSpeak, onSpell, onExit,
               problem to Axl, not filing a complaint about the options. */}
           <Target
             label="Skip"
-            height={t.target * 0.8}
+            third
+            height={t.target * 0.75}
             gap={0}
             onPress={() => {
               Haptics.selectionAsync();
               setNarrowing(true);
             }}
           />
+          <Target
+            label="Back"
+            third
+            height={t.target * 0.75}
+            gap={0}
+            onPress={() => {
+              setBoard(null);
+              setPage(0);
+            }}
+          />
         </View>
-        <Target
-          label="Back"
-          height={t.target * 0.7}
-          gap={0}
-          wide
-          onPress={() => {
-            setBoard(null);
-            setPage(0);
-          }}
-        />
       </View>
     );
   }
