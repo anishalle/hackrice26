@@ -5,6 +5,7 @@ from app.models import BrowserLiveViewResponse, StartGuidedBrowserRequest
 from app.services.browser_use import (
     BrowserUseNotConfiguredError,
     get_active_browser_live_view,
+    get_guided_browser_session,
     start_guided_browser,
 )
 
@@ -25,6 +26,21 @@ async def browser_live_view() -> BrowserLiveViewResponse:
 
     if session is None:
         return BrowserLiveViewResponse(active=False)
+    return BrowserLiveViewResponse(active=True, **session)
+
+
+@router.get("/sessions/{session_id}", response_model=BrowserLiveViewResponse)
+async def guided_browser_session(session_id: str) -> BrowserLiveViewResponse:
+    """Report task state for a Browser Use session started by this app."""
+    try:
+        session = await get_guided_browser_session(session_id)
+    except BrowserUseNotConfiguredError as error:
+        raise HTTPException(status_code=503, detail=str(error)) from error
+    except httpx.HTTPError as error:
+        raise HTTPException(
+            status_code=502, detail="Browser Use could not retrieve the guided browser"
+        ) from error
+
     return BrowserLiveViewResponse(active=True, **session)
 
 

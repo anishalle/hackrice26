@@ -1,9 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ExternalLink, Loader2, MonitorUp, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { startGuidedBrowser, type BrowserLiveView } from "@/lib/browser-live-view";
+import {
+  getGuidedBrowserSession,
+  startGuidedBrowser,
+  type BrowserLiveView,
+} from "@/lib/browser-live-view";
 
 interface GuidedBrowserProps {
   websiteUrl: string;
@@ -14,6 +18,40 @@ export function GuidedBrowser({ websiteUrl, mode }: GuidedBrowserProps) {
   const [starting, setStarting] = useState(false);
   const [liveView, setLiveView] = useState<BrowserLiveView | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const sessionId = liveView?.session_id ?? "";
+    if (!sessionId) return;
+
+    let cancelled = false;
+    async function refreshStatus() {
+      try {
+        const next = await getGuidedBrowserSession(sessionId);
+        if (!cancelled) {
+          setLiveView((current) => ({
+            ...current,
+            ...next,
+            live_url: next.live_url || current?.live_url || "",
+          }));
+        }
+      } catch (caught) {
+        if (!cancelled) {
+          setError(
+            caught instanceof Error
+              ? caught.message
+              : "The guided browser status is unavailable."
+          );
+        }
+      }
+    }
+
+    void refreshStatus();
+    const interval = window.setInterval(() => void refreshStatus(), 2_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, [liveView?.session_id]);
 
   async function openBrowser() {
     setStarting(true);
@@ -53,7 +91,10 @@ export function GuidedBrowser({ websiteUrl, mode }: GuidedBrowserProps) {
   }
 
   return (
-    <section className="mt-3 overflow-hidden rounded-xl border bg-card shadow-sm" aria-labelledby="guided-browser-title">
+    <section
+      className="mt-3 overflow-hidden rounded-xl border bg-card shadow-sm"
+      aria-labelledby="guided-browser-title"
+    >
       <div className="flex flex-wrap items-center justify-between gap-3 border-b bg-muted/30 px-4 py-3">
         <div>
           <h3 id="guided-browser-title" className="flex items-center gap-2 text-sm font-semibold">
@@ -80,25 +121,46 @@ export function GuidedBrowser({ websiteUrl, mode }: GuidedBrowserProps) {
             onClick={() => void openBrowser()}
             disabled={starting}
           >
-            {starting ? <Loader2 className="size-4 animate-spin" /> : <MonitorUp className="size-4" />}
+            {starting ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <MonitorUp className="size-4" />
+            )}
             {starting ? "Opening guided browser…" : "Open in guided browser"}
           </Button>
           <p className="mt-2 text-xs leading-5 text-muted-foreground">
             The browser opens the landing page only. No form, account, or submission action is allowed.
           </p>
-          {error && <p role="alert" className="mt-3 text-sm text-destructive">{error}</p>}
+          {error && (
+            <p role="alert" className="mt-3 text-sm text-destructive">
+              {error}
+            </p>
+          )}
         </div>
       ) : (
         <div>
           <iframe
-            title="Live browser controlled by Hermes"
+            title="Live guided browser"
             src={liveView.live_url}
             className="aspect-video w-full bg-muted"
             allow="autoplay"
           />
-          <p className="p-3 text-xs text-muted-foreground">
-            Live, user-approved guided browser. Hermes remains your planner and narrator.
-          </p>
+          <div className="p-3 text-xs text-muted-foreground">
+            <p>
+              Browser Use status: {" "}
+              <span className="font-medium text-foreground">
+                {liveView.status ?? "starting"}
+              </span>
+            </p>
+            {liveView.last_step_summary && (
+              <p className="mt-1">{liveView.last_step_summary}</p>
+            )}
+            {error && (
+              <p role="alert" className="mt-1 text-destructive">
+                {error}
+              </p>
+            )}
+          </div>
         </div>
       )}
     </section>

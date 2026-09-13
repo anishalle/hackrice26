@@ -3,6 +3,8 @@ export interface BrowserLiveView {
   session_id?: string | null;
   live_url?: string | null;
   started_at?: string | null;
+  status?: string | null;
+  last_step_summary?: string | null;
 }
 
 export async function getBrowserLiveView(): Promise<BrowserLiveView> {
@@ -32,6 +34,19 @@ export async function startGuidedBrowser(
 
   if (!response.ok) {
     throw new Error(payload.detail ?? "The guided browser could not start.");
+  }
+  return payload;
+}
+
+export async function getGuidedBrowserSession(sessionId: string): Promise<BrowserLiveView> {
+  const backendUrl = (process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://127.0.0.1:8000").replace(/\/$/, "");
+  const response = await fetch(`${backendUrl}/api/v1/browser/sessions/${sessionId}`);
+  const payload = (await response.json().catch(() => ({}))) as BrowserLiveView & {
+    detail?: string;
+  };
+
+  if (!response.ok) {
+    throw new Error(payload.detail ?? "The guided browser status is unavailable.");
   }
   return payload;
 }

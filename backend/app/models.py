@@ -16,6 +16,8 @@ class BrowserLiveViewResponse(BaseModel):
     session_id: str | None = None
     live_url: str | None = None
     started_at: str | None = None
+    status: str | None = None
+    last_step_summary: str | None = None
 
 
 class StartGuidedBrowserRequest(BaseModel):

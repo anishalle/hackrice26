@@ -86,4 +86,29 @@ async def start_guided_browser(website_url: str, mode: str) -> dict[str, str]:
         "session_id": str(session_id),
         "live_url": str(live_url),
         "started_at": str(session_data.get("createdAt") or ""),
+        "status": str(session_data.get("status") or "created"),
+        "last_step_summary": str(session_data.get("lastStepSummary") or ""),
+    }
+
+
+async def get_guided_browser_session(session_id: str) -> dict[str, str]:
+    """Return the user-visible status for a session we created."""
+    if settings.BROWSER_USE_API_KEY is None:
+        raise BrowserUseNotConfiguredError(
+            "BROWSER_USE_API_KEY is not configured on the backend"
+        )
+
+    headers = {"X-Browser-Use-API-Key": settings.BROWSER_USE_API_KEY.get_secret_value()}
+    url = f"https://api.browser-use.com/api/v3/sessions/{session_id}"
+    async with httpx.AsyncClient(timeout=15) as client:
+        response = await client.get(url, headers=headers)
+        response.raise_for_status()
+
+    session_data: dict[str, Any] = response.json()
+    return {
+        "session_id": str(session_data["id"]),
+        "live_url": str(session_data.get("liveUrl") or ""),
+        "started_at": str(session_data.get("createdAt") or ""),
+        "status": str(session_data.get("status") or "unknown"),
+        "last_step_summary": str(session_data.get("lastStepSummary") or ""),
     }
