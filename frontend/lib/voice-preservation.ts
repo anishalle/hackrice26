@@ -39,6 +39,14 @@ export async function getVoiceProfile(ownerSubject: string): Promise<VoiceProfil
   return (await response.json()) as VoiceProfile;
 }
 
+export async function getRecordingAudio(ownerSubject: string, sampleId: string): Promise<Blob> {
+  const response = await fetch(`${backendUrl()}/api/v1/voice/profile/samples/${sampleId}/audio`, {
+    headers: ownerHeaders(ownerSubject), cache: "no-store",
+  });
+  if (!response.ok) return readError(response, "Could not load this recording.");
+  return response.blob();
+}
+
 export async function setUpVoiceProfile(
   ownerSubject: string,
   displayName: string

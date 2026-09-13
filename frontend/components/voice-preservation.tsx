@@ -12,6 +12,7 @@ import {
   Volume2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { WeeklyVoiceHistory } from "@/components/weekly-voice-history";
 import {
   createVoiceClone,
   deleteVoiceSample,
@@ -525,6 +526,8 @@ export function VoicePreservation({
           ))}
         </ul>
       ) : null}
+
+      {profile && <WeeklyVoiceHistory samples={profile.samples} ownerSubject={ownerSubject} />}
 
       {message && (
         <p role="status" className="mt-4 text-sm text-muted-foreground">
