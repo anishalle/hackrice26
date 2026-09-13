@@ -1,259 +1,162 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSession } from "@/lib/session";
-import { FRAG, VERT } from "./shader";
+import { liveHeroAllowed } from "./gpu-gate";
+import { createRiverHero, HERO_TEXT_DELAY_MS, HERO_TEXT_SLIDE_MIN_W } from "./scene";
 
 /**
- * The hero canvas.
+ * The hero canvas — river.ai's canyon scene.
  *
- * Budget discipline, because a raymarcher on a full viewport is not free:
- * the canvas renders at a fraction of device pixels and is scaled up (the
- * dither hides it — that is part of why the look works), the march budget is
- * capped, and the loop stops entirely when the element scrolls out of view or
- * the tab is hidden.
+ * Three gates decide what actually runs, in order:
  *
- * It is also capability-aware, which is the point of the app: reduced motion
- * freezes it on a single resolved frame, and a low-vision profile drops the
- * dot matrix and the filter strength so text contrast over it holds up.
+ *  1. A capability-aware short circuit. Reduced motion, from the OS or from the
+ *     profile, resolves one frame and holds it — no loop, no time-of-day cycle.
+ *  2. An upfront GPU gate (see gpu-gate.ts) that runs BEFORE the scene shader
+ *     is compiled, because compiling it can itself hang a weak GPU.
+ *  3. An in-loop AA governor that trades supersampling for frame budget, and
+ *     bails to a snapshot still if the device cannot hold ~20fps at the floor.
+ *
+ * The typewriter is driven from the render loop rather than a React timer, so
+ * the text and the scene reveal share one clock. `onType` fires per rendered
+ * frame; the caller stores substring lengths, so React only re-renders when a
+ * character actually lands.
  */
-export function Canyon({ className }: { className?: string }) {
+
+export type CanyonProps = {
+  className?: string;
+  /** Drives the typewriter. Also rendered in full for assistive tech. */
+  headline?: string;
+  subline?: string;
+  onType?: (state: { head: number; sub: number; revealed: boolean }) => void;
+};
+
+// Budget: the hero should be fully readable inside ~2.8s. The headline is the
+// hook, so it stays fractionally more deliberate than the subline, which people
+// skim. Anything slower and a first-time visitor is watching a loading bar.
+const HEAD_RATE = 24; // ms per character
+const HEAD_DELAY = 150;
+const SUB_DELAY = 180; // after the headline finishes
+const SUB_RATE = 15;
+
+export function Canyon({ className, headline = "", subline = "", onType }: CanyonProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [still, setStill] = useState<string | null>(null);
+  // Only true once we know the live scene is NOT going to run. The decorative
+  // fallback is a bright radial wash, so showing it while the gate is still
+  // deciding put a tan oval on screen for a beat before the canyon replaced it.
+  const [showFallback, setShowFallback] = useState(false);
   const { adaptation } = useSession();
 
-  // The render loop reads the profile through a ref, so a profile change
-  // retunes the shader without tearing down the GL context.
-  const settings = useRef({ reduceMotion: false, maxContrast: false });
-  useEffect(() => {
-    settings.current = {
-      reduceMotion: adaptation.reduceMotion,
-      maxContrast: adaptation.maxContrast,
-    };
-  }, [adaptation.reduceMotion, adaptation.maxContrast]);
+  // The loop reads copy and the callback through refs, so neither retunes the
+  // GL context or restarts the intro.
+  const copy = useRef({ headline, subline, onType });
+  copy.current = { headline, subline, onType };
+
+  const reduceMotion = adaptation.reduceMotion;
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const gl =
-      (canvas.getContext("webgl", { antialias: false, alpha: false, depth: false }) as
-        | WebGLRenderingContext
-        | null) ?? null;
-    if (!gl) return; // the CSS fallback underneath stays visible
+    let disposed = false;
+    let hero: { destroy: () => void } | null = null;
 
-    function compile(type: number, src: string) {
-      const sh = gl!.createShader(type)!;
-      gl!.shaderSource(sh, src);
-      gl!.compileShader(sh);
-      if (!gl!.getShaderParameter(sh, gl!.COMPILE_STATUS)) {
-        console.error(gl!.getShaderInfoLog(sh));
-        return null;
-      }
-      return sh;
+    const osReduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const reduce = osReduce || reduceMotion;
+
+    // Last emitted counts, so we only call back when a character lands.
+    let lastHead = -1;
+    let lastSub = -1;
+    let lastRevealed = false;
+
+    function emit(elapsed: number, revealed: boolean) {
+      const { headline: h, subline: s, onType: cb } = copy.current;
+      if (!cb) return;
+      // Wide/non-touch types over the condensing valley after a short hold;
+      // narrow/touch types first, over the bare sky.
+      const slides =
+        !window.matchMedia("(pointer: coarse)").matches &&
+        window.innerWidth >= HERO_TEXT_SLIDE_MIN_W;
+      const el = elapsed - (slides ? HERO_TEXT_DELAY_MS : 0);
+      const head = Math.max(0, Math.min(h.length, Math.floor((el - HEAD_DELAY) / HEAD_RATE)));
+      const headDoneAt = HEAD_DELAY + h.length * HEAD_RATE + SUB_DELAY;
+      const sub =
+        el >= headDoneAt
+          ? Math.max(0, Math.min(s.length, Math.floor((el - headDoneAt) / SUB_RATE)))
+          : 0;
+      if (head === lastHead && sub === lastSub && revealed === lastRevealed) return;
+      lastHead = head;
+      lastSub = sub;
+      lastRevealed = revealed;
+      cb({ head, sub, revealed });
     }
 
-    const vs = compile(gl.VERTEX_SHADER, VERT);
-    const fs = compile(gl.FRAGMENT_SHADER, FRAG);
-    if (!vs || !fs) return;
+    // Probe support on a throwaway context so the gate never sees the scene
+    // shader — the whole point is to decide before that gets compiled.
+    const probe = (canvas.getContext("webgl", { antialias: false, alpha: false }) ??
+      canvas.getContext("experimental-webgl")) as WebGLRenderingContext | null;
 
-    const prog = gl.createProgram()!;
-    gl.attachShader(prog, vs);
-    gl.attachShader(prog, fs);
-    gl.linkProgram(prog);
-    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
-      console.error(gl.getProgramInfoLog(prog));
-      return;
-    }
-    gl.useProgram(prog);
-
-    const buf = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
-    const aPos = gl.getAttribLocation(prog, "aPos");
-    gl.enableVertexAttribArray(aPos);
-    gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
-
-    const u = (name: string) => gl.getUniformLocation(prog, name);
-    const uRes = u("uRes");
-    const uTime = u("uTime");
-    const uScroll = u("uScroll");
-    const uShadow = u("uShadow");
-    const uMid = u("uMid");
-    const uLight = u("uLight");
-    const uSun = u("uSun");
-    const uDotScale = u("uDotScale");
-    const uDotAmount = u("uDotAmount");
-    const uFilter = u("uFilter");
-    const uSunY = u("uSunY");
-    const uSteps = u("uSteps");
-    const uSamples = u("uSamples");
-    const uHorizon = u("uHorizon");
-
-    /** Reads the ramp off CSS custom properties so the theme owns the colour. */
-    function rampFromCss() {
-      const cs = getComputedStyle(document.documentElement);
-      const read = (name: string, fallback: [number, number, number]) => {
-        const raw = cs.getPropertyValue(name).trim();
-        const m = /^#?([0-9a-f]{6})$/i.exec(raw);
-        if (!m) return fallback;
-        const n = parseInt(m[1], 16);
-        return [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255] as [
-          number,
-          number,
-          number,
-        ];
-      };
-      return {
-        shadow: read("--duo-shadow", [0.004, 0.012, 0.204]),
-        mid: read("--duo-mid", [0.451, 0.475, 0.992]),
-        light: read("--duo-light", [0.804, 0.98, 1]),
-        sun: read("--duo-sun", [1, 0.89, 0.72]),
-      };
-    }
-
-    let raf = 0;
-    let running = true;
-    let visible = true;
-    let start = performance.now();
-    let frozenAt: number | null = null;
-    let lastDraw = 0;
-
-    // Device pixel budget. The dither makes upscaling read as grain rather
-    // than blur, so a sub-1.0 buffer costs little; the sampling below is
-    // what actually buys clean silhouettes.
-    function pixelScale() {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      const wide = window.innerWidth > 1600;
-      return Math.min(dpr, wide ? 0.65 : 0.8);
-    }
-
-    // Adaptive AA, after river.ai's AUTO AA governor: start supersampled and
-    // drop to one tap when the frame budget can't hold it. It never climbs
-    // back up — oscillating between AA modes looks worse than the lower one.
-    //
-    // Two paths, because they are different failures. A sustained overrun is
-    // averaged over a window so one hitch doesn't downgrade the session. A
-    // grossly slow frame is not an outlier to filter out: on a weak GPU or a
-    // software rasteriser every frame looks like that, and a governor that
-    // discards them as noise never fires on the machines that need it most.
-    let samples = 4;
-    let acc = 0;
-    let accFrames = 0;
-    let slowStreak = 0;
-    let last = performance.now();
-
-    function resize() {
-      const scale = pixelScale();
-      const w = Math.max(1, Math.floor(canvas!.clientWidth * scale));
-      const h = Math.max(1, Math.floor(canvas!.clientHeight * scale));
-      if (canvas!.width !== w || canvas!.height !== h) {
-        canvas!.width = w;
-        canvas!.height = h;
-        gl!.viewport(0, 0, w, h);
-      }
-    }
-
-    function draw(now: number) {
-      raf = requestAnimationFrame(draw);
-      if (!running || !visible) return;
-
-      const { reduceMotion, maxContrast } = settings.current;
-
-      // ~30fps is plenty for water this slow, and halves GPU cost.
-      if (now - lastDraw < 32) return;
-      const frameMs = now - last;
-      last = now;
-      lastDraw = now;
-
-      if (samples > 1) {
-        if (frameMs > 120) {
-          slowStreak += 1;
-          if (slowStreak >= 2) samples = 1;
-        } else {
-          slowStreak = 0;
-          acc += frameMs;
-          accFrames += 1;
-          if (accFrames >= 30) {
-            // 32ms is the cap; 46 leaves headroom before it truly stutters.
-            if (acc / accFrames > 46) samples = 1;
-            acc = 0;
-            accFrames = 0;
-          }
-        }
-      }
-
-      // Reduced motion resolves one frame and holds it.
-      if (reduceMotion) {
-        if (frozenAt !== null) return;
-        frozenAt = 6.0;
+    if (reduce || !probe) {
+      // Reduced motion (or no WebGL): resolve the text immediately, static.
+      emit(Number.MAX_SAFE_INTEGER, true);
+      if (reduce && probe) {
+        hero = createRiverHero(canvas, { reduceMotion: true, onPhase: () => {} });
       } else {
-        frozenAt = null;
+        setShowFallback(true); // no WebGL at all — the wash is the whole hero
       }
-
-      resize();
-      const t = frozenAt ?? (now - start) / 1000;
-
-      const scrollY = window.scrollY || 0;
-      const scroll = Math.min(1, scrollY / Math.max(1, window.innerHeight));
-
-      const ramp = rampFromCss();
-      gl!.uniform2f(uRes, canvas!.width, canvas!.height);
-      gl!.uniform1f(uTime, t);
-      gl!.uniform1f(uScroll, scroll);
-      gl!.uniform3fv(uShadow, ramp.shadow);
-      gl!.uniform3fv(uMid, ramp.mid);
-      gl!.uniform3fv(uLight, ramp.light);
-      gl!.uniform3fv(uSun, ramp.sun);
-
-      // A low-vision profile loses the dot matrix and most of the filter, so
-      // the ground stays flat and dark enough for text to hold contrast.
-      gl!.uniform1f(uDotScale, maxContrast ? 7.0 : 4.0);
-      gl!.uniform1f(uDotAmount, maxContrast ? 0.0 : 0.85);
-      gl!.uniform1f(uFilter, maxContrast ? 0.45 : 1.0);
-      gl!.uniform1f(uSunY, 0.1);
-      gl!.uniform1i(uSteps, window.innerWidth > 1200 ? 104 : 76);
-      // One tap while frozen would alias the single held frame, so reduced
-      // motion always gets the supersampled resolve — it is paid once.
-      gl!.uniform1i(uSamples, reduceMotion && samples > 1 ? 4 : samples);
-      // river.ai places the horizon at 0.570 of the viewport.
-      gl!.uniform1f(uHorizon, 0.57);
-
-      gl!.drawArrays(gl!.TRIANGLES, 0, 3);
+      return () => {
+        hero?.destroy();
+      };
     }
 
-    const io = new IntersectionObserver(
-      ([entry]) => {
-        visible = entry.isIntersecting;
-      },
-      { threshold: 0 },
-    );
-    io.observe(canvas);
+    const params = new URLSearchParams(window.location.search);
+    const force = { live: params.has("riverLive"), static: params.has("riverStatic") };
 
-    function onVisibility() {
-      running = !document.hidden;
-      if (running) start = performance.now() - 6000;
-    }
-    document.addEventListener("visibilitychange", onVisibility);
-
-    raf = requestAnimationFrame(draw);
+    liveHeroAllowed(probe, force).then((allowed) => {
+      if (disposed) return;
+      if (!allowed) {
+        // Static path: the CSS fallback underneath stays visible and the text
+        // still types in, so the hero never reads as broken.
+        setShowFallback(true);
+        canvas.style.display = "none";
+        const t0 = performance.now();
+        const tick = () => {
+          if (disposed) return;
+          const el = performance.now() - t0;
+          emit(el, true);
+          if (el < 12000) requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+        return;
+      }
+      hero = createRiverHero(canvas, {
+        reduceMotion: false,
+        onPhase: ({ elapsed, revealed }) => emit(elapsed, revealed),
+        onFreeze: (url) => setStill(url),
+      });
+    });
 
     return () => {
-      cancelAnimationFrame(raf);
-      io.disconnect();
-      document.removeEventListener("visibilitychange", onVisibility);
-      gl.deleteProgram(prog);
-      gl.deleteShader(vs);
-      gl.deleteShader(fs);
-      gl.deleteBuffer(buf);
+      disposed = true;
+      hero?.destroy();
     };
-  }, []);
+  }, [reduceMotion]);
 
   return (
     <div className={className} aria-hidden="true">
-      {/* Fallback ground. Visible if WebGL is unavailable, and the colour the
-          canvas resolves to anyway, so there is never a flash of nothing. */}
-      <div className="absolute inset-0 canyon-fallback" />
+      {/* Ground under the canvas. Flat night by default, matching the GL clear
+          colour exactly so the handover to the first drawn frame is invisible.
+          It only becomes the decorative wash once the gate has actually ruled
+          the live scene out — that wash is bright, and showing it up front
+          flashed a tan oval over the canyon on every load. */}
+      <div className={`absolute inset-0 ${showFallback ? "canyon-fallback" : "canyon-ground"}`} />
       <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" />
+      {/* Snapshot still, swapped in if the scene bails on slow hardware. */}
+      {still && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={still} alt="" className="absolute inset-0 h-full w-full object-cover" />
+      )}
     </div>
   );
 }

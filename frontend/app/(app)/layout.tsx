@@ -5,11 +5,13 @@ import { usePathname } from "next/navigation";
 import { AXES, AXIS_SPECS, fingerprint, stopFor } from "@/lib/capability";
 import { adaptationNotes } from "@/lib/adaptation";
 import { useSession } from "@/lib/session";
+import { useAuth } from "@/lib/auth-context";
+import { Avatar, useAvatarChoice } from "@/components/avatar";
 import { VoiceLayer } from "@/components/voice-layer";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { BackendStatus } from "@/components/backend-status";
 import { Annotation, PlotLabel, Rule } from "@/components/primitives";
-import { IconAgent, IconCheck, IconFeed } from "@/components/icons";
+import { IconAgent, IconCheck, IconFeed, IconWall } from "@/components/icons";
 
 /**
  * The app shell. Two tabs, and a persistent readout of the profile that is
@@ -18,11 +20,14 @@ import { IconAgent, IconCheck, IconFeed } from "@/components/icons";
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { profile, attestation, adaptation, hydrated } = useSession();
+  const { user } = useAuth();
   const notes = adaptationNotes(profile);
+  const avatarChoice = useAvatarChoice();
 
   const tabs = [
     { href: "/feed", label: "Feed", Icon: IconFeed, hint: "What people like you are solving" },
     { href: "/agent", label: "Agent", Icon: IconAgent, hint: "Things it does for you" },
+    { href: "/wall", label: "Wall", Icon: IconWall, hint: "Everyone plotting alongside you" },
   ];
 
   return (
@@ -33,7 +38,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             href="/"
             className="font-mono text-[0.8125rem] tracking-[0.18em] uppercase transition-colors hover:text-[var(--brand)]"
           >
-            Axis
+            Aide
           </Link>
 
           <nav aria-label="Main" className="flex items-center gap-1">
@@ -69,6 +74,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 className="target hidden items-center gap-2 px-3 font-mono text-[0.75rem] text-[var(--text-2)] transition-colors hover:text-[var(--text)] sm:inline-flex"
                 title="Your capability profile"
               >
+                {/* Labelled, unlike the feed bylines: the fingerprint beside it
+                    describes the profile, not the person, so this face is the
+                    only thing here naming the account. */}
+                <Avatar {...avatarChoice} size={24} label={user?.email ?? "Your account"} />
                 {attestation && <IconCheck width={14} height={14} className="text-[var(--accent)]" />}
                 {fingerprint(profile)}
               </Link>
@@ -104,7 +113,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               ))
             ) : (
               <p className="font-mono text-[0.75rem] leading-[1.6] text-[var(--text-2)]">
-                Default rendering — your profile is at full on every axis.{" "}
+                Default rendering: your profile is at full on every axis.{" "}
                 <Link href="/profile" className="underline decoration-[var(--line)]">
                   Change an axis
                 </Link>{" "}

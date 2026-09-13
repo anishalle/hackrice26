@@ -62,7 +62,7 @@ export default function VerifyPage() {
         </header>
 
         <div className="mt-14 max-w-[36rem]">
-          <PlotLabel>Step 2 of 3</PlotLabel>
+          <PlotLabel>Step 3 of 4</PlotLabel>
           <h1 className="mt-3 display-sm text-[clamp(2rem,4.5vw,3rem)]">
             Prove it&rsquo;s you, a way you can finish.
           </h1>
@@ -71,7 +71,7 @@ export default function VerifyPage() {
             {hydrated && unavailable.length > 0 ? (
               <>
                 <span className="font-mono tabular-nums text-[var(--brand)]">{unavailable.length}</span>{" "}
-                make a demand you told us you can&rsquo;t meet, so they&rsquo;re off the table — and
+                make a demand you told us you can&rsquo;t meet, so they&rsquo;re off the table, and
                 here&rsquo;s exactly which demand.
               </>
             ) : (
@@ -144,7 +144,7 @@ export default function VerifyPage() {
                     </h3>
                     {v.blockers.map((b) => (
                       <Annotation key={b.axis} className="mt-1.5">
-                        requires {b.demand} &mdash; {AXIS_SPECS[b.axis].title.toLowerCase()} axis
+                        requires {b.demand} &middot; {AXIS_SPECS[b.axis].title.toLowerCase()} axis
                       </Annotation>
                     ))}
                   </div>
@@ -161,8 +161,8 @@ export default function VerifyPage() {
             <p className="max-w-[38rem] text-[0.875rem] leading-[1.6] text-[var(--text-2)]">
               Provider attestation always stays available. When every camera- and
               voice-based check is ruled out, a healthcare provider confirming
-              your identity is the route that works for anyone &mdash; which is
-              why the next step exists.
+              your identity is the route that works for anyone, which is why the
+              next step exists.
             </p>
           </div>
           <div className="mt-5 flex items-center gap-2.5">

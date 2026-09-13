@@ -137,10 +137,16 @@ export const IconSolved = (p: IconProps) => (
   </Icon>
 );
 
-export const IconTheme = (p: IconProps) => (
+export const IconSun = (p: IconProps) => (
   <Icon {...p}>
     <circle cx="12" cy="12" r="5" />
     <path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.2 5.2l1.4 1.4M17.4 17.4l1.4 1.4M18.8 5.2l-1.4 1.4M6.6 17.4l-1.4 1.4" />
+  </Icon>
+);
+
+export const IconMoon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M20.5 14.6A8.6 8.6 0 0 1 9.4 3.5a8.6 8.6 0 1 0 11.1 11.1Z" />
   </Icon>
 );
 
@@ -156,6 +162,15 @@ export const IconExternal = (p: IconProps) => (
     <path d="M14 4.5h5.5V10" />
     <path d="M19.5 4.5 11 13" />
     <path d="M18 14.5v4a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6h4" />
+  </Icon>
+);
+
+export const IconWall = (p: IconProps) => (
+  <Icon {...p}>
+    <rect x="3.5" y="3.5" width="7" height="7" rx="2" />
+    <rect x="13.5" y="3.5" width="7" height="7" rx="2" />
+    <rect x="3.5" y="13.5" width="7" height="7" rx="2" />
+    <rect x="13.5" y="13.5" width="7" height="7" rx="2" />
   </Icon>
 );
 

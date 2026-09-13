@@ -7,10 +7,12 @@ function cx(...parts: Array<string | false | null | undefined>) {
   return parts.filter(Boolean).join(" ");
 }
 
+// btn-lift carries the hover/press motion and the transition curve; see the
+// note beside it in globals.css for why the transform is defined there rather
+// than as utilities here.
 const BASE =
-  "target inline-flex items-center justify-center gap-2 rounded-[var(--r-pill)] px-6 " +
-  "text-[0.9375rem] font-medium transition-[background-color,color,border-color,opacity] " +
-  "duration-150 disabled:opacity-45 disabled:pointer-events-none";
+  "btn-lift target inline-flex items-center justify-center gap-2 rounded-[var(--r-pill)] px-6 " +
+  "text-[0.9375rem] font-medium disabled:opacity-45 disabled:pointer-events-none";
 
 // The primary is the maximum-contrast pill — near-black on light, near-white
 // on dark. Cornflower is reserved for the accent role, which keeps it meaning

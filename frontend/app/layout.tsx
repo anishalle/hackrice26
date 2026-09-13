@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter_Tight, JetBrains_Mono } from "next/font/google";
 import { AuthProvider } from "@/lib/auth-context";
 import { SessionProvider } from "@/lib/session";
+import { DevAnnotator } from "@/components/dev-annotator";
 import "./globals.css";
 
 // Inter Tight is what river.ai uses, and the closest free grotesque to
@@ -19,9 +20,9 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Axis — an interface that reads your capability profile",
+  title: "ALS takes your velocity. Aide gives it back.",
   description:
-    "One profile decides how you prove who you are and what the interface becomes. A social network and an agent, both rendered from your capabilities.",
+    "A companion app for people with ALS. A weekly voice check-in tracks how speech and movement are changing, the interface adapts as they do, and agents take on the tasks that got slow.",
 };
 
 /**
@@ -49,6 +50,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <AuthProvider>
           <SessionProvider>{children}</SessionProvider>
         </AuthProvider>
+        {/* Renders nothing outside development — see the component. */}
+        <DevAnnotator />
       </body>
     </html>
   );

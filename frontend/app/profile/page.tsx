@@ -1,11 +1,14 @@
 "use client";
 
+import { ViewTransition } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { AXES, AXIS_SPECS, fingerprint, stopFor } from "@/lib/capability";
 import { adaptationNotes, hasAdaptations } from "@/lib/adaptation";
 import { routeVerification, blockedCount } from "@/lib/verification";
 import { useSession } from "@/lib/session";
+import { useAvatarChoice } from "@/components/avatar";
+import { GazingAvatar } from "@/components/avatar-gaze";
 import { AxisPlot } from "@/components/axis-plot";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Annotation, ButtonLink, Panel, PlotLabel, Rule } from "@/components/primitives";
@@ -23,31 +26,46 @@ export default function ProfilePage() {
   const blocked = blockedCount(verdicts);
   const adapted = hasAdaptations(profile);
   const animate = !reduce && !adaptation.reduceMotion;
+  const avatarChoice = useAvatarChoice();
 
   return (
     <main className="paper min-h-dvh">
       <div className="mx-auto max-w-[72rem] py-6 px-[var(--pad-x)]">
         <header className="flex items-center justify-between">
           <Link
-            href="/"
+            href="/avatar"
             className="target -ml-3 inline-flex items-center gap-2 px-3 font-mono text-[0.8125rem] tracking-[0.18em] uppercase text-[var(--text-2)] transition-colors hover:text-[var(--text)]"
           >
             <IconArrowLeft width={16} height={16} />
-            Axis
+            Blobatar
           </Link>
           <ThemeToggle />
         </header>
 
-        <div className="mt-14 max-w-[34rem]">
-          <PlotLabel>Step 1 of 3</PlotLabel>
-          <h1 className="mt-3 display-sm text-[clamp(2rem,4.5vw,3rem)]">
-            Plot your profile.
-          </h1>
-          <p className="prose-lg mt-5 text-[var(--text-2)]">
-            Everything starts at full. Move only the axes that aren&rsquo;t true
-            for you. Each change is answered in the margin with what the product
-            will do differently.
-          </p>
+        <div className="mt-14 flex flex-col gap-7 sm:flex-row sm:items-start sm:gap-10">
+          {/* Decorative. The page is addressed to "you" throughout, so the face
+              is not carrying any identity a screen reader needs read out.
+
+              Shares a view-transition name with the customiser's face, so the
+              browser morphs the one element between the two pages rather than
+              tearing one down and building another. The name has to be unique
+              on screen at any moment — there is exactly one of these per page,
+              which is what makes it safe. */}
+          <ViewTransition name="blobatar">
+            <GazingAvatar {...avatarChoice} size={248} className="block shrink-0" />
+          </ViewTransition>
+
+          <div className="max-w-[34rem]">
+            <PlotLabel>Step 2 of 4</PlotLabel>
+            <h1 className="mt-3 display-sm text-[clamp(2rem,4.5vw,3rem)]">
+              Plot your profile.
+            </h1>
+            <p className="prose-lg mt-5 text-[var(--text-2)]">
+              Everything starts at full. Move only the axes that aren&rsquo;t
+              true for you. Each change is answered in the margin with what the
+              product will do differently.
+            </p>
+          </div>
         </div>
 
         <div className="mt-12 grid gap-10 lg:grid-cols-[minmax(0,1fr)_21rem] lg:gap-14">
@@ -55,7 +73,7 @@ export default function ProfilePage() {
           <Panel className="p-6 sm:p-8">
             <div className="flex items-baseline justify-between">
               <PlotLabel>Capability chart</PlotLabel>
-              <PlotLabel className="text-[var(--brand)]">{hydrated ? fingerprint(profile) : "—"}</PlotLabel>
+              <PlotLabel className="text-[var(--brand)]">{hydrated ? fingerprint(profile) : "·"}</PlotLabel>
             </div>
             <Rule className="mt-3" />
 
@@ -107,7 +125,7 @@ export default function ProfilePage() {
                     className="font-mono text-[0.75rem] leading-[1.6] text-[var(--text-2)]"
                   >
                     Nothing yet. At full on every axis the interface stays as it
-                    is — which is the point: the profile only ever adds routes,
+                    is, which is the point: the profile only ever adds routes,
                     it never removes them.
                   </motion.p>
                 )}

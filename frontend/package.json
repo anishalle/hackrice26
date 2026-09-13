@@ -10,7 +10,9 @@
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
+    "@blobatar/react": "^2.7.0",
     "appwrite": "^27.0.0",
+    "blobatar": "^2.7.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.45.0",
@@ -26,6 +28,8 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "agentation": "^3.0.2",
+    "agentation-mcp": "^1.2.0",
     "eslint": "^9",
     "eslint-config-next": "16.3.5",
     "playwright": "^1.63.0",

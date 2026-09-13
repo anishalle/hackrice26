@@ -77,7 +77,7 @@ export const POSTS: Post[] = [
     ago: "2h",
     problem: "Every bank app I've tried makes you turn your head for the liveness check.",
     solution:
-      "Two of them will accept a video call with a human agent instead if you ask support directly — it isn't in the app anywhere. Ask for 'assisted identity verification' by name, not 'accessibility help', or you get routed to a page about font sizes.",
+      "Two of them will accept a video call with a human agent instead if you ask support directly, though it isn't in the app anywhere. Ask for 'assisted identity verification' by name, not 'accessibility help', or you get routed to a page about font sizes.",
     axes: ["motor"],
     worked: 47,
     comments: [
@@ -101,7 +101,7 @@ export const POSTS: Post[] = [
     ago: "6h",
     problem: "Screen readers read the pharmacy refill form's error messages before the field they belong to.",
     solution:
-      "I stopped fighting it and now fill the form in reverse — last field first. Sounds silly, works every time, because their validation only fires forward. Told their dev team; no reply in five months.",
+      "I stopped fighting it and now fill the form in reverse, last field first. Sounds silly, works every time, because their validation only fires forward. Told their dev team; no reply in five months.",
     axes: ["vision"],
     worked: 23,
     comments: [

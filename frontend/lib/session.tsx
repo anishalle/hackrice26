@@ -7,9 +7,29 @@ import type { ModalityId } from "./verification";
 
 const STORAGE_KEY = "axis.session.v1";
 
+/**
+ * The chosen blobatar.
+ *
+ * `seed` is the only required part — shape and base colour both fall out of it,
+ * so a seed on its own is already a complete face. `hue`, `tone` and
+ * `expression` are overrides layered on top, and each is nullable so that
+ * "untouched" stays distinguishable from "deliberately set to the value the
+ * seed would have picked anyway". Shuffling clears them.
+ */
+export interface AvatarChoice {
+  seed: string;
+  hue: number | null;
+  tone: number | null;
+  expression: ExpressionId;
+}
+
+export type ExpressionId = "idle" | "happy" | "sad" | "mad" | "surprised";
+
 export interface SessionState {
   profile: Profile;
   profileComplete: boolean;
+  avatar: AvatarChoice;
+  avatarChosen: boolean;
   verifiedWith: ModalityId | null;
   attestation: Attestation | null;
   theme: "light" | "dark";
@@ -17,9 +37,21 @@ export interface SessionState {
   hydrated: boolean;
 }
 
+/* A fixed seed, not a random one: the server and the first client render have
+   to agree, and Math.random() here would mean a different face on each and a
+   hydration mismatch. The customiser reseeds on a real interaction instead. */
+export const DEFAULT_AVATAR: AvatarChoice = {
+  seed: "axis-guest",
+  hue: null,
+  tone: null,
+  expression: "idle",
+};
+
 const INITIAL: SessionState = {
   profile: { ...DEFAULT_PROFILE },
   profileComplete: false,
+  avatar: { ...DEFAULT_AVATAR },
+  avatarChosen: false,
   verifiedWith: null,
   attestation: null,
   theme: "light",
@@ -74,7 +106,16 @@ function hydrate() {
   } catch {
     /* a blocked or corrupt store just means a fresh session */
   }
-  state = { ...INITIAL, ...restored, hydrated: true };
+  // The avatar is merged a level deeper than the rest. Sessions stored before
+  // it existed have no `avatar` key at all, and a spread alone would leave
+  // `state.avatar` whole only by luck — a partial one written by an older build
+  // would land here missing fields and every read would have to guard.
+  state = {
+    ...INITIAL,
+    ...restored,
+    avatar: { ...DEFAULT_AVATAR, ...(restored.avatar ?? {}) },
+    hydrated: true,
+  };
   emit();
 }
 
@@ -86,6 +127,8 @@ export interface Session extends SessionState {
   setProfileComplete: (v: boolean) => void;
   setVerifiedWith: (m: ModalityId | null) => void;
   setAttestation: (a: Attestation | null) => void;
+  setAvatar: (patch: Partial<AvatarChoice>) => void;
+  shuffleAvatar: () => void;
   toggleTheme: () => void;
   reset: () => void;
 }
@@ -131,12 +174,38 @@ export function useSession(): Session {
     update((s) => ({ ...s, attestation: a }));
   }, []);
 
+  const setAvatar = useCallback((patch: Partial<AvatarChoice>) => {
+    update((s) => ({ ...s, avatar: { ...s.avatar, ...patch }, avatarChosen: true }));
+  }, []);
+
+  // Reseeding clears the hue and tone overrides on purpose. They were dialled
+  // against the previous creature; carrying them onto a new one produces a
+  // shape wearing the last face's colour, which reads as the shuffle being
+  // broken rather than as a setting persisting.
+  const shuffleAvatar = useCallback(() => {
+    update((s) => ({
+      ...s,
+      avatar: {
+        ...s.avatar,
+        seed: `blob-${Math.random().toString(36).slice(2, 10)}`,
+        hue: null,
+        tone: null,
+      },
+      avatarChosen: true,
+    }));
+  }, []);
+
   const toggleTheme = useCallback(() => {
     update((s) => ({ ...s, theme: s.theme === "light" ? "dark" : "light" }));
   }, []);
 
   const reset = useCallback(() => {
-    update(() => ({ ...INITIAL, profile: { ...DEFAULT_PROFILE }, hydrated: true }));
+    update(() => ({
+      ...INITIAL,
+      profile: { ...DEFAULT_PROFILE },
+      avatar: { ...DEFAULT_AVATAR },
+      hydrated: true,
+    }));
   }, []);
 
   const adaptation = useMemo(() => deriveAdaptation(snapshot.profile), [snapshot.profile]);
@@ -148,6 +217,8 @@ export function useSession(): Session {
     setProfileComplete,
     setVerifiedWith,
     setAttestation,
+    setAvatar,
+    shuffleAvatar,
     toggleTheme,
     reset,
   };

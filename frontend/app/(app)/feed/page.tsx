@@ -6,6 +6,7 @@ import { AXES, AXIS_SPECS, type Axis } from "@/lib/capability";
 import { AUTHORS, POSTS, type Post } from "@/lib/fixtures";
 import { useSession } from "@/lib/session";
 import { Annotation, Button, Panel, Rule } from "@/components/primitives";
+import { Avatar } from "@/components/avatar";
 import { VoiceStage } from "@/components/voice-stage";
 import { IconCheck, IconComment, IconSolved } from "@/components/icons";
 
@@ -55,7 +56,7 @@ export default function FeedPage() {
         </h1>
         {hydrated && relevantAxes.length > 0 ? (
           <Annotation className="mt-4">
-            sorted by overlap with your profile &mdash;{" "}
+            sorted by overlap with your profile &middot;{" "}
             {relevantAxes.map((a) => AXIS_SPECS[a].title.toLowerCase()).join(", ")}
           </Annotation>
         ) : (
@@ -106,7 +107,9 @@ function PostCard({
 
   return (
     <Panel as="article" className="p-6 sm:p-7">
-      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        {/* Decorative: the byline right beside it already names the author. */}
+        <Avatar seed={author.id} size={30} />
         <span className="text-[0.9375rem] font-medium">{author.name}</span>
         {author.attested.length > 0 && (
           <span
@@ -165,7 +168,8 @@ function PostCard({
         <ul className="mt-4 grid gap-4 border-l pl-5" style={{ borderColor: "var(--line)" }}>
           {post.comments.map((c) => (
             <li key={c.id}>
-              <div className="flex flex-wrap items-baseline gap-x-2.5">
+              <div className="flex flex-wrap items-center gap-x-2.5">
+                <Avatar seed={c.authorId} size={22} />
                 <span className="text-[0.875rem] font-medium">{AUTHORS[c.authorId].name}</span>
                 <span className="font-mono text-[0.6875rem] text-[var(--text-2)]">{c.ago}</span>
               </div>

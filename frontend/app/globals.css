@@ -2,35 +2,50 @@
 @import "tw-animate-css";
 
 /* ---------------------------------------------------------------------------
-   Axis — light-first, on river.ai's measured palette.
+   Aide — light lilac paper, deep violet ink.
 
-     --paper #F2E9D6 · --ink #0E2F7E · --rule #D8CCAA · --accent #1E6CC4
-     (read from their :root; see reference/extracted-tokens.md)
+   The paper started as river.ai's warm cream #F2E9D6 and their navy ink
+   #0E2F7E. The paper moved to lilac first, and the navy held on it — both are
+   cool — but held is not the same as belonging: a blue ink on a violet ground
+   reads as two decisions rather than one. So the ink now sits in the paper's
+   own hue family, dark enough to carry the same weight the navy did.
 
-   Warm cream paper with deep navy ink. Persona's #3f48fd carries the primary
-   action, which is the one place the two brands need to meet.
+   Persona's #3f48fd still carries the primary action. It is close to the ink in
+   hue now, which is fine because lightness is what separates them: the ink is
+   ~12:1 against the paper and the brand is a bright mid-tone, so the button
+   never reads as a run of text.
+
+   Measured against --bg #ece9f8:
+     --text 12.1:1 · --text-2 8.4:1 · --text-3 4.8:1 · --brand 4.9:1
+
+   The landing page does not use this palette — it is pinned dark. See the
+   scoped block below.
    --------------------------------------------------------------------------- */
 
 :root,
 [data-theme="light"] {
-  --bg: #f2e9d6;
-  --bg-deep: #e8dcc0;
-  --surface: #faf5ea;
-  --surface-2: #ece1c9;
-  --line: #d8ccaa;
-  --line-soft: #e6dcc2;
+  --bg: #ece9f8;
+  --bg-deep: #ddd8f0;
+  --surface: #f6f4fd;
+  --surface-2: #e3dff5;
+  --line: #cbc4e7;
+  --line-soft: #ded9f1;
 
-  --text: #0e2f7e;
-  --text-2: #1f3f8e;
-  --text-3: #6b7898;
+  --text: #2f1a63;
+  --text-2: #4a3288;
+  /* 4.8:1 on --bg. This is the one that needs watching on every repaint — it
+     carries the eyebrows and meta lines, and it is the first to slip under AA
+     when the paper moves. */
+  --text-3: #6a5f95;
 
   --brand: #3f48fd;
   --brand-hover: #2f38ee;
   --brand-ink: #ffffff;
-  --brand-soft: #c8cbfe;
-  --brand-dim: #dcdefb;
+  --brand-soft: #b9bdfd;
+  --brand-dim: #d9dbfc;
 
-  /* Verified/attested. river.ai's sage, deepened to clear AA on paper. */
+  /* Verified/attested. river.ai's sage, deepened to clear AA on paper. It now
+     also reads as the one warm-side hue on a cool page, which suits it. */
   --accent: #2c6d5e;
   --accent-soft: #6da89f;
   --accent-dim: #d6e8e2;
@@ -38,16 +53,16 @@
   --warn: #9a5518;
 
   /* Maximum-contrast solid, for the primary pill. */
-  --solid: #0e2f7e;
-  --solid-ink: #f2e9d6;
+  --solid: #2f1a63;
+  --solid-ink: #f1eefb;
 
-  --announce-bg: #0e2f7e;
-  --announce-ink: #f2e9d6;
+  --announce-bg: #2f1a63;
+  --announce-ink: #f1eefb;
 
-  /* Duotone ramp handed to the shader: ink through to paper. */
-  --duo-shadow: #0e2f7e;
-  --duo-mid: #7fa3c4;
-  --duo-light: #f5eddb;
+  /* Duotone ramp for .canyon-fallback: ink through to paper. */
+  --duo-shadow: #2f1a63;
+  --duo-mid: #8f8ac4;
+  --duo-light: #f2effc;
   --duo-sun: #ffe3c4;
 
   --type-scale: 1;
@@ -63,23 +78,34 @@
   --pad-x: clamp(20px, 4vw, 56px);
 }
 
+/* Applied two ways, deliberately. On <html> it is the app's dark theme, driven
+   by the toggle. On the landing page's <main> it is a scope: that page is
+   always dark whatever the toggle says, because the canyon shader bakes
+   river.ai's own palette and runs a real day cycle, so the page around it has
+   to stay night-side for the hero to read as one image. Scoping the tokens
+   beats flipping data-theme on navigation — the app's toggle keeps its meaning
+   and there is no theme flash on first paint. */
 [data-theme="dark"] {
-  --bg: #071233;
-  --bg-deep: #040c24;
-  --surface: #0d1b45;
-  --surface-2: #132254;
-  --line: #24356e;
-  --line-soft: #1a2757;
+  --bg: #150a2e;
+  --bg-deep: #0d0620;
+  --surface: #1e1140;
+  --surface-2: #2a1a52;
+  --line: #3b2a6b;
+  --line-soft: #2c1e55;
 
+  /* Cream, not a violet-white, and deliberately so. It is the one warm thing
+     on a cool page, it is what the canyon's sun is made of, and on the landing
+     it is the headline sitting directly over that sun. A cooler ink here would
+     match the frame and lose the picture. */
   --text: #f2e9d6;
-  --text-2: #bcc7e0;
-  --text-3: #7f8db0;
+  --text-2: #cfc4e4;
+  --text-3: #948aba;
 
-  --brand: #5b63ff;
-  --brand-hover: #7d84ff;
-  --brand-ink: #060e28;
+  --brand: #7d72ff;
+  --brand-hover: #9a91ff;
+  --brand-ink: #0d0620;
   --brand-soft: #c8cbfe;
-  --brand-dim: #2b3080;
+  --brand-dim: #34246e;
 
   --accent: #6da89f;
   --accent-soft: #bcdad0;
@@ -88,43 +114,60 @@
   --warn: #ffb27a;
 
   --solid: #f2e9d6;
-  --solid-ink: #0e2f7e;
+  --solid-ink: #2f1a63;
 
-  --announce-bg: #16255c;
-  --announce-ink: #d7e0f5;
+  --announce-bg: #241452;
+  --announce-ink: #ddd4f0;
 
-  --duo-shadow: #040c24;
-  --duo-mid: #3f5fa8;
+  --duo-shadow: #0d0620;
+  --duo-mid: #6a54a8;
   --duo-light: #f2e9d6;
   --duo-sun: #ffe3c4;
 }
 
-/* The vision axis pushes ink and paper apart rather than recolouring. */
-[data-contrast="max"][data-theme="light"] {
-  --bg: #fdf9ef;
-  --surface: #ffffff;
-  --surface-2: #f6efdd;
-  --line: #9c8f70;
-  --text: #04184a;
-  --text-2: #142a63;
-  --text-3: #35467a;
-  --brand: #2029d8;
-  --accent: #17493c;
-  --solid: #04184a;
+/* A scoped data-theme has to restate colour and background, not just the
+   tokens. `body { color: var(--text) }` resolves against body's own token set
+   and hands the resulting *computed colour* down by inheritance — redefining
+   --text further in does not retroactively change it. So any text inside the
+   scope that does not set its own colour keeps the app's navy ink, which on
+   the landing's dark ground is navy on navy. The hero only escaped this
+   because its headline and subhead carry explicit text-[var(--text)]. */
+[data-theme]:not(html) {
+  color: var(--text);
+  background-color: var(--bg);
 }
 
-[data-contrast="max"][data-theme="dark"] {
-  --bg: #01060f;
-  --surface: #040c24;
-  --surface-2: #0a1538;
-  --line: #45589a;
+/* The vision axis pushes ink and paper apart rather than recolouring. */
+[data-contrast="max"][data-theme="light"] {
+  --bg: #faf8ff;
+  --surface: #ffffff;
+  --surface-2: #f0edfb;
+  --line: #8b85b2;
+  --text: #1c0b45;
+  --text-2: #2e1a63;
+  --text-3: #4b3c7d;
+  --brand: #3a22c8;
+  --accent: #17493c;
+  --solid: #1c0b45;
+  --solid-ink: #ffffff;
+}
+
+/* The descendant form is what reaches the pinned-dark landing page, whose
+   data-theme lives on <main> rather than on <html> where data-contrast is.
+   Without it, raising contrast would silently skip the whole landing. */
+[data-contrast="max"][data-theme="dark"],
+[data-contrast="max"] [data-theme="dark"] {
+  --bg: #06020f;
+  --surface: #0d0620;
+  --surface-2: #170c33;
+  --line: #6250a0;
   --text: #ffffff;
-  --text-2: #e4ecff;
-  --text-3: #b9c4e6;
-  --brand: #9aa0ff;
+  --text-2: #ece4ff;
+  --text-3: #c8bce6;
+  --brand: #b3a8ff;
   --accent: #a9e6d8;
   --solid: #ffffff;
-  --solid-ink: #01060f;
+  --solid-ink: #06020f;
 }
 
 /* --- shadcn bridge ---------------------------------------------------------
@@ -310,6 +353,15 @@ body {
   -webkit-backdrop-filter: blur(14px) saturate(140%);
 }
 
+/* The pre-paint ground. #150a2e is gl.clearColor(0.082, 0.039, 0.18) written as
+   hex — the exact colour the canvas clears to — so the swap from CSS to the
+   first drawn frame cannot be seen. Change one and you must change the other.
+   Deliberately flat: anything with structure in it reads as a second, wrong
+   hero for the moment before the real one. */
+.canyon-ground {
+  background-color: #150a2e;
+}
+
 .canyon-fallback {
   background:
     radial-gradient(70% 46% at 58% 44%, color-mix(in oklab, var(--duo-light) 40%, transparent) 0%, transparent 62%),
@@ -319,14 +371,6 @@ body {
 .announce {
   background-color: var(--announce-bg);
   color: var(--announce-ink);
-}
-
-.scroll-cue-line {
-  display: block;
-  width: 1px;
-  height: 40px;
-  margin: 10px auto 0;
-  background: linear-gradient(to bottom, var(--text-3), transparent);
 }
 
 /* Three blinks, then solid. An indefinite blink would trip WCAG 2.2.2. */
@@ -352,9 +396,11 @@ body {
   opacity: 0.55;
 }
 
-/* Chrome sitting on the hero. The shader's sky resolves dark in both themes,
-   so anything over it takes paper ink regardless of the page theme — the
-   header would otherwise be navy on navy in light mode. */
+/* Chrome sitting on the hero. The landing is pinned dark, so --text is already
+   paper here; this pins it to the literal value anyway, so the header cannot
+   be knocked into navy-on-navy by a future change to the scope above. What it
+   does NOT protect against is the sky itself going pale at dawn and dusk —
+   that is the scrim's job, in app/page.tsx. */
 .on-hero,
 .on-hero .eyebrow {
   color: #f2e9d6;
@@ -409,6 +455,37 @@ a {
   text-decoration-thickness: 1px;
 }
 
+/* --- View transitions --------------------------------------------------------
+   The blobatar morphs between the customiser and the profile page. Given its
+   own timing because the default 250ms crossfade reads as a dissolve at this
+   size; it needs long enough to be seen travelling, on the same easing curve
+   as everything else that moves in the app.
+
+   The reduced-motion rules are not redundant with the blanket `*` rule below.
+   View-transition pseudo-elements hang off the root's own tree, so a
+   descendant selector never reaches them — they have to be named directly, and
+   both the OS preference and the capability profile have to be able to stop a
+   148px face flying across the screen. */
+
+::view-transition-group(blobatar) {
+  animation-duration: 460ms;
+  animation-timing-function: var(--ease);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+
+[data-motion="reduced"]::view-transition-group(*),
+[data-motion="reduced"]::view-transition-old(*),
+[data-motion="reduced"]::view-transition-new(*) {
+  animation: none !important;
+}
+
 /* --- Motion ----------------------------------------------------------------- */
 
 @media (prefers-reduced-motion: reduce) {
@@ -426,6 +503,41 @@ a {
   animation-duration: 0.01ms !important;
   animation-iteration-count: 1 !important;
   transition-duration: 0.01ms !important;
+}
+
+/* Buttons lift a pixel under the cursor and settle under the press. Small on
+   purpose: the point is that the control feels physical, not that anything
+   moves. The transition is declared here rather than per-button so every
+   control that opts in gets the same curve.
+
+   Both reduced-motion rules above only zero the transition *duration*, which
+   would leave the offsets snapping into place instantly — a jump is a worse
+   answer than stillness for someone who asked for less motion. So the
+   transforms themselves are dropped, not merely un-animated. */
+.btn-lift {
+  transition-property: background-color, color, border-color, opacity, transform;
+  transition-duration: 150ms;
+  transition-timing-function: var(--ease);
+}
+
+.btn-lift:hover {
+  transform: translateY(-1px);
+}
+
+.btn-lift:active {
+  transform: translateY(0) scale(0.98);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn-lift:hover,
+  .btn-lift:active {
+    transform: none !important;
+  }
+}
+
+[data-motion="reduced"] .btn-lift:hover,
+[data-motion="reduced"] .btn-lift:active {
+  transform: none !important;
 }
 
 /* --- Utilities ---------------------------------------------------------------- */

@@ -70,14 +70,14 @@ export default function ConsentPage() {
         </header>
 
         <div className="mt-14">
-          <PlotLabel>Step 3 of 3</PlotLabel>
+          <PlotLabel>Step 4 of 4</PlotLabel>
           <h1 className="mt-3 max-w-[32rem] display-sm text-[clamp(2rem,4.5vw,3rem)]">
             {PROVIDER.name} is about to share five things.
           </h1>
           <p className="prose-lg mt-5 text-[var(--text-2)]">
             Each one is listed with the exact record it reads. Turn off anything
-            you&rsquo;d rather keep &mdash; only the first is required, and the
-            app works without the rest.
+            you&rsquo;d rather keep. Only the first is required, and the app
+            works without the rest.
           </p>
         </div>
 
@@ -88,7 +88,7 @@ export default function ConsentPage() {
               <p className="font-mono text-[0.8125rem] tracking-[0.06em]">{PROVIDER.name}</p>
             </div>
             <p className="font-mono text-[0.6875rem] uppercase tracking-[0.1em] text-[var(--text-2)]">
-              Authorizing &rarr; Axis
+              Authorizing &rarr; Aide
             </p>
           </div>
           <Rule major />

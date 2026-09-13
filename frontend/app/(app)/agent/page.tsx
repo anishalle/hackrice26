@@ -53,7 +53,7 @@ export default function AgentPage() {
         </h1>
         <p className="mt-4 text-[0.9375rem] leading-[1.6] text-[var(--text-2)]">
           {hydrated && adaptation.voiceInputUnavailable
-            ? "Every task here is startable without speaking — your profile says voice input isn't a route we should rely on."
+            ? "Every task here is startable without speaking. Your profile says voice input isn't a route we should rely on."
             : "Start any of these by tapping, or hold anywhere on the page and just say it."}
         </p>
       </div>
@@ -76,9 +76,9 @@ export default function AgentPage() {
         <div className="mt-5 flex gap-3">
           <IconMic width={17} height={17} className="mt-0.5 shrink-0 text-[var(--text-2)]" />
           <p className="max-w-[40rem] text-[0.875rem] leading-[1.6] text-[var(--text-2)]">
-            In voice-first mode the agent is not a tab — it&rsquo;s how the whole
-            app is operated. It reads the feed aloud, drafts replies in your
-            voice, and posts them when you say go.
+            In voice-first mode the agent stops being a tab and becomes how the
+            whole app is operated. It reads the feed aloud, drafts replies in
+            your voice, and posts them when you say go.
           </p>
         </div>
       </div>
