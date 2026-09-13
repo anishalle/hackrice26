@@ -5,6 +5,12 @@ import { useAuth } from "@/lib/auth-context";
 import { ProtectedRoute } from "@/components/protected-route";
 import { APPWRITE_PROJECT_NAME } from "@/lib/appwrite";
 import { Button } from "@/components/ui/button";
+import { AccessibilityConsole } from "@/components/accessibility-console";
+import { HermesAgent } from "@/components/hermes-agent";
+import {
+  DEFAULT_ACCESSIBILITY_PREFERENCES,
+  isAccessibilityPreferences,
+} from "@/lib/accessibility";
 import { LogOut, Sparkles, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -12,6 +18,9 @@ function HomeContent() {
   const { user, logout } = useAuth();
   const router = useRouter();
   const [loggingOut, setLoggingOut] = useState(false);
+  const accessibilityPreferences = isAccessibilityPreferences(user?.prefs?.accessibility)
+    ? user.prefs.accessibility
+    : DEFAULT_ACCESSIBILITY_PREFERENCES;
 
   const handleLogout = async () => {
     setLoggingOut(true);
@@ -61,8 +70,13 @@ function HomeContent() {
         </div>
       </header>
 
-      {/* Blank Body */}
-      <main className="flex-1 max-w-5xl w-full mx-auto p-6 md:p-10" />
+      <main className="flex-1 max-w-5xl w-full mx-auto p-6 md:p-10">
+        <AccessibilityConsole
+          key={user?.$id ?? "guest"}
+          initialPreferences={accessibilityPreferences}
+        />
+        <HermesAgent />
+      </main>
     </div>
   );
 }
