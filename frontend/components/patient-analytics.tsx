@@ -92,15 +92,6 @@ export function PatientAnalyticsPanel({ patientId }: { patientId: string }) {
             </Panel>;
           })}
         </div>
-        <details className="mt-4 rounded-[var(--r)] border border-[var(--line)] p-5 text-sm">
-          <summary className="cursor-pointer font-medium">What Tiger Data is doing here</summary>
-          <p className="mt-3 max-w-[70ch] leading-6 text-[var(--text-2)]">
-            Measurements live in a time-partitioned hypertable. A continuous aggregate
-            precomputes weekly counts, averages, ranges and variability in PostgreSQL.
-            This screen reads those summaries, with real-time aggregation for newer data,
-            instead of downloading every raw observation. No speedup is claimed from this small demo dataset.
-          </p>
-        </details>
       </>}
     </section>
   );
