@@ -72,7 +72,12 @@ def migrated_database_url(tmp_path_factory):
     previous = settings.DATABASE_URL
     settings.DATABASE_URL = url
     try:
-        command.upgrade(Config("alembic.ini"), "head")
+        config = Config("alembic.ini")
+        # 0003 (patient analytics) needs the TimescaleDB extension, which the
+        # embedded server lacks and the marketplace never touches. Stamp past it.
+        command.upgrade(config, "20260913_0002")
+        command.stamp(config, "20260913_0003")
+        command.upgrade(config, "head")
         yield url
     finally:
         settings.DATABASE_URL = previous
@@ -144,5 +149,5 @@ def test_migration_downgrade_and_upgrade_again(migrated_database_url) -> None:
     from alembic.config import Config
 
     config = Config("alembic.ini")
-    command.downgrade(config, "20260913_0002")
+    command.downgrade(config, "20260913_0003")
     command.upgrade(config, "head")

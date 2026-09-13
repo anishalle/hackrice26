@@ -1,7 +1,7 @@
 """Turn the skills table into the marketplace and seed the launch catalogue.
 
-Revision ID: 20260913_0003
-Revises: 20260913_0002
+Revision ID: 20260913_0004
+Revises: 20260913_0003
 Create Date: 2026-09-13 12:00:00
 """
 
@@ -12,8 +12,8 @@ import sqlalchemy as sa
 from alembic import op
 from sqlalchemy.dialects import postgresql
 
-revision: str = "20260913_0003"
-down_revision: str | Sequence[str] | None = "20260913_0002"
+revision: str = "20260913_0004"
+down_revision: str | Sequence[str] | None = "20260913_0003"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

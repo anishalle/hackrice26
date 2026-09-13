@@ -117,12 +117,12 @@ does not turn demo fixtures or chat state into database-backed product features.
 
 ## Migration history
 
-The hosted database reports Alembic revision `20260913_0003`, but this repository
-(including fetched remote branches) only contains migrations through `0002`.
-The tables/columns used by this backend are present. Deployment uses that existing
-schema without stamping, downgrading, or deleting data. Restore the original
-`0003` migration from whoever applied it before using `manage.py migrate` on this
-database or making further schema changes. No placeholder migration was invented.
+Revision `20260913_0003` on the hosted database is the patient-analytics
+migration from `backend/sunay` (TimescaleDB hypertable and continuous aggregate).
+It is now checked in here so the chain is unbroken: `0001` schema, `0002` voice
+preservation, `0003` patient analytics, `0004` marketplace skills. Never reuse a
+revision number that another branch has already applied to this database:
+Alembic will consider the new migration done and silently skip it.
 
 ## Verification status
 

@@ -39,7 +39,7 @@ requires a new migration and re-indexing.
 
 ## Marketplace
 
-The marketplace catalogue lives in the `skills` table. Migration `0003` adds
+The marketplace catalogue lives in the `skills` table. Migration `0004` adds
 the marketplace columns (`slug`, `author_handle`, `tags`, `karma`, `featured`,
 `docs`) and seeds the thirteen launch skills, each with a published version 1,
 so `uv run alembic upgrade head` is the whole setup. The seed is idempotent:
