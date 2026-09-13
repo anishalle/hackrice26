@@ -18,6 +18,7 @@ import GetStartedScreen from './screens/GetStartedScreen';
 import LoginScreen from './screens/LoginScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import TabBar from './components/TabBar';
+import { AccessProvider, useAccess } from './components/AccessMode';
 
 const Tab = createBottomTabNavigator();
 
@@ -48,10 +49,30 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
+      <AccessProvider>
       {screen === 'app' ? (
+        <Shell />
+      ) : screen === 'login' ? (
+        <LoginScreen onDone={() => setScreen('app')} onBack={() => setScreen('start')} />
+      ) : (
+        <GetStartedScreen onStart={() => setScreen('app')} onLogin={() => setScreen('login')} />
+      )}
+      <StatusBar style="dark" />
+      </AccessProvider>
+    </SafeAreaProvider>
+  );
+}
+
+// Inside the provider, so it can read the mode. Both modes open on Home; in
+// gaze mode that route renders the gaze home instead of the feed, and the tab
+// bar hides itself, so navigation happens through full-size targets.
+function Shell() {
+  const { t } = useAccess();
+
+  return (
         <NavigationContainer theme={navTheme}>
           <Tab.Navigator
-            screenOptions={{ headerShown: false, animation: 'fade' }}
+            screenOptions={{ headerShown: false, animation: t.motion ? 'fade' : 'none' }}
             tabBar={(props) => <TabBar {...props} />}
           >
             <Tab.Screen name="Home" component={HomeScreen} />
@@ -67,12 +88,5 @@ export default function App() {
             </Tab.Screen>
           </Tab.Navigator>
         </NavigationContainer>
-      ) : screen === 'login' ? (
-        <LoginScreen onDone={() => setScreen('app')} onBack={() => setScreen('start')} />
-      ) : (
-        <GetStartedScreen onStart={() => setScreen('app')} onLogin={() => setScreen('login')} />
-      )}
-      <StatusBar style="dark" />
-    </SafeAreaProvider>
   );
 }

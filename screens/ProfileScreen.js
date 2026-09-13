@@ -7,6 +7,7 @@ import { PROFILE, ACCESS, INPUTS, TARGET_STEPS, TEXT_STEPS, TRENDS } from '../da
 import AgentBlob from '../components/AgentBlob';
 import BlobMark from '../components/BlobMark';
 import Icon from '../components/Icon';
+import { useAccess } from '../components/AccessMode';
 
 const TONE = { amber: accents.amber, periwinkle: accents.periwinkle, mint: accents.mint, peach: accents.peach };
 
@@ -55,6 +56,7 @@ function Stepper({ label, steps, value, onChange }) {
 
 export default function ProfileScreen({ onBack }) {
   const insets = useSafeAreaInsets();
+  const { gaze, setMode } = useAccess();
   const [inputs, setInputs] = useState(ACCESS.inputs);
   const [target, setTarget] = useState(ACCESS.target);
   const [text, setText] = useState(ACCESS.text);
@@ -125,6 +127,16 @@ export default function ProfileScreen({ onBack }) {
           <Stepper label="Buttons" steps={TARGET_STEPS} value={target} onChange={setTarget} />
           <View style={styles.divided} />
           <Stepper label="Text" steps={TEXT_STEPS} value={text} onChange={setText} />
+        </Section>
+
+        <Section title="Gaze mode" hint="For driving the app with iOS Eye Tracking or a single switch.">
+          <View style={styles.row}>
+            <View style={styles.rowText}>
+              <Text style={styles.rowLabel}>Use gaze mode</Text>
+              <Text style={styles.meta}>88pt targets, no gestures, Axl asks instead of you typing</Text>
+            </View>
+            <Switch value={gaze} onValueChange={(on) => setMode(on ? 'gaze' : 'standard')} />
+          </View>
         </Section>
 
         <Section title="Let Axl adapt" hint="Off means it proposes a change and waits for you.">
