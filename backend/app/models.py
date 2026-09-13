@@ -2,7 +2,7 @@
 
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, HttpUrl
 
 
 class HealthResponse(BaseModel):
@@ -16,3 +16,8 @@ class BrowserLiveViewResponse(BaseModel):
     session_id: str | None = None
     live_url: str | None = None
     started_at: str | None = None
+
+
+class StartGuidedBrowserRequest(BaseModel):
+    website_url: HttpUrl
+    mode: Literal["assist", "together"]
