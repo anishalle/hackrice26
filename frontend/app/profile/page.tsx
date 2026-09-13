@@ -2,7 +2,6 @@
 
 import { ViewTransition } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { AXES, AXIS_SPECS, fingerprint, stopFor } from "@/lib/capability";
 import { adaptationNotes, deriveAdaptation, hasAdaptations } from "@/lib/adaptation";
@@ -30,8 +29,7 @@ import { IconArrowLeft, IconArrowRight, IconBlocked } from "@/components/icons";
  * on `adaptation` in lib/session.tsx.
  */
 export default function ProfilePage() {
-  const router = useRouter();
-  const { patient, profile, setAxis, setPreviewing, adaptation, hydrated } = useSession();
+  const { patient, profile, setAxis, adaptation, hydrated } = useSession();
   const reduce = useReducedMotion();
   const notes = adaptationNotes(profile);
   const verdicts = routeVerification(profile);
@@ -43,11 +41,6 @@ export default function ProfilePage() {
   // at. Derived straight from the profile rather than read off the session, so
   // the summary below is honest even though the clinician is not in a preview.
   const theirs = deriveAdaptation(profile);
-
-  const openPreview = () => {
-    setPreviewing(true);
-    router.push("/feed");
-  };
 
   return (
     <main className="paper min-h-dvh">
@@ -257,14 +250,6 @@ export default function ProfilePage() {
         </div>
 
         <div className="mt-12 flex flex-wrap items-center gap-4">
-          <button
-            type="button"
-            onClick={openPreview}
-            className="btn-lift target inline-flex h-12 items-center justify-center gap-2 rounded-[var(--r-pill)] bg-[var(--solid)] px-7 text-[0.9375rem] font-medium text-[var(--solid-ink)]"
-          >
-            Open the app as {patient.name.split(" ")[0]}
-            <IconArrowRight width={18} height={18} />
-          </button>
           <ButtonLink href="/records" variant="secondary" className="h-12">
             Full record
             <IconArrowRight width={18} height={18} />
@@ -272,10 +257,6 @@ export default function ProfilePage() {
           <ButtonLink href="/clinician" variant="quiet" className="h-12">
             Back to caseload
           </ButtonLink>
-          <p className="font-mono text-[0.75rem] text-[var(--text-2)]">
-            The preview renders the real app at this profile. You can leave it at
-            any time.
-          </p>
         </div>
 
         <div className="h-16" />
