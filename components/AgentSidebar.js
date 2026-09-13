@@ -8,8 +8,11 @@ import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import { colors, accents, spacing, radii, type, tagPalette, cardShadow } from '../theme';
 import { SKILLS, CATEGORIES } from '../data/skills';
+import { CHATS, SUGGESTIONS } from '../data/chats';
+import { CLINICIANS } from '../data/days';
 import Icon from './Icon';
 import AgentBlob from './AgentBlob';
+import { useAccess } from './AccessMode';
 import BlobMark from './BlobMark';
 
 // Axl's sidebar. Three things live here that the thread has no room for: the
@@ -35,6 +38,15 @@ const SUBMARKETS = CATEGORIES.map((name) => {
   const items = SKILLS.filter((s) => s.tags.includes(name)).sort((a, b) => b.karma - a.karma);
   return { name, items, karma: items.reduce((n, s) => n + s.karma, 0) };
 }).sort((a, b) => b.karma - a.karma);
+
+const SUGGESTED = SUGGESTIONS.map((s) => ({ ...s, skill: SKILLS.find((k) => k.id === s.id) })).filter(
+  (s) => s.skill
+);
+
+// Three of each, not all of them. The panel is for picking up where you left
+// off, so an open thread beats a recent one and everything past the third row
+// is browsing rather than resuming.
+const RELEVANT_CHATS = [...CHATS].sort((a, b) => Number(!!b.open) - Number(!!a.open)).slice(0, 3);
 
 function Row({ icon, label, meta, tint, seed, active, onPress, children }) {
   return (
@@ -131,7 +143,11 @@ export default function AgentSidebar({
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const { width } = useWindowDimensions();
-  const panelW = Math.min(302, width * 0.86);
+  const { gaze, t } = useAccess();
+  // Wider in gaze mode, and it arrives from the right because that is the side
+  // the menu button lives on: a panel that slides in from under your hand is
+  // a panel you do not have to re-find.
+  const panelW = gaze ? Math.min(400, width * 0.94) : Math.min(302, width * 0.86);
 
   const slide = useRef(new Animated.Value(0)).current;
   const [market, setMarket] = useState(null);
@@ -181,12 +197,18 @@ export default function AgentSidebar({
       <Animated.View
         style={[
           styles.panel,
+          gaze ? styles.panelRight : styles.panelLeft,
           {
             width: panelW,
             paddingTop: insets.top + spacing(1),
             paddingBottom: insets.bottom + spacing(1.5),
             transform: [
-              { translateX: slide.interpolate({ inputRange: [0, 1], outputRange: [-panelW - 24, 0] }) },
+              {
+                translateX: slide.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [gaze ? panelW + 24 : -panelW - 24, 0],
+                }),
+              },
             ],
           },
         ]}
@@ -194,11 +216,71 @@ export default function AgentSidebar({
         <View style={styles.head}>
           <AgentBlob size={44} stage="done" />
           <View style={styles.headSpacer} />
-          <Pressable hitSlop={10} onPress={onClose} style={styles.headBtn}>
-            <Icon name="sidebar" size={17} color={colors.inkMuted} />
+          {/* The way out is the one control someone reaches for when they
+              opened this by accident, so it is the largest thing in the
+              header and says what it does. */}
+          <Pressable
+            hitSlop={10}
+            onPress={onClose}
+            accessibilityRole="button"
+            accessibilityLabel="Close menu"
+            style={({ pressed }) => [styles.closeBtn, pressed && styles.rowOn]}
+          >
+            <Icon name="sidebar" size={18} color={colors.ink} />
+            <Text style={styles.closeText}>Close</Text>
           </Pressable>
         </View>
 
+        {gaze ? (
+          <View style={styles.gazeBody}>
+            <Pressable
+              style={({ pressed }) => [styles.gazeRow, pressed && styles.rowOn]}
+              onPress={() => leave(() => navigation.navigate('Marketplace'))}
+            >
+              <Icon name="store" size={22} color={colors.ink} />
+              <Text style={styles.gazeRowText}>Marketplace</Text>
+            </Pressable>
+
+            {SUGGESTED.slice(0, 2).map(({ id, why, skill }) => (
+              <Pressable
+                key={id}
+                style={({ pressed }) => [styles.gazeRow, pressed && styles.rowOn]}
+                onPress={() => leave(() => navigation.navigate('Marketplace', { skillId: id }))}
+              >
+                <BlobMark seed={id} size={18} fill={t.accents.mint} />
+                <View style={styles.gazeRowStack}>
+                  <Text style={styles.gazeRowText}>{skill.title}</Text>
+                  <Text style={styles.gazeRowSub}>{why}</Text>
+                </View>
+              </Pressable>
+            ))}
+
+            {RELEVANT_CHATS.slice(0, 2).map((c) => (
+              <Pressable
+                key={c.id}
+                style={({ pressed }) => [styles.gazeRow, pressed && styles.rowOn]}
+                onPress={() => leave(onNewChat)}
+              >
+                <BlobMark seed={c.id} size={18} fill={t.accents.periwinkle} />
+                <View style={styles.gazeRowStack}>
+                  <Text style={styles.gazeRowText} numberOfLines={1}>{c.title}</Text>
+                  <Text style={styles.gazeRowSub}>{c.when}</Text>
+                </View>
+              </Pressable>
+            ))}
+
+            <Pressable
+              style={({ pressed }) => [styles.gazeRow, pressed && styles.rowOn]}
+              onPress={() => leave(() => onSend(null))}
+            >
+              <BlobMark seed="clinician" size={18} fill={t.accents.peach} />
+              <View style={styles.gazeRowStack}>
+                <Text style={styles.gazeRowText}>Send to clinician</Text>
+                <Text style={styles.gazeRowSub}>{CLINICIANS[0].name}</Text>
+              </View>
+            </Pressable>
+          </View>
+        ) : (
         <ScrollView
           style={styles.flex}
           contentContainerStyle={styles.body}
@@ -223,11 +305,83 @@ export default function AgentSidebar({
 
           <View style={styles.section}>
             <View style={styles.sectionHead}>
+              <Icon name="newChat" size={13} color={colors.inkMuted} />
+              <Text style={styles.sectionLabel}>Chats</Text>
+            </View>
+            <View style={styles.group}>
+              {RELEVANT_CHATS.map((c) => (
+                <Pressable
+                  key={c.id}
+                  onPress={() => leave(onNewChat)}
+                  style={({ pressed }) => [styles.day, pressed && styles.rowOn]}
+                >
+                  <View style={styles.dayHead}>
+                    <Text style={styles.dayTitle} numberOfLines={1}>{c.title}</Text>
+                    {/* An open thread is one Axl is still waiting on, which is
+                        worth a mark of its own. */}
+                    {c.open && <View style={[styles.sentDot, { backgroundColor: accents.amber }]} />}
+                  </View>
+                  <Text style={styles.chatSnippet} numberOfLines={1}>{c.snippet}</Text>
+                  <Text style={styles.dayDate}>{c.when}</Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+
+          <View style={styles.section}>
+            <View style={styles.sectionHead}>
+              <Icon name="store" size={13} color={colors.inkMuted} />
+              <Text style={styles.sectionLabel}>Suggested for you</Text>
+            </View>
+            <View style={styles.group}>
+              {SUGGESTED.map(({ id, why, skill }) => {
+                const palette = tagPalette[skill.tags[0]];
+                return (
+                  <Pressable
+                    key={id}
+                    onPress={() => leave(() => navigation.navigate('Marketplace', { skillId: id }))}
+                    style={({ pressed }) => [styles.suggestion, pressed && styles.rowOn]}
+                  >
+                    <BlobMark seed={id} size={12} fill={palette.bg} />
+                    <View style={styles.suggestionText}>
+                      <Text style={styles.dayTitle} numberOfLines={1}>{skill.title}</Text>
+                      {/* The reason, not the ranking. A suggestion nobody can
+                          tie to their own week is one they scroll past. */}
+                      <Text style={styles.dayDate} numberOfLines={2}>{why}</Text>
+                    </View>
+                    <Icon name="next" size={11} color={colors.inkMuted} />
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+
+          <View style={styles.section}>
+            <View style={styles.sectionHead}>
+              <Icon name="audit" size={13} color={colors.inkMuted} />
+              <Text style={styles.sectionLabel}>Care team</Text>
+            </View>
+            <View style={styles.group}>
+              {CLINICIANS.map((c) => (
+                <Pressable
+                  key={c.id}
+                  onPress={() => leave(() => onSend(null))}
+                  style={({ pressed }) => [styles.day, pressed && styles.rowOn]}
+                >
+                  <Text style={styles.dayTitle} numberOfLines={1}>{c.name}</Text>
+                  <Text style={styles.dayDate} numberOfLines={1}>{c.role}</Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+
+          <View style={styles.section}>
+            <View style={styles.sectionHead}>
               <Icon name="trend" size={13} color={colors.inkMuted} />
               <Text style={styles.sectionLabel}>Trending sub-markets</Text>
             </View>
             <View style={styles.group}>
-              {SUBMARKETS.map((m) => (
+              {SUBMARKETS.slice(0, 4).map((m) => (
                 <SubMarket
                   key={m.name}
                   market={m}
@@ -339,14 +493,17 @@ export default function AgentSidebar({
             </View>
           </View>
         </ScrollView>
+        )}
 
-        <Pressable
-          onPress={() => leave(() => onSend(null))}
-          style={({ pressed }) => [styles.footer, pressed && { opacity: 0.85 }]}
-        >
-          <Icon name="paperplane" size={14} color="#fff" />
-          <Text style={styles.footerText}>Send to clinician</Text>
-        </Pressable>
+        {!gaze && (
+          <Pressable
+            onPress={() => leave(() => onSend(null))}
+            style={({ pressed }) => [styles.footer, pressed && { opacity: 0.85 }]}
+          >
+            <Icon name="paperplane" size={14} color="#fff" />
+            <Text style={styles.footerText}>Send to clinician</Text>
+          </Pressable>
+        )}
       </Animated.View>
     </View>
   );
@@ -358,15 +515,28 @@ const styles = StyleSheet.create({
 
   panel: {
     position: 'absolute',
-    left: 0,
     top: 0,
     bottom: 0,
     backgroundColor: colors.surface,
-    borderTopRightRadius: 28,
-    borderBottomRightRadius: 28,
     paddingHorizontal: spacing(1),
     ...cardShadow,
   },
+  panelLeft: { left: 0, borderTopRightRadius: 28, borderBottomRightRadius: 28 },
+  panelRight: { right: 0, borderTopLeftRadius: 28, borderBottomLeftRadius: 28 },
+
+  gazeBody: { flex: 1, justifyContent: 'center', gap: spacing(1.25), paddingHorizontal: spacing(0.5) },
+  gazeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing(1.5),
+    minHeight: 88,
+    paddingHorizontal: spacing(2),
+    borderRadius: radii.tile,
+    backgroundColor: colors.page,
+  },
+  gazeRowStack: { flex: 1, gap: 2 },
+  gazeRowText: { ...type.bodyMedium, fontSize: 20, lineHeight: 26, color: colors.ink },
+  gazeRowSub: { ...type.callout, color: colors.inkMuted },
 
   head: {
     flexDirection: 'row',
@@ -377,12 +547,22 @@ const styles = StyleSheet.create({
   },
   headSpacer: { flex: 1 },
   headBtn: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
+  closeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing(0.75),
+    height: 44,
+    paddingHorizontal: spacing(1.5),
+    borderRadius: radii.pill,
+    backgroundColor: colors.page,
+  },
+  closeText: { ...type.label, fontSize: 14, color: colors.ink },
 
   body: { paddingBottom: spacing(2), gap: spacing(2.5) },
   group: { gap: 2 },
   section: { gap: spacing(0.75) },
   sectionHead: { flexDirection: 'row', alignItems: 'center', gap: spacing(0.75) },
-  sectionLabel: { ...type.caption, color: colors.inkMuted, letterSpacing: 0.2 },
+  sectionLabel: { ...type.label, fontSize: 13, color: colors.ink, letterSpacing: 0.2 },
 
   row: {
     flexDirection: 'row',
@@ -445,11 +625,22 @@ const styles = StyleSheet.create({
   },
   fieldInput: { flex: 1, padding: 0, ...type.footnote, color: colors.ink },
 
-  day: { paddingVertical: spacing(0.875), paddingHorizontal: spacing(1), borderRadius: 12, gap: 3 },
+  day: { paddingVertical: spacing(1.25), paddingHorizontal: spacing(1), borderRadius: 12, gap: 3, minHeight: 56 },
   dayHead: { flexDirection: 'row', alignItems: 'center', gap: spacing(0.75) },
-  dayTitle: { flex: 1, ...type.label, fontSize: 14, color: colors.inkMuted },
+  dayTitle: { flex: 1, ...type.bodyMedium, fontSize: 15, color: colors.ink },
   dayFoot: { flexDirection: 'row', alignItems: 'center', gap: spacing(0.5) },
-  dayDate: { ...type.caption, color: colors.inkMuted },
+  dayDate: { ...type.footnote, fontSize: 12, color: colors.inkMuted },
+  chatSnippet: { ...type.footnote, color: colors.ink, opacity: 0.7 },
+  suggestion: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing(1.25),
+    minHeight: 56,
+    paddingVertical: spacing(1.25),
+    paddingHorizontal: spacing(1),
+    borderRadius: 12,
+  },
+  suggestionText: { flex: 1, gap: 2 },
   dayDivider: { ...type.caption, color: colors.inkMuted },
   empty: { ...type.footnote, color: colors.inkMuted, padding: spacing(1) },
 

@@ -12,6 +12,11 @@ import { accents, colors } from '../theme';
 // Reanimated, so a blob per message costs no React renders. The community
 // avatars stay still on purpose; four idling faces in a list is noise.
 export const AXL_SEED = 'sarahw';
+
+// The voice agent: the one that speaks a phrase out loud in the banked voice.
+// It answers a different question than Axl does, so it gets its own face and
+// its own colour rather than being Axl in a different hat.
+export const VOICE_SEED = 'vox-carrier';
 export const AXL_HERO_SEED = 'mara';
 
 // Trait overrides are positions in [0,1) inside blobatar's own ranges.
@@ -84,7 +89,7 @@ const SQUINT_CHANCE = 0.28;
 const REST_MIN = 2600;
 const REST_MAX = 6200;
 
-function useRest(enabled) {
+function useRest(enabled, calm = false) {
   const [pose, setPose] = useState(null);
 
   useEffect(() => {
@@ -93,20 +98,20 @@ function useRest(enabled) {
     let gap;
     const beat = () => {
       gap = setTimeout(() => {
-        const squint = Math.random() < SQUINT_CHANCE;
+        const squint = !calm && Math.random() < SQUINT_CHANCE;
         setPose(squint ? happy : BLINK);
         hold = setTimeout(() => {
           setPose(null);
           beat();
-        }, squint ? SQUINT_HOLD : BLINK_HOLD);
-      }, REST_MIN + Math.random() * (REST_MAX - REST_MIN));
+        }, squint ? SQUINT_HOLD : BLINK_HOLD * (calm ? 1.3 : 1));
+      }, (calm ? REST_MIN * 2.4 : REST_MIN) + Math.random() * (REST_MAX - REST_MIN) * (calm ? 1.8 : 1));
     };
     beat();
     return () => {
       clearTimeout(gap);
       clearTimeout(hold);
     };
-  }, [enabled]);
+  }, [enabled, calm]);
 
   return pose;
 }
@@ -127,16 +132,26 @@ const STAGE_EXPRESSION = {
   done: idle,
 };
 
-export default function AgentBlob({ seed = AXL_SEED, size = 40, stage, animate = true }) {
-  const rest = useRest(!animate);
+// `calm` slows him down. blobatar seeds the blink and saccade periods from
+// traits, so pinning both to the top of their ranges (6.5s and 7.6s) is the
+// supported way to make him idle less often rather than less far — the
+// amplitude knob is not exposed through the adapter.
+//
+// Paired with `animate={false}` it drops the breathe, bob and glance entirely
+// and leaves only the slow blink below, which is what the gaze screens want:
+// a face that is present without ever pulling the eye off a target.
+const CALM = { ...FACE, 'motion.blink': 1, 'motion.saccade': 1 };
+
+export default function AgentBlob({ seed = AXL_SEED, size = 40, stage, animate = true, calm = false, head }) {
+  const rest = useRest(!animate, calm);
   const pose = rest ?? STAGE_EXPRESSION[stage] ?? idle;
 
   return (
     <AnimatedBlobatar
       name={seed}
       size={size}
-      traits={FACE}
-      palette={PALETTE}
+      traits={calm ? CALM : FACE}
+      palette={head ? { head, eye: EYE } : PALETTE}
       expression={pose}
       animate={animate}
       title="Axl"

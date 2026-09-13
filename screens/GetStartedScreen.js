@@ -3,10 +3,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { colors, fonts, type, spacing, radii, cardShadow } from '../theme';
 import { AuthAvatar } from '../components/AuthAvatar';
+import { useAccess } from '../components/AccessMode';
 import Icon from '../components/Icon';
 
-export default function GetStartedScreen({ onStart, onLogin }) {
+export default function GetStartedScreen({ onStart, onLogin, onGaze }) {
   const insets = useSafeAreaInsets();
+  const { setMode } = useAccess();
   const { width } = useWindowDimensions();
   const blob = Math.max(160, Math.min(width - spacing(2), 420));
 
@@ -33,8 +35,7 @@ export default function GetStartedScreen({ onStart, onLogin }) {
       </View>
 
       <Text style={styles.subhead}>
-        Axl runs the things ALS made harder: the calls, the refills, the forms. It checks in
-        with you weekly, and grows the buttons before you start missing them.
+        Axl runs what ALS made harder, and changes shape as you do.
       </Text>
 
       <Pressable
@@ -46,6 +47,21 @@ export default function GetStartedScreen({ onStart, onLogin }) {
       >
         <Text style={styles.ctaText}>Get started</Text>
         <Icon name="forward" size={16} color={colors.ink} />
+      </Pressable>
+
+      {/* Door one into gaze mode. 88pt and centred, because it has to be
+          reachable by dwell while the rest of the app is still touch-sized. */}
+      <Pressable
+        style={styles.gazeDoor}
+        accessibilityRole="button"
+        accessibilityLabel="Use gaze mode. Larger targets, no gestures, no typing."
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          setMode('gaze');
+          (onGaze ?? onStart)?.();
+        }}
+      >
+        <Text style={styles.gazeDoorText}>Use gaze mode</Text>
       </Pressable>
 
       <Pressable
@@ -127,6 +143,18 @@ const styles = StyleSheet.create({
     ...cardShadow,
   },
   ctaText: { ...type.heading, color: colors.ink },
+
+  gazeDoor: {
+    alignSelf: 'stretch',
+    minHeight: 88,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
+    marginTop: spacing(1.25),
+    borderRadius: radii.pill,
+    backgroundColor: colors.mint,
+  },
+  gazeDoorText: { ...type.heading, fontSize: 22, lineHeight: 28, color: colors.ink },
 
   login: { paddingTop: spacing(2), paddingBottom: spacing(0.5) },
   loginText: { ...type.callout, color: colors.inkMuted },

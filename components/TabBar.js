@@ -3,6 +3,7 @@ import { View, Pressable, Animated, StyleSheet } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, fonts, spacing, type } from '../theme';
+import { useAccess } from './AccessMode';
 
 const R = 20;
 const GAP = spacing(1);
@@ -19,6 +20,7 @@ const ACTIVE = { Home: colors.mint, Agents: colors.periwinkle, Marketplace: colo
 // only the two actually involved ever move.
 export default function TabBar({ state, descriptors, navigation }) {
   const insets = useSafeAreaInsets();
+  const { t } = useAccess();
   const one = useRef(new Animated.Value(1)).current;
   const acts = useRef(state.routes.map((_, i) => new Animated.Value(i === state.index ? 1 : 0))).current;
 
@@ -41,6 +43,11 @@ export default function TabBar({ state, descriptors, navigation }) {
   // custom one (like this) has to check it itself.
   const focusedOptions = descriptors[state.routes[state.index].key].options;
   if (focusedOptions.tabBarStyle?.display === 'none') return null;
+
+  // Gaze mode navigates by full-size targets on its own home screen, so a row
+  // of three cramped pills at the bottom edge is a liability rather than a way
+  // around: bottom-edge targets are also the hardest to hold a gaze on.
+  if (t.dwellMs) return null;
 
   // A corner opens when this item is active or the neighbour it faces is.
   // During a cross-fade the two sum to 1, so the edge tracks continuously
@@ -75,6 +82,8 @@ export default function TabBar({ state, descriptors, navigation }) {
                 style={[
                   styles.item,
                   {
+                    minHeight: t.target,
+                    justifyContent: 'center',
                     marginHorizontal: act.interpolate({ inputRange: [0, 1], outputRange: [0, GAP] }),
                     backgroundColor: act.interpolate({
                       inputRange: [0, 1],

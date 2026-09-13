@@ -4,9 +4,9 @@ import {
   Animated, Easing, Keyboard,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useIsFocused, useNavigation } from '@react-navigation/native';
+import { useIsFocused, useNavigation, useRoute } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
-import { colors, accents, spacing, radii, type, softShadow } from '../theme';
+import { colors, accents, liveAccents, spacing, radii, type, softShadow } from '../theme';
 import { DAYS, CLINICIANS } from '../data/days';
 import Thinking from '../components/Thinking';
 import ExecutionMode from '../components/ExecutionMode';
@@ -18,18 +18,29 @@ import TypingDots from '../components/TypingDots';
 import PromptBar from '../components/PromptBar';
 import VoiceRecorder from '../components/VoiceRecorder';
 import VoiceNote from '../components/VoiceNote';
-import AgentBlob from '../components/AgentBlob';
+import AgentBlob, { VOICE_SEED } from '../components/AgentBlob';
 import AgentSidebar from '../components/AgentSidebar';
 import ClinicianSheet from '../components/ClinicianSheet';
 import Bubble from '../components/Bubble';
 import Icon from '../components/Icon';
 import BlobMark from '../components/BlobMark';
+import GazeComposer from '../components/GazeComposer';
+import { useAccess } from '../components/AccessMode';
+import { CHECK_IN, REPLIES } from '../data/phrases';
 
+
+// Axl's two sizes in the gaze header. One render, scaled between them.
+const BLOB_BIG = 180;
+const BLOB_SMALL = 120;
 
 const GREETING = [
   { id: 'g1', text: "Hi, I'm Axl." },
   { id: 'g2', text: 'Ask me to handle something: a refill, a form, a ride. Or tell me how the week has gone and I will log it.' },
 ];
+
+// The voice agent's pink, taken from the gaze palette but fixed rather than
+// per-mode: it identifies a handler, not a screen.
+const VOICE_HEAD = liveAccents.peach;
 
 const FLAG_TINT = {
   amber: accents.amber,
@@ -43,11 +54,11 @@ const clock = () =>
 
 // Axl's byline sits with each answer rather than in the nav bar, so a long
 // thread always says who is speaking.
-function AgentLine({ stage, time, children }) {
+function AgentLine({ stage, time, head, seed, children }) {
   return (
     <View style={styles.agentTurn}>
       <View style={styles.byline}>
-        <AgentBlob size={44} stage={stage} />
+        <AgentBlob size={44} stage={stage} head={head} seed={seed} />
         <Text style={styles.bylineTime}>{time ?? clock()}</Text>
       </View>
       <View style={styles.agentBody}>{children}</View>
@@ -58,7 +69,20 @@ function AgentLine({ stage, time, children }) {
 export default function AgentsScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
+  const route = useRoute();
   const isFocused = useIsFocused();
+  const { gaze, t: access, setMode: setAccessMode } = useAccess();
+  // In gaze mode the thread is a script: Axl asks, and the composer offers the
+  // answers. `step` is where in the check-in we are.
+  const [step, setStep] = useState(0);
+  // The keyboard is the last rung of the ladder: reachable from the board when
+  // nothing fits, and never on the main path.
+  const [spelling, setSpelling] = useState(false);
+  const [composerMode, setComposerMode] = useState('asking');
+  // The board and the narrowing step are taller than the thread and the big
+  // header can both afford, so while one is up the screen gives them the room.
+  const speaking = gaze && composerMode === 'speaking';
+  const shrink = useRef(new Animated.Value(0)).current;
   const [turns, setTurns] = useState([]);
   const [mode, setMode] = useState('guide');
   const [browserSession, setBrowserSession] = useState(null);
@@ -103,6 +127,8 @@ export default function AgentsScreen() {
     setBrowserSession(null);
     previousResponseId.current = null;
     setTurns([]);
+    setStep(0);
+    setSpelling(false);
     if (id) agentSession(`/${id}`, { method: 'DELETE' }).catch(() => {});
   };
   const stopBrowser = async () => {
@@ -134,13 +160,38 @@ export default function AgentsScreen() {
       boot.setValue(0);
       return;
     }
+    // Reduced smooth-pursuit gain means a rising, fading thread is both
+    // untrackable and a magnet for reflexive saccades, so gaze mode snaps.
+    if (!access.motion) {
+      boot.setValue(1);
+      return;
+    }
     Animated.timing(boot, {
       toValue: 1,
       duration: 420,
       easing: Easing.out(Easing.cubic),
       useNativeDriver: true,
     }).start();
-  }, [isFocused]);
+  }, [isFocused, access.motion]);
+
+  // He eases between his two sizes on the curve the web app uses for its press
+  // settle, cubic-bezier(0.16, 1, 0.3, 1): fast out of the gate and slow into
+  // the end, so the shrink reads as one move rather than a cut.
+  //
+  // This is the one animation gaze mode keeps. The rule against motion is about
+  // ambient movement and anything a person has to track; a 220ms transition on
+  // a control that just changed is the alternative to a jump, and a jump is
+  // also a change the eye has to absorb.
+  useEffect(() => {
+    Animated.timing(shrink, {
+      toValue: speaking ? 1 : 0,
+      duration: 220,
+      easing: Easing.bezier(0.16, 1, 0.3, 1),
+      // Height cannot go on the native driver, and the scale has to stay in
+      // lockstep with it, so both ride the JS one.
+      useNativeDriver: false,
+    }).start();
+  }, [speaking]);
 
   // `behavior="padding"` already pads past the home indicator, so keeping the
   // bottom inset on the composer leaves exactly that much dead space under it.
@@ -193,6 +244,35 @@ export default function AgentsScreen() {
     }
   };
 
+  // A scripted answer arrives complete. Nothing to stream, nothing to think
+  // about: a spinner someone has to wait through costs fixations for nothing.
+  const answer = (option) => {
+    const current = CHECK_IN[step];
+    const key = [`${current.id}-${option.id}`, option.id, current.id].find((k) => REPLIES[k]);
+    setTurns((all) => [
+      ...all,
+      {
+        id: `${Date.now()}`,
+        stage: 'done',
+        prompt: option.say ?? option.label,
+        answer: REPLIES[key] ?? 'Noted.',
+      },
+    ]);
+    setStep((n) => Math.min(n + 1, CHECK_IN.length - 1));
+    requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: access.motion }));
+  };
+
+  // A phrase off the board is said rather than asked: it goes out in the
+  // banked voice, so it is the person's own voice in the room.
+  const speak = (phrase) => {
+    setTurns((all) => [
+      ...all,
+      { id: `${Date.now()}`, stage: 'done', prompt: phrase, answer: 'Said out loud in your voice.', via: 'voice' },
+    ]);
+    requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: access.motion }));
+  };
+
+  // A spoken question gets a spoken answer back, with the transcript under it.
   const submitVoice = () => {
     setRecording(false);
     setTurns((current) => [...current, {
@@ -216,50 +296,146 @@ export default function AgentsScreen() {
   };
 
   return (
-    <View style={styles.root}>
-      <View style={[styles.navBar, { paddingTop: insets.top + spacing(0.5) }]}>
-        {/* The tab bar is hidden on this screen, so leaving Axl has to be one
-            tap in the nav bar. Back goes home; the sidebar sits beside it. */}
-        <View style={styles.navCluster}>
+    <View style={[styles.root, { backgroundColor: gaze ? access.ground : colors.bg }]}>
+      {/* Gaze mode gets its own header: Axl centred at the top, three times
+          the size of the two controls flanking him. The name is redundant next
+          to his face, and a title is one more thing to read on a screen built
+          to be read as little as possible. */}
+      {gaze ? (
+        <View style={[styles.gazeHeader, { paddingTop: insets.top + spacing(0.5) }]}>
+          {/* He shrinks in place rather than being re-laid-out: the box height
+              is what gives the board its room, and the blob inside stays a
+              single 180pt render scaled from its own top edge. Re-rendering him
+              at a smaller size would recentre him in a shorter box, which
+              reads as a jump up the screen rather than a shrink. */}
+          <Animated.View
+            style={[
+              styles.navBlobBig,
+              { height: shrink.interpolate({ inputRange: [0, 1], outputRange: [BLOB_BIG, BLOB_SMALL] }) },
+            ]}
+          >
+            <Animated.View
+              style={{
+                transform: [
+                  { scale: shrink.interpolate({ inputRange: [0, 1], outputRange: [1, BLOB_SMALL / BLOB_BIG] }) },
+                ],
+                transformOrigin: 'top center',
+              }}
+            >
+              {/* The mode's pink up here, where he is presence rather than a
+                  speaker: the blue byline below is what marks a question. */}
+              <AgentBlob size={BLOB_BIG} animate={false} calm head={access.accents.peach} />
+            </Animated.View>
+          </Animated.View>
+
+          {/* Pinned to the corners rather than laid out in a row with him: in
+              a flex row a 180pt blob drags both controls down to its centre. */}
           <Pressable
-            style={styles.navBtn}
+            style={[styles.navBtn, styles.navBtnGaze, styles.gazeLeft, { top: insets.top + spacing(0.5) }]}
             hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel="Back to home"
             onPress={() => {
               Haptics.selectionAsync();
               setDay(null);
               navigation.navigate('Home');
             }}
           >
-            <Icon name="back" size={17} color={colors.ink} />
+            <Icon name="back" size={20} color={colors.ink} />
           </Pressable>
+
           <Pressable
-            style={styles.navBtn}
+            style={[styles.navBtn, styles.navBtnGaze, styles.gazeRight, { top: insets.top + spacing(0.5) }]}
             hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel="Open menu"
             onPress={() => {
               Haptics.selectionAsync();
               setSidebar(true);
             }}
           >
-            <Icon name="sidebar" size={17} color={colors.ink} />
+            <Icon name="sidebar" size={20} color={colors.ink} />
           </Pressable>
         </View>
-
-        <View style={styles.navTitleWrap}>
-          <Text style={styles.navTitle}>{reviewing ? reviewing.date : 'Axl'}</Text>
-          {reviewing && <Text style={styles.navSub}>check-in</Text>}
-        </View>
-
-        {/* Matches the left cluster's width so the title stays centred. */}
-        <View style={styles.navCluster}>
-          {reviewing && (
-            <Pressable style={[styles.navBtn, styles.navBtnEnd]} hitSlop={10} onPress={() => setSheet(reviewing)}>
-              <Icon name="paperplane" size={16} color={colors.ink} />
+      ) : (
+        <View style={[styles.navBar, { paddingTop: insets.top + spacing(0.5) }]}>
+          {/* The tab bar is hidden on this screen, so leaving Axl has to be one
+              tap in the nav bar. Back goes home; the sidebar sits beside it. */}
+          <View style={styles.navCluster}>
+            <Pressable
+              style={styles.navBtn}
+              hitSlop={10}
+              onPress={() => {
+                Haptics.selectionAsync();
+                setDay(null);
+                navigation.navigate('Home');
+              }}
+            >
+              <Icon name="back" size={17} color={colors.ink} />
             </Pressable>
-          )}
+            <Pressable
+              style={styles.navBtn}
+              hitSlop={10}
+              onPress={() => {
+                Haptics.selectionAsync();
+                setSidebar(true);
+              }}
+            >
+              <Icon name="sidebar" size={17} color={colors.ink} />
+            </Pressable>
+          </View>
+
+          <View style={styles.navTitleWrap}>
+            <Text style={styles.navTitle}>{reviewing ? reviewing.date : 'Axl'}</Text>
+            {reviewing && <Text style={styles.navSub}>check-in</Text>}
+          </View>
+
+          {/* Same width as the left cluster, so the title is centred on the
+              screen rather than on whatever is left over. */}
+          <View style={[styles.navCluster, styles.navClusterEnd]}>
+            {reviewing ? (
+              <Pressable style={styles.navBtn} hitSlop={10} onPress={() => setSheet(reviewing)}>
+                <Icon name="paperplane" size={16} color={colors.ink} />
+              </Pressable>
+            ) : (
+              <Pressable
+                style={styles.offer}
+                accessibilityRole="button"
+                accessibilityLabel="Switch to gaze mode"
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  setAccessMode('gaze');
+                }}
+              >
+                <Text style={styles.offerText}>Gaze</Text>
+              </Pressable>
+            )}
+          </View>
         </View>
-      </View>
+      )}
 
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        {speaking ? (
+          // Bottom of the gap rather than the top: it sits just above the
+          // phrases it refers to, so confirming what was last said costs a
+          // glance instead of a trip up the screen.
+          <View style={[styles.flex, styles.lastSaidWrap]}>
+            {turns.length > 0 && (
+              <View style={styles.lastSaid}>
+                <AgentBlob
+                  size={30}
+                  animate={false}
+                  calm
+                  seed={turns[turns.length - 1].via === 'voice' ? VOICE_SEED : undefined}
+                  head={turns[turns.length - 1].via === 'voice' ? VOICE_HEAD : accents.periwinkle}
+                />
+                <Text style={styles.lastSaidText} numberOfLines={2}>
+                  {turns[turns.length - 1].prompt}
+                </Text>
+              </View>
+            )}
+          </View>
+        ) : (
         <Animated.ScrollView
           ref={scrollRef}
           style={[
@@ -268,7 +444,7 @@ export default function AgentsScreen() {
           ]}
           contentContainerStyle={styles.container}
           keyboardDismissMode="interactive"
-          onContentSizeChange={() => !reviewing && scrollRef.current?.scrollToEnd({ animated: true })}
+          onContentSizeChange={() => !reviewing && scrollRef.current?.scrollToEnd({ animated: access.motion })}
         >
           {reviewing ? (
             <>
@@ -316,13 +492,15 @@ export default function AgentsScreen() {
             </>
           ) : (
             <>
-              <AgentLine stage="done">
-                {GREETING.map((g) => (
-                  <Text key={g.id} style={styles.agentText}>
-                    {g.text}
-                  </Text>
-                ))}
-              </AgentLine>
+              {!gaze && (
+                <AgentLine stage="done">
+                  {GREETING.map((g) => (
+                    <Text key={g.id} style={styles.agentText}>
+                      {g.text}
+                    </Text>
+                  ))}
+                </AgentLine>
+              )}
 
               {turns.map((turn) => (
                 <View key={turn.id} style={styles.turn}>
@@ -334,20 +512,33 @@ export default function AgentsScreen() {
                     )}
                   </Bubble>
 
-                  <AgentLine stage={turn.stage}>
+                  <AgentLine
+                    stage={turn.stage}
+                    seed={turn.via === 'voice' ? VOICE_SEED : undefined}
+                    head={turn.via === 'voice' ? VOICE_HEAD : gaze ? accents.periwinkle : undefined}
+                  >
                     {turn.stage === 'loading' && <TypingDots />}
-                    {turn.tools.length > 0 && <Thinking tools={turn.tools} done={turn.stage === 'done'} />}
-                    {turn.stage === 'thinking' && turn.tools.length === 0 && <TypingDots />}
+                    {(turn.tools?.length ?? 0) > 0 && <Thinking tools={turn.tools} done={turn.stage === 'done'} />}
+                    {turn.stage === 'thinking' && (turn.tools?.length ?? 0) === 0 && <TypingDots />}
                     {!!turn.answer && <Text selectable style={styles.agentText}>{turn.answer}</Text>}
                     {!!turn.error && <Text style={styles.agentText}>{turn.error}</Text>}
-
                   </AgentLine>
                 </View>
               ))}
+
+              {/* Last in the thread, so the question sits directly above the
+                  answers and the eye never travels up the screen to re-read
+                  what it is answering. */}
+              {gaze && composerMode === 'asking' && (
+                <AgentLine stage="done" head={gaze ? accents.periwinkle : undefined}>
+                  <Text style={[styles.agentText, styles.agentTextBig]}>{CHECK_IN[step].ask}</Text>
+                </AgentLine>
+              )}
             </>
           )}
           {!reviewing && <AgentBrowser key={browserSession?.id || 'empty'} session={browserSession} onApprove={approveBrowser} onStop={stopBrowser} />}
         </Animated.ScrollView>
+        )}
 
         <View style={[styles.promptWrap, { paddingBottom: keyboardUp ? spacing(1) : insets.bottom + spacing(1) }]}>
           {reviewing ? (
@@ -361,6 +552,25 @@ export default function AgentsScreen() {
                 <Text style={styles.logSendText}>Send with a note</Text>
               </Pressable>
             </View>
+          ) : gaze && spelling ? (
+            <PromptBar
+              onSubmit={(text) => {
+                setSpelling(false);
+                speak(text);
+              }}
+              onVoice={() => setSpelling(false)}
+              editable
+            />
+          ) : gaze ? (
+            <GazeComposer
+              openBoard={!!route.params?.board}
+              step={CHECK_IN[step]}
+              onAnswer={answer}
+              onSpeak={speak}
+              onSpell={() => setSpelling(true)}
+              onMode={setComposerMode}
+              onExit={() => setAccessMode('standard')}
+            />
           ) : recording ? (
             <VoiceRecorder onSend={submitVoice} onCancel={() => setRecording(false)} />
           ) : (
@@ -397,7 +607,7 @@ export default function AgentsScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.bg },
+  root: { flex: 1 },
   flex: { flex: 1 },
 
   navBar: {
@@ -416,8 +626,27 @@ const styles = StyleSheet.create({
     ...softShadow,
   },
   navCluster: { flexDirection: 'row', alignItems: 'center', gap: spacing(1), width: 84 },
+  navClusterEnd: { justifyContent: 'flex-end' },
+  // Smaller than the composer's targets on purpose: these are secondary in
+  // gaze mode, and the blob between them has to be the largest thing up here.
+  navBtnGaze: { width: 60, height: 60, borderRadius: 30 },
+  gazeHeader: { paddingBottom: spacing(0.5) },
+  // Lifted, because the silhouette leaves a band of empty box above it.
+  navBlobBig: { alignItems: 'center', marginTop: -spacing(3), overflow: 'hidden' },
+  gazeLeft: { position: 'absolute', left: spacing(2) },
+  gazeRight: { position: 'absolute', right: spacing(2) },
   navBtnEnd: { marginLeft: 'auto' },
   navTitleWrap: { flex: 1 },
+  offer: {
+    height: 34,
+    paddingHorizontal: spacing(1.25),
+    marginLeft: spacing(0.75),
+    borderRadius: radii.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.mint,
+  },
+  offerText: { ...type.label, color: colors.ink },
   navTitle: { ...type.heading, color: colors.ink, textAlign: 'center' },
   navSub: { ...type.caption, color: colors.inkMuted, textAlign: 'center' },
 
@@ -430,6 +659,18 @@ const styles = StyleSheet.create({
   // Answers are unboxed. Only the person's own messages get a bubble.
   agentBody: { gap: spacing(1), paddingRight: spacing(2) },
   agentText: { ...type.body, color: colors.ink },
+  // The question in gaze mode is read from a propped phone at arm's length.
+  agentTextBig: { fontSize: 21, lineHeight: 28 },
+  // The one line the board keeps: what was last said, so the screen is not
+  // blank above it and there is something to check against.
+  lastSaidWrap: { justifyContent: 'flex-end', paddingBottom: spacing(2) },
+  lastSaid: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing(1),
+    marginHorizontal: spacing(2.5),
+  },
+  lastSaidText: { flex: 1, ...type.bodyMedium, fontSize: 16, color: colors.inkMuted },
 
   promptText: { ...type.body, color: '#fff' },
   agentVoice: { marginBottom: spacing(0.5) },

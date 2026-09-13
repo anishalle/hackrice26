@@ -10,6 +10,8 @@ import TiltGaze from '../components/TiltGaze';
 import Icon from '../components/Icon';
 import BlobMark from '../components/BlobMark';
 import { PROFILE } from '../data/profile';
+import { useAccess } from '../components/AccessMode';
+import GazeHomeScreen from './GazeHomeScreen';
 
 const ACTIONS = [
   { key: 'Speech', label: 'Speech' },
@@ -62,7 +64,12 @@ const ACCENT_CYCLE = [accents.periwinkle, accents.mint, accents.peach, accents.a
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
+  const { gaze } = useAccess();
   const [filter, setFilter] = useState('All');
+
+  // A scrolling feed of small cards is the one shape gaze cannot use, so the
+  // mode gets its own screen rather than a resized version of this one.
+  if (gaze) return <GazeHomeScreen />;
 
   const shown = filter === 'All' ? HISTORY : HISTORY.filter((h) => h.tag === filter);
 

@@ -88,7 +88,13 @@ export default function AuthFlow({ onLogin }) {
           accessibilityElementsHidden={!!journey}
           importantForAccessibility={journey ? 'no-hide-descendants' : 'auto'}
         >
-          {screen === 'start' ? <GetStartedScreen onStart={() => navigate('signup')} onLogin={() => navigate('login')} />
+          {screen === 'start' ? (
+            <GetStartedScreen
+              onStart={() => navigate('signup')}
+              onLogin={() => navigate('login')}
+              onGaze={onLogin}
+            />
+          )
             : screen === 'signup' ? <SignupScreen onDone={() => navigate('start')} onBack={() => navigate('start')} onLogin={() => navigate('login')} />
               : screen === 'persona' ? <PersonaScreen onDone={onLogin} onBack={() => navigate('login')} />
                 : <LoginScreen onDone={() => navigate('persona')} onBack={() => navigate('start')} onSignup={() => navigate('signup')} />}
