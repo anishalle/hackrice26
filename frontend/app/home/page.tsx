@@ -7,6 +7,7 @@ import { APPWRITE_PROJECT_NAME } from "@/lib/appwrite";
 import { Button } from "@/components/ui/button";
 import { AccessibilityConsole } from "@/components/accessibility-console";
 import { HermesAgent } from "@/components/hermes-agent";
+import { VoicePreservation } from "@/components/voice-preservation";
 import {
   DEFAULT_ACCESSIBILITY_PREFERENCES,
   isAccessibilityPreferences,
@@ -75,6 +76,7 @@ function HomeContent() {
           key={user?.$id ?? "guest"}
           initialPreferences={accessibilityPreferences}
         />
+        {user && <VoicePreservation ownerSubject={user.$id} displayName={user.name || "My preserved voice"} />}
         <HermesAgent />
       </main>
     </div>
