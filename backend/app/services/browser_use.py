@@ -134,6 +134,41 @@ async def stop_guided_browser(session_id: str) -> None:
         response.raise_for_status()
 
 
+async def scroll_guided_browser(session_id: str, amount: int) -> None:
+    """Move the remote page a small, predictable number of pixels."""
+    if settings.BROWSER_USE_API_KEY is None:
+        raise BrowserUseNotConfiguredError(
+            "BROWSER_USE_API_KEY is not configured on the backend"
+        )
+
+    headers = {"X-Browser-Use-API-Key": settings.BROWSER_USE_API_KEY.get_secret_value()}
+    url = f"https://api.browser-use.com/api/v4/browsers/{session_id}"
+    async with httpx.AsyncClient(timeout=15) as client:
+        response = await client.get(url, headers=headers)
+        response.raise_for_status()
+
+    session_data: dict[str, Any] = response.json()
+    cdp_url = session_data.get("cdpUrl")
+    if not cdp_url:
+        raise RuntimeError("The guided browser is no longer available")
+
+    try:
+        async with async_playwright() as playwright:
+            browser = await playwright.chromium.connect_over_cdp(
+                str(cdp_url), timeout=15_000
+            )
+            try:
+                if not browser.contexts:
+                    raise RuntimeError("The guided browser has no available page")
+                context = browser.contexts[0]
+                page = context.pages[0] if context.pages else await context.new_page()
+                await page.mouse.wheel(0, amount)
+            finally:
+                await browser.close()
+    except PlaywrightError as error:
+        raise RuntimeError("The guided browser could not scroll") from error
+
+
 async def _open_landing_page(cdp_url: str, website_url: str) -> str:
     """Navigate through CDP without exposing the privileged CDP URL to the client."""
     try:

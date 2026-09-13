@@ -1,11 +1,16 @@
 import httpx
 from fastapi import APIRouter, HTTPException
 
-from app.models import BrowserLiveViewResponse, StartGuidedBrowserRequest
+from app.models import (
+    BrowserLiveViewResponse,
+    GuidedBrowserScrollRequest,
+    StartGuidedBrowserRequest,
+)
 from app.services.browser_use import (
     BrowserUseNotConfiguredError,
     get_active_browser_live_view,
     get_guided_browser_session,
+    scroll_guided_browser,
     start_guided_browser,
     stop_guided_browser,
 )
@@ -56,6 +61,23 @@ async def stop_browser_session(session_id: str) -> None:
         raise HTTPException(
             status_code=502, detail="Browser Use could not end the guided browser"
         ) from error
+
+
+@router.post("/sessions/{session_id}/scroll", status_code=204)
+async def scroll_browser_session(
+    session_id: str, request: GuidedBrowserScrollRequest
+) -> None:
+    """Scroll a live browser by a small user-selected amount."""
+    try:
+        await scroll_guided_browser(session_id, request.amount)
+    except BrowserUseNotConfiguredError as error:
+        raise HTTPException(status_code=503, detail=str(error)) from error
+    except httpx.HTTPError as error:
+        raise HTTPException(
+            status_code=502, detail="Browser Use could not reach the guided browser"
+        ) from error
+    except RuntimeError as error:
+        raise HTTPException(status_code=502, detail=str(error)) from error
 
 
 @router.post("/sessions", response_model=BrowserLiveViewResponse, status_code=201)

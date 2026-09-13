@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ExternalLink, Loader2, MonitorUp, X } from "lucide-react";
+import { ChevronDown, ChevronUp, ExternalLink, Loader2, MonitorUp, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   getGuidedBrowserSession,
+  scrollGuidedBrowser,
   startGuidedBrowser,
   stopGuidedBrowser,
   type BrowserLiveView,
@@ -18,6 +19,7 @@ interface GuidedBrowserProps {
 export function GuidedBrowser({ websiteUrl, mode }: GuidedBrowserProps) {
   const [starting, setStarting] = useState(false);
   const [stopping, setStopping] = useState(false);
+  const [scrolling, setScrolling] = useState(false);
   const [liveView, setLiveView] = useState<BrowserLiveView | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -86,6 +88,22 @@ export function GuidedBrowser({ websiteUrl, mode }: GuidedBrowserProps) {
       );
     } finally {
       setStopping(false);
+    }
+  }
+
+  async function fineScroll(amount: number) {
+    if (!liveView?.session_id) return;
+
+    setScrolling(true);
+    setError(null);
+    try {
+      await scrollGuidedBrowser(liveView.session_id, amount);
+    } catch (caught) {
+      setError(
+        caught instanceof Error ? caught.message : "The guided browser could not scroll."
+      );
+    } finally {
+      setScrolling(false);
     }
   }
 
@@ -165,6 +183,28 @@ export function GuidedBrowser({ websiteUrl, mode }: GuidedBrowserProps) {
             allow="autoplay"
           />
           <div className="p-3 text-xs text-muted-foreground">
+            <div className="mb-3 flex flex-wrap items-center gap-2">
+              <span className="mr-1">Fine scroll</span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => void fineScroll(-180)}
+                disabled={scrolling}
+              >
+                <ChevronUp className="size-4" />
+                Up
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => void fineScroll(180)}
+                disabled={scrolling}
+              >
+                <ChevronDown className="size-4" />
+                Down
+              </Button>
+              <span>Moves 180 px at a time.</span>
+            </div>
             <p>
               Browser Use status: {" "}
               <span className="font-medium text-foreground">

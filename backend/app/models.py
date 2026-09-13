@@ -2,7 +2,7 @@
 
 from typing import Literal
 
-from pydantic import BaseModel, HttpUrl
+from pydantic import BaseModel, Field, HttpUrl
 
 
 class HealthResponse(BaseModel):
@@ -23,3 +23,7 @@ class BrowserLiveViewResponse(BaseModel):
 class StartGuidedBrowserRequest(BaseModel):
     website_url: HttpUrl
     mode: Literal["assist", "together"]
+
+
+class GuidedBrowserScrollRequest(BaseModel):
+    amount: int = Field(ge=-600, le=600)

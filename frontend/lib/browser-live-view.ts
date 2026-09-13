@@ -62,3 +62,17 @@ export async function stopGuidedBrowser(sessionId: string): Promise<void> {
     throw new Error(payload.detail ?? "The guided browser could not be ended.");
   }
 }
+
+export async function scrollGuidedBrowser(sessionId: string, amount: number): Promise<void> {
+  const backendUrl = (process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://127.0.0.1:8000").replace(/\/$/, "");
+  const response = await fetch(`${backendUrl}/api/v1/browser/sessions/${sessionId}/scroll`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ amount }),
+  });
+
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => ({}))) as { detail?: string };
+    throw new Error(payload.detail ?? "The guided browser could not scroll.");
+  }
+}
