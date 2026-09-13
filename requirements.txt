@@ -70,6 +70,8 @@ python-dotenv==1.2.3
     # via
     #   pydantic-settings
     #   uvicorn
+python-multipart==0.0.32
+    # via hackrice26
 pyyaml==6.0.3
     # via uvicorn
 sentry-sdk==2.69.1

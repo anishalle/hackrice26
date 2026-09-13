@@ -14,3 +14,4 @@ def test_health_and_openapi(monkeypatch) -> None:
         schema = client.get("/api/v1/openapi.json")
         assert schema.status_code == 200
         assert "/api/v1/health" in schema.json()["paths"]
+        assert "/api/v1/voice/profile" in schema.json()["paths"]

@@ -17,6 +17,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
+    LargeBinary,
     String,
     Text,
     UniqueConstraint,
@@ -61,6 +62,59 @@ class AccessibilityProfile(CreatedAtMixin, Base):
     input_methods: Mapped[list[str]] = mapped_column(JSONB, default=list)
     output_methods: Mapped[list[str]] = mapped_column(JSONB, default=list)
     preferences: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict)
+
+
+class VoiceProfile(CreatedAtMixin, Base):
+    """Consent-backed archive and provider state for a user's preserved voice."""
+
+    __tablename__ = "voice_profiles"
+
+    id: Mapped[UUID] = mapped_column(
+        PG_UUID(as_uuid=True), primary_key=True, default=uuid4
+    )
+    user_id: Mapped[UUID] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        unique=True,
+    )
+    display_name: Mapped[str] = mapped_column(String(255))
+    consent_granted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    consent_version: Mapped[str] = mapped_column(String(64))
+    provider_voice_id: Mapped[str | None] = mapped_column(
+        String(255), unique=True, nullable=True
+    )
+    provider_status: Mapped[str] = mapped_column(
+        String(32), default="collecting", index=True
+    )
+    cloned_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
+
+class VoiceSample(CreatedAtMixin, Base):
+    """Original user-owned recording stored as PostgreSQL bytea data."""
+
+    __tablename__ = "voice_samples"
+    __table_args__ = (
+        UniqueConstraint(
+            "voice_profile_id", "sha256", name="uq_voice_samples_profile_sha256"
+        ),
+    )
+
+    id: Mapped[UUID] = mapped_column(
+        PG_UUID(as_uuid=True), primary_key=True, default=uuid4
+    )
+    voice_profile_id: Mapped[UUID] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("voice_profiles.id", ondelete="CASCADE"),
+        index=True,
+    )
+    original_filename: Mapped[str] = mapped_column(String(255))
+    content_type: Mapped[str] = mapped_column(String(128))
+    byte_size: Mapped[int] = mapped_column(Integer)
+    sha256: Mapped[str] = mapped_column(String(64))
+    phrase_hint: Mapped[str | None] = mapped_column(Text, nullable=True)
+    audio_data: Mapped[bytes] = mapped_column(LargeBinary)
 
 
 class Skill(CreatedAtMixin, Base):

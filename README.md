@@ -44,6 +44,41 @@ The backend creates a short-lived Browser Use cloud browser, opens the approved
 landing page through a private CDP connection, and returns only its interactive
 live-view URL to the frontend. The CDP URL and API key remain server-side.
 
+## Voice preservation
+
+The voice-preservation flow lets a user explicitly consent, record several short
+audio samples in the web app, and save them in PostgreSQL. Each sample is
+encrypted by the backend before it is stored in the `voice_samples.audio_data`
+`bytea` column. When the user presses **Create my voice**, the backend decrypts
+the samples only in memory and sends them to ElevenLabs' Instant Voice Cloning
+endpoint. A ready cloned voice can then be used through the speech endpoint.
+
+Add these settings to `.env` before recording:
+
+```sh
+ELEVENLABS_API_KEY=your_elevenlabs_key
+# Generate this once, save it somewhere safe, and do not rotate it casually.
+VOICE_SAMPLE_ENCRYPTION_KEY=your_fernet_key
+```
+
+Generate the Fernet key from the repository root:
+
+```sh
+uv run python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())'
+```
+
+If this encryption key is lost or replaced, existing recordings cannot be
+decrypted for cloning. ElevenLabs can accept a single sample, but record a
+collection of clear, varied speech (at least about one minute total is a useful
+starting point) for a better clone. The UI deliberately requires explicit
+consent before microphone access or storage and does not contact ElevenLabs
+until the user asks to create their voice.
+
+The current `X-Voice-Owner-Subject` request header is a local demo identity
+bridge supplied by the authenticated frontend. Before public deployment,
+replace it with backend-verified Appwrite/JWT authentication; an unverified
+header must not be used to protect personal voice recordings in production.
+
 ## Layout
 
 ```text
@@ -55,12 +90,13 @@ backend/app/
   api/
     main.py        # Collect feature routers
     deps.py        # Shared database-session dependency
-    routes/        # Health and Browser Use route modules
+    routes/        # Health, browser, and voice-preservation route modules
   core/
     config.py      # Typed environment settings
     db.py          # PostgreSQL engine, pgvector registration, request sessions
   services/
     browser_use.py # Guided cloud-browser lifecycle and CDP controls
+    voice_preservation.py # Encrypted samples and server-side ElevenLabs calls
     retrieval.py   # pgvector skill-chunk retrieval
 alembic/           # Versioned PostgreSQL/pgvector schema migrations
 backend/tests/     # API smoke tests
