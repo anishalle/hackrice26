@@ -1,10 +1,16 @@
 "use client";
 
+import { Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { ProtectedRoute } from "@/components/protected-route";
 import { ButtonLink, Panel, PlotLabel } from "@/components/primitives";
 import { IconArrowRight, IconCheck } from "@/components/icons";
+import { safeReturnPath } from "@/lib/auth-redirect";
 
 function PersonaComplete() {
+  const searchParams = useSearchParams();
+  const returnPath = safeReturnPath(searchParams.get("next"));
+
   return (
     <main className="paper min-h-dvh">
       <div className="mx-auto flex min-h-dvh max-w-[34rem] items-center px-[var(--pad-x)] py-6">
@@ -16,7 +22,7 @@ function PersonaComplete() {
           <Panel className="mt-8 p-5 text-sm leading-6 text-[var(--text-2)]">
             This sandbox return confirms that the Persona journey came back to Aide. Identity results are not stored in this demo.
           </Panel>
-          <ButtonLink href="/home" className="mt-8 h-12">
+          <ButtonLink href={returnPath} className="mt-8 h-12">
             Continue to Aide <IconArrowRight width={18} height={18} />
           </ButtonLink>
         </div>
@@ -26,5 +32,11 @@ function PersonaComplete() {
 }
 
 export default function PersonaCompletePage() {
-  return <ProtectedRoute><PersonaComplete /></ProtectedRoute>;
+  return (
+    <ProtectedRoute>
+      <Suspense fallback={<main className="paper min-h-dvh" />}>
+        <PersonaComplete />
+      </Suspense>
+    </ProtectedRoute>
+  );
 }

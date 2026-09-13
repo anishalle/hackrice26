@@ -17,8 +17,9 @@ import Link from "next/link";
 
 export function LoginForm({
   className,
+  returnPath,
   ...props
-}: React.ComponentProps<"div">) {
+}: React.ComponentProps<"div"> & { returnPath?: string }) {
   const { sendMagicLink } = useAuth();
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -33,7 +34,7 @@ export function LoginForm({
     setSubmitting(true);
 
     try {
-      await sendMagicLink(email.trim());
+      await sendMagicLink(email.trim(), undefined, returnPath);
       setIsSent(true);
     } catch (err: unknown) {
       const msg =
@@ -85,7 +86,7 @@ export function LoginForm({
               setError(null);
               setSubmitting(true);
               try {
-                await sendMagicLink(email.trim());
+                await sendMagicLink(email.trim(), undefined, returnPath);
               } catch (err: unknown) {
                 const msg =
                   err instanceof Error ? err.message : "Failed to resend magic link.";

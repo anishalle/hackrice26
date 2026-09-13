@@ -4,6 +4,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import type { Models } from "appwrite";
 import { account, ID } from "./appwrite";
 import type { AccessibilityPreferences } from "./accessibility";
+import { safeReturnPath } from "./auth-redirect";
 
 export interface UserPreferences extends Models.Preferences {
   persona_verified?: boolean;
@@ -19,7 +20,11 @@ export interface SignupData {
 interface AuthContextType {
   user: Models.User<UserPreferences> | null;
   loading: boolean;
-  sendMagicLink: (email: string, signupData?: SignupData) => Promise<Models.Token>;
+  sendMagicLink: (
+    email: string,
+    signupData?: SignupData,
+    returnPath?: string
+  ) => Promise<Models.Token>;
   verifyMagicLink: (
     userId: string,
     secret: string,
@@ -62,12 +67,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const sendMagicLink = async (
     email: string,
-    signupData?: SignupData
+    signupData?: SignupData,
+    returnPath?: string
   ): Promise<Models.Token> => {
-    let redirectUrl =
-      typeof window !== "undefined"
-        ? `${window.location.origin}/verify`
-        : "/verify";
+    const params = new URLSearchParams();
+    const safePath = safeReturnPath(returnPath, "/home");
+    if (safePath !== "/home") params.set("next", safePath);
 
     if (signupData) {
       if (typeof window !== "undefined") {
@@ -84,15 +89,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      const params = new URLSearchParams();
       if (signupData.firstName) params.set("fn", signupData.firstName);
       if (signupData.lastName) params.set("ln", signupData.lastName);
       if (signupData.phone) params.set("ph", signupData.phone);
-      const queryString = params.toString();
-      if (queryString) {
-        redirectUrl += `?${queryString}`;
-      }
     }
+
+    const queryString = params.toString();
+    const baseRedirectUrl =
+      typeof window !== "undefined"
+        ? `${window.location.origin}/verify`
+        : "/verify";
+    const redirectUrl = queryString ? `${baseRedirectUrl}?${queryString}` : baseRedirectUrl;
 
     const token = await account.createMagicURLToken({
       userId: ID.unique(),

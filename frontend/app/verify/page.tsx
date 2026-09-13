@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
+import { safeReturnPath } from "@/lib/auth-redirect";
 import { Button } from "@/components/ui/button";
 import { Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import Link from "next/link";
@@ -14,6 +15,7 @@ function VerifyContent() {
   const fn = searchParams.get("fn");
   const ln = searchParams.get("ln");
   const ph = searchParams.get("ph");
+  const returnPath = safeReturnPath(searchParams.get("next"));
   const router = useRouter();
   const { verifyMagicLink } = useAuth();
 
@@ -40,7 +42,7 @@ function VerifyContent() {
         });
         setStatus("success");
         setTimeout(() => {
-          router.replace("/settings");
+          router.replace(`/settings?next=${encodeURIComponent(returnPath)}`);
         }, 1200);
       } catch (err: unknown) {
         setStatus("error");
@@ -53,7 +55,7 @@ function VerifyContent() {
     };
 
     performVerification();
-  }, [isMissingParams, userId, secret, fn, ln, ph, verifyMagicLink, router]);
+  }, [isMissingParams, userId, secret, fn, ln, ph, returnPath, verifyMagicLink, router]);
 
   return (
     <div className="flex min-h-svh flex-col items-center justify-center gap-6 bg-background p-6 md:p-10">

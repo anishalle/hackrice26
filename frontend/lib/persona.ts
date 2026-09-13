@@ -1,5 +1,6 @@
 import { ExecutionMethod, Functions } from "appwrite";
 import { account, client } from "./appwrite";
+import { safeReturnPath } from "./auth-redirect";
 
 const functions = new Functions(client);
 const FUNCTION_ID =
@@ -11,21 +12,22 @@ export interface PersonaJourney {
 }
 
 /** Create the same Persona journey as the native client. */
-export async function preparePersona(): Promise<PersonaJourney> {
+export async function preparePersona(returnPath?: string): Promise<PersonaJourney> {
   try {
     await account.get();
   } catch {
     throw new Error("Please sign in before starting identity verification.");
   }
 
-  const returnUrl = new URL("/persona/complete", window.location.origin).toString();
+  const returnUrl = new URL("/persona/complete", window.location.origin);
+  returnUrl.searchParams.set("next", safeReturnPath(returnPath));
   const execution = await functions.createExecution({
     functionId: FUNCTION_ID,
     async: false,
     xpath: "/api/persona/start",
     method: ExecutionMethod.POST,
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ returnUrl }),
+    body: JSON.stringify({ returnUrl: returnUrl.toString() }),
   });
   if (execution.responseStatusCode < 200 || execution.responseStatusCode >= 300) {
     let detail = "";
@@ -58,7 +60,7 @@ export async function preparePersona(): Promise<PersonaJourney> {
   if (!isSecureUrl || typeof authorizeUrl !== "string") {
     throw new Error("Unable to open identity verification. Please try again.");
   }
-  return { authorizeUrl, returnUrl };
+  return { authorizeUrl, returnUrl: returnUrl.toString() };
 }
 
 /** Navigate from a person-initiated click so browsers do not block the handoff. */

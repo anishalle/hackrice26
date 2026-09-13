@@ -10,6 +10,7 @@ import { Avatar } from "@/components/avatar";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Panel, PlotLabel, Rule } from "@/components/primitives";
 import { IconArrowLeft, IconArrowRight } from "@/components/icons";
+import { ProtectedRoute } from "@/components/protected-route";
 
 /**
  * The caseload: every patient this clinician follows, focus patient first.
@@ -30,7 +31,7 @@ import { IconArrowLeft, IconArrowRight } from "@/components/icons";
  * data. The labelling is not decoration: the one thing this screen must never
  * do is read as a real clinical system.
  */
-export default function ClinicianPage() {
+function ClinicianContent() {
   const router = useRouter();
   const { patients, status, error, retry } = usePatients();
   const { setActivePatient, setPreviewing, patientProfiles, hydrated } = useSession();
@@ -117,6 +118,14 @@ export default function ClinicianPage() {
         <div className="h-16" />
       </div>
     </main>
+  );
+}
+
+export default function ClinicianPage() {
+  return (
+    <ProtectedRoute>
+      <ClinicianContent />
+    </ProtectedRoute>
   );
 }
 

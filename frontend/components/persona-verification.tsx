@@ -7,7 +7,13 @@ import { IconArrowLeft, IconArrowRight, IconCheck, IconShield } from "@/componen
 
 type Status = "preparing" | "ready" | "opening" | "error";
 
-export function PersonaVerification({ onBack }: { onBack: () => void }) {
+export function PersonaVerification({
+  onBack,
+  returnPath,
+}: {
+  onBack: () => void;
+  returnPath?: string;
+}) {
   const [status, setStatus] = useState<Status>("preparing");
   const [journey, setJourney] = useState<PersonaJourney | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -16,7 +22,7 @@ export function PersonaVerification({ onBack }: { onBack: () => void }) {
     setStatus("preparing");
     setError(null);
     try {
-      const next = await preparePersona();
+      const next = await preparePersona(returnPath);
       setJourney(next);
       setStatus("ready");
     } catch (caught) {
@@ -27,7 +33,7 @@ export function PersonaVerification({ onBack }: { onBack: () => void }) {
 
   useEffect(() => {
     let cancelled = false;
-    void preparePersona().then((next) => {
+    void preparePersona(returnPath).then((next) => {
       if (!cancelled) {
         setJourney(next);
         setStatus("ready");
@@ -39,7 +45,7 @@ export function PersonaVerification({ onBack }: { onBack: () => void }) {
       }
     });
     return () => { cancelled = true; };
-  }, []);
+  }, [returnPath]);
 
   function continueToPersona() {
     if (!journey) return;
