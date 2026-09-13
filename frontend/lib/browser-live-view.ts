@@ -15,3 +15,23 @@ export async function getBrowserLiveView(): Promise<BrowserLiveView> {
 
   return (await response.json()) as BrowserLiveView;
 }
+
+export async function startGuidedBrowser(
+  websiteUrl: string,
+  mode: "assist" | "together"
+): Promise<BrowserLiveView> {
+  const backendUrl = (process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://127.0.0.1:8000").replace(/\/$/, "");
+  const response = await fetch(`${backendUrl}/api/v1/browser/sessions`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ website_url: websiteUrl, mode }),
+  });
+  const payload = (await response.json().catch(() => ({}))) as BrowserLiveView & {
+    detail?: string;
+  };
+
+  if (!response.ok) {
+    throw new Error(payload.detail ?? "The guided browser could not start.");
+  }
+  return payload;
+}

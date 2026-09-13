@@ -1,44 +1,36 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { ExternalLink, Loader2, MonitorUp, RefreshCw, X } from "lucide-react";
+import { useState } from "react";
+import { ExternalLink, Loader2, MonitorUp, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { getBrowserLiveView, type BrowserLiveView } from "@/lib/browser-live-view";
+import { startGuidedBrowser, type BrowserLiveView } from "@/lib/browser-live-view";
 
 interface GuidedBrowserProps {
   websiteUrl: string;
   mode: "guide" | "assist" | "together";
-  onOpenWithHermes: (url: string) => void;
-  loading: boolean;
 }
 
-export function GuidedBrowser({ websiteUrl, mode, onOpenWithHermes, loading }: GuidedBrowserProps) {
-  const [watching, setWatching] = useState(false);
+export function GuidedBrowser({ websiteUrl, mode }: GuidedBrowserProps) {
+  const [starting, setStarting] = useState(false);
   const [liveView, setLiveView] = useState<BrowserLiveView | null>(null);
-  const [status, setStatus] = useState("Ready when you are.");
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!watching) return;
-
-    let cancelled = false;
-    async function refresh() {
-      try {
-        const next = await getBrowserLiveView();
-        if (cancelled) return;
-        setLiveView(next);
-        setStatus(next.active ? "Hermes is connected to this browser." : "Waiting for Hermes to open the guided browser…");
-      } catch {
-        if (!cancelled) setStatus("Waiting for the guided browser to become available…");
-      }
+  async function openBrowser() {
+    setStarting(true);
+    setError(null);
+    try {
+      setLiveView(
+        await startGuidedBrowser(
+          websiteUrl,
+          mode === "together" ? "together" : "assist"
+        )
+      );
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "The guided browser could not start.");
+    } finally {
+      setStarting(false);
     }
-
-    void refresh();
-    const interval = window.setInterval(() => void refresh(), 3_000);
-    return () => {
-      cancelled = true;
-      window.clearInterval(interval);
-    };
-  }, [watching]);
+  }
 
   if (mode === "guide") {
     return (
@@ -68,36 +60,35 @@ export function GuidedBrowser({ websiteUrl, mode, onOpenWithHermes, loading }: G
             <MonitorUp className="size-4 text-primary" />
             Guided browser
           </h3>
-          <p className="mt-0.5 text-xs text-muted-foreground">{status}</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            A private Browser Use session opens only after you approve this website.
+          </p>
         </div>
-        {watching && (
-          <Button variant="ghost" size="sm" onClick={() => setWatching(false)}>
+        {liveView?.live_url && (
+          <Button variant="ghost" size="sm" onClick={() => setLiveView(null)}>
             <X className="size-4" />
             Hide view
           </Button>
         )}
       </div>
 
-      {!watching ? (
+      {!liveView?.live_url ? (
         <div className="p-4">
           <p className="break-all text-sm text-muted-foreground">{websiteUrl}</p>
           <Button
             className="mt-3"
-            onClick={() => {
-              setWatching(true);
-              setStatus("Asking Hermes to open the website…");
-              onOpenWithHermes(websiteUrl);
-            }}
-            disabled={loading}
+            onClick={() => void openBrowser()}
+            disabled={starting}
           >
-            {loading ? <Loader2 className="size-4 animate-spin" /> : <MonitorUp className="size-4" />}
-            Open in guided browser
+            {starting ? <Loader2 className="size-4 animate-spin" /> : <MonitorUp className="size-4" />}
+            {starting ? "Opening guided browser…" : "Open in guided browser"}
           </Button>
           <p className="mt-2 text-xs leading-5 text-muted-foreground">
-            Hermes can inspect and navigate. It will still ask before forms, submissions, or account changes.
+            The browser opens the landing page only. No form, account, or submission action is allowed.
           </p>
+          {error && <p role="alert" className="mt-3 text-sm text-destructive">{error}</p>}
         </div>
-      ) : liveView?.active && liveView.live_url ? (
+      ) : (
         <div>
           <iframe
             title="Live browser controlled by Hermes"
@@ -105,18 +96,9 @@ export function GuidedBrowser({ websiteUrl, mode, onOpenWithHermes, loading }: G
             className="aspect-video w-full bg-muted"
             allow="autoplay"
           />
-          <div className="flex items-center justify-between gap-2 p-3">
-            <p className="text-xs text-muted-foreground">Live view of the browser Hermes is using.</p>
-            <Button variant="outline" size="sm" onClick={() => setWatching(false)}>
-              <RefreshCw className="size-3.5" />
-              Refresh later
-            </Button>
-          </div>
-        </div>
-      ) : (
-        <div className="flex min-h-44 items-center justify-center gap-2 p-5 text-sm text-muted-foreground" aria-live="polite">
-          <Loader2 className="size-4 animate-spin" />
-          {status}
+          <p className="p-3 text-xs text-muted-foreground">
+            Live, user-approved guided browser. Hermes remains your planner and narrator.
+          </p>
         </div>
       )}
     </section>
