@@ -2,7 +2,7 @@ import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-na
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { colors, fonts, type, spacing, radii, cardShadow } from '../theme';
-import AgentBlob, { AXL_HERO_SEED } from '../components/AgentBlob';
+import { AuthAvatar } from '../components/AuthAvatar';
 import Icon from '../components/Icon';
 
 export default function GetStartedScreen({ onStart, onLogin }) {
@@ -24,7 +24,7 @@ export default function GetStartedScreen({ onStart, onLogin }) {
         {/* The bubble is anchored to the blob, not the column, so its tail
             always lands on his upper-left curve whatever size he is. */}
         <View style={{ width: blob, height: blob }}>
-          <AgentBlob seed={AXL_HERO_SEED} size={blob} />
+          <AuthAvatar size={blob} />
           <View style={[styles.bubble, { bottom: blob * 0.66, left: blob * 0.02 }]}>
             <Text style={styles.bubbleText}>Hi, I'm Axl.</Text>
             <View style={styles.bubbleTail} />

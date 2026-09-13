@@ -14,10 +14,9 @@ import { colors, fonts } from './theme';
 import HomeScreen from './screens/HomeScreen';
 import AgentsScreen from './screens/AgentsScreen';
 import MarketplaceScreen from './screens/MarketplaceScreen';
-import GetStartedScreen from './screens/GetStartedScreen';
-import LoginScreen from './screens/LoginScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import TabBar from './components/TabBar';
+import AuthFlow from './components/AuthFlow';
 
 const Tab = createBottomTabNavigator();
 
@@ -41,7 +40,7 @@ const navTheme = {
 
 export default function App() {
   const [fontsLoaded] = useFonts({ Inter_300Light, Inter_400Regular, Inter_500Medium, Inter_600SemiBold });
-  // 'start' -> 'login' -> 'app'. Get started skips the door; Log in uses it.
+  // Sign-up returns to welcome; login goes through Persona before the demo profile.
   const [screen, setScreen] = useState('start');
 
   if (!fontsLoaded) return null;
@@ -67,10 +66,8 @@ export default function App() {
             </Tab.Screen>
           </Tab.Navigator>
         </NavigationContainer>
-      ) : screen === 'login' ? (
-        <LoginScreen onDone={() => setScreen('app')} onBack={() => setScreen('start')} />
       ) : (
-        <GetStartedScreen onStart={() => setScreen('app')} onLogin={() => setScreen('login')} />
+        <AuthFlow onLogin={() => setScreen('app')} />
       )}
       <StatusBar style="dark" />
     </SafeAreaProvider>
