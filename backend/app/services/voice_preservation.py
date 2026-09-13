@@ -32,6 +32,14 @@ class ElevenLabsNotConfiguredError(RuntimeError):
     pass
 
 
+class ElevenLabsProviderError(RuntimeError):
+    """A safe, actionable rejection returned by the ElevenLabs API."""
+
+    def __init__(self, *, status_code: int, message: str) -> None:
+        self.status_code = status_code
+        super().__init__(message)
+
+
 class VoiceProfileNotFoundError(RuntimeError):
     pass
 
@@ -198,7 +206,7 @@ async def create_elevenlabs_clone(
     headers = {"xi-api-key": settings.ELEVENLABS_API_KEY.get_secret_value()}
     async with httpx.AsyncClient(timeout=90) as client:
         response = await client.post(url, headers=headers, data=data, files=files)
-        response.raise_for_status()
+        _raise_for_elevenlabs_error(response)
 
     provider_response: dict[str, Any] = response.json()
     voice_id = provider_response.get("voice_id")
@@ -247,7 +255,7 @@ async def synthesize_elevenlabs_speech(
             params={"output_format": "mp3_44100_128"},
             json=payload,
         )
-        response.raise_for_status()
+        _raise_for_elevenlabs_error(response)
     return response.content
 
 
@@ -301,3 +309,32 @@ def _decrypt_voice_sample(encrypted_audio: bytes) -> bytes:
         raise VoiceSampleEncryptionError(
             "A saved voice recording could not be decrypted"
         ) from error
+
+
+def _raise_for_elevenlabs_error(response: httpx.Response) -> None:
+    try:
+        response.raise_for_status()
+    except httpx.HTTPStatusError as error:
+        raise ElevenLabsProviderError(
+            status_code=response.status_code,
+            message=_elevenlabs_error_message(response),
+        ) from error
+
+
+def _elevenlabs_error_message(response: httpx.Response) -> str:
+    """Return only the useful provider message, never request headers or keys."""
+    try:
+        payload = response.json()
+    except ValueError:
+        payload = None
+
+    detail = payload.get("detail") if isinstance(payload, dict) else None
+    if isinstance(detail, dict):
+        detail = detail.get("message") or detail.get("status")
+    if not isinstance(detail, str) or not detail.strip():
+        detail = "The provider did not include an error explanation"
+
+    return (
+        f"ElevenLabs rejected this request (HTTP {response.status_code}): "
+        f"{detail[:400]}"
+    )

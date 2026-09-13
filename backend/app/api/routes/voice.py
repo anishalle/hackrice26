@@ -27,6 +27,7 @@ from app.models import (
 )
 from app.services.voice_preservation import (
     ElevenLabsNotConfiguredError,
+    ElevenLabsProviderError,
     VoiceProfileNotFoundError,
     VoiceSampleEncryptionError,
     add_voice_sample,
@@ -130,6 +131,10 @@ async def create_voice_clone(
         )
     except ElevenLabsNotConfiguredError as error:
         raise HTTPException(status_code=503, detail=str(error)) from error
+    except ElevenLabsProviderError as error:
+        raise HTTPException(
+            status_code=_provider_response_status(error.status_code), detail=str(error)
+        ) from error
     except VoiceProfileNotFoundError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error
     except ValueError as error:
@@ -163,6 +168,10 @@ async def generate_voice_speech(
         )
     except ElevenLabsNotConfiguredError as error:
         raise HTTPException(status_code=503, detail=str(error)) from error
+    except ElevenLabsProviderError as error:
+        raise HTTPException(
+            status_code=_provider_response_status(error.status_code), detail=str(error)
+        ) from error
     except VoiceProfileNotFoundError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error
     except ValueError as error:
@@ -200,3 +209,8 @@ def _sample_response(sample) -> VoiceSampleResponse:
         phrase_hint=sample.phrase_hint,
         created_at=sample.created_at,
     )
+
+
+def _provider_response_status(provider_status: int) -> int:
+    """Preserve actionable client errors while hiding unexpected provider failures."""
+    return provider_status if 400 <= provider_status < 500 else 502
