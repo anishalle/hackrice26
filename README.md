@@ -44,14 +44,18 @@ read it at runtime:
 | Route | What it is |
 |---|---|
 | `/` | Landing, with the WebGL duotone canyon |
-| `/login` → `/verify` | Appwrite magic-link sign-in and its callback |
+| `/login` → `/verify` → `/settings` | Appwrite magic-link sign-in followed by the Persona sandbox handoff |
+| `/persona/complete` | Persona sandbox return page |
 | `/profile` | Plot your capability profile; consequences annotate live |
 | `/identity` | Which identity checks you can finish, and why not the others |
 | `/consent` | Scoped provider authorization (fictional Meridian Health) |
 | `/feed` · `/agent` | The social half and the assistive half |
 
-`/verify` belongs to Appwrite's magic link. The capability-based identity
-check is `/identity` — they are different things and both are needed.
+`/verify` belongs to Appwrite's magic link. Once signed in, `/settings` calls
+the configured Appwrite Function to create a Persona sandbox journey and passes
+a web return URL. Persona's OIDC credentials remain inside that Function; the
+browser receives only the returned authorization URL. The capability-based
+identity routing screen is `/identity`.
 
 ## Try the adaptation
 
@@ -76,6 +80,7 @@ frontend/lib/verification.ts  each modality's real requirements, and the router
 frontend/lib/meridian.ts      the fictional provider and its FHIR-shaped scopes
 frontend/lib/session.tsx      capability profile store
 frontend/lib/auth-context.tsx Appwrite account (from the backend scaffold)
+frontend/lib/persona.ts       Appwrite Function handoff to Persona
 frontend/lib/api.ts           FastAPI client
 frontend/components/canyon/   the WebGL duotone shader
 ```
@@ -88,7 +93,8 @@ axis means editing one file.
 - **Meridian Health is fictional**, standing in for a real provider
   integration. Its scopes mirror FHIR resource/field pairs so swapping in a
   real one is mechanical.
-- **Identity verification is simulated.** No identity service is contacted.
+- **Persona uses its sandbox journey.** The demo returns to Aide after the
+  journey, but does not store an identity result in the app.
 - **Speech synthesis is real** where the browser supports it; recognition is
   simulated and labelled as such on screen.
 

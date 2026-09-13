@@ -121,7 +121,7 @@ export default function AgentPage() {
           <option value="guide">Guide me</option><option value="assist">Assist me</option><option value="together">Do it with me</option>
         </select></label>
         <label className="text-sm"><input type="checkbox" checked={demo} disabled={loading} onChange={(event) => { setDemo(event.target.checked); setTurns((current) => current.slice(0, 1)); setError(null); }} /> Demo responses</label>
-        <Link href="/settings" className="text-sm underline">Input and output preferences</Link>
+        <Link href="/settings" className="text-sm underline">Verify with Persona</Link>
       </div>
       <div className="mt-8 flex-1">
         <ul className="grid gap-7">
