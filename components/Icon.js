@@ -4,7 +4,9 @@ import {
   CaretLeft, CaretRight, CaretDown, CaretUp, ArrowRight, ArrowUp,
   Microphone, Paperclip, MagnifyingGlass, X, Bell, Sparkle, Play, Pause,
   Waveform, Broadcast, ArrowsHorizontal, SquaresFour, ArrowsClockwise,
-  SlidersHorizontal, Crosshair,
+  SlidersHorizontal, Crosshair, List, SidebarSimple, ClockCounterClockwise,
+  Storefront, TrendUp, Check, NotePencil, PaperPlaneRight, PencilSimple,
+  House, ShieldCheck,
 } from 'phosphor-react-native';
 
 // SF Symbols on iOS, phosphor everywhere else. Keyed by role so callers never
@@ -28,6 +30,19 @@ const ICONS = {
   bell: ['bell', Bell],
   play: ['play', Play],
   pause: ['pause', Pause],
+
+  // Sidebar roles.
+  sidebar: ['sidebar.left', SidebarSimple],
+  menu: ['line.3.horizontal', List],
+  newChat: ['square.and.pencil', PencilSimple],
+  home: ['house', House],
+  store: ['bag', Storefront],
+  trend: ['chart.line.uptrend.xyaxis', TrendUp],
+  history: ['clock.arrow.circlepath', ClockCounterClockwise],
+  audit: ['checkmark.shield', ShieldCheck],
+  note: ['square.and.pencil', NotePencil],
+  paperplane: ['paperplane', PaperPlaneRight],
+  check: ['checkmark', Check],
 
   // Category glyphs (see `tagGlyph` in the theme), listed here so the
   // non-iOS fallback shows the right shape instead of a generic sparkle.

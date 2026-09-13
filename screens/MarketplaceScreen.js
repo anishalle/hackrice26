@@ -53,6 +53,17 @@ export default function MarketplaceScreen() {
     navigation.setParams({ skillId: undefined });
   }, [requested]);
 
+  // Axl's sidebar routes here with a sub-market already chosen, so the list
+  // lands filtered instead of asking for the same tap twice.
+  const requestedCategory = route.params?.category;
+  useEffect(() => {
+    if (!requestedCategory) return;
+    setOpen(null);
+    setCategory(requestedCategory);
+    setShown(PAGE);
+    navigation.setParams({ category: undefined });
+  }, [requestedCategory]);
+
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
     return SKILLS.filter(
