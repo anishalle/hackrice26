@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import {
   getGuidedBrowserSession,
   startGuidedBrowser,
+  stopGuidedBrowser,
   type BrowserLiveView,
 } from "@/lib/browser-live-view";
 
@@ -16,6 +17,7 @@ interface GuidedBrowserProps {
 
 export function GuidedBrowser({ websiteUrl, mode }: GuidedBrowserProps) {
   const [starting, setStarting] = useState(false);
+  const [stopping, setStopping] = useState(false);
   const [liveView, setLiveView] = useState<BrowserLiveView | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -70,6 +72,23 @@ export function GuidedBrowser({ websiteUrl, mode }: GuidedBrowserProps) {
     }
   }
 
+  async function endBrowser() {
+    if (!liveView?.session_id) return;
+
+    setStopping(true);
+    setError(null);
+    try {
+      await stopGuidedBrowser(liveView.session_id);
+      setLiveView(null);
+    } catch (caught) {
+      setError(
+        caught instanceof Error ? caught.message : "The guided browser could not be ended."
+      );
+    } finally {
+      setStopping(false);
+    }
+  }
+
   if (mode === "guide") {
     return (
       <div className="mt-3 rounded-lg border border-primary/20 bg-primary/5 p-3">
@@ -106,9 +125,9 @@ export function GuidedBrowser({ websiteUrl, mode }: GuidedBrowserProps) {
           </p>
         </div>
         {liveView?.live_url && (
-          <Button variant="ghost" size="sm" onClick={() => setLiveView(null)}>
+          <Button variant="ghost" size="sm" onClick={() => void endBrowser()} disabled={stopping}>
             <X className="size-4" />
-            Hide view
+            {stopping ? "Ending…" : "End session"}
           </Button>
         )}
       </div>

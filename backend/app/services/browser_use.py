@@ -1,6 +1,9 @@
 from typing import Any
 
 import httpx
+from playwright.async_api import Error as PlaywrightError
+from playwright.async_api import TimeoutError as PlaywrightTimeoutError
+from playwright.async_api import async_playwright
 
 from app.core.config import settings
 
@@ -49,28 +52,23 @@ async def get_active_browser_live_view() -> dict[str, str] | None:
 
 
 async def start_guided_browser(website_url: str, mode: str) -> dict[str, str]:
-    """Create a Browser Use task with a live-view URL for the current user."""
+    """Launch an interactive browser and open the approved landing page."""
     if settings.BROWSER_USE_API_KEY is None:
         raise BrowserUseNotConfiguredError(
             "BROWSER_USE_API_KEY is not configured on the backend"
         )
 
-    mode_instruction = (
-        "Navigate to the page and inspect only the landing page. Do not type, click, "
-        "submit, sign in, or make a selection. Stop after describing the page."
-        if mode == "assist"
-        else "Navigate to the page only. Do not type, click, submit, sign in, or make "
-        "a selection. Stop immediately after the page finishes loading."
-    )
     headers = {
         "Content-Type": "application/json",
         "X-Browser-Use-API-Key": settings.BROWSER_USE_API_KEY.get_secret_value(),
     }
     payload = {
-        "task": f"Open {website_url}. {mode_instruction}",
-        "keepAlive": True,
+        "proxyCountryCode": "us",
+        "timeout": 15,
+        "browserScreenWidth": 1280,
+        "browserScreenHeight": 720,
     }
-    url = "https://api.browser-use.com/api/v3/sessions"
+    url = "https://api.browser-use.com/api/v4/browsers"
 
     async with httpx.AsyncClient(timeout=30) as client:
         response = await client.post(url, headers=headers, json=payload)
@@ -79,15 +77,20 @@ async def start_guided_browser(website_url: str, mode: str) -> dict[str, str]:
     session_data: dict[str, Any] = response.json()
     live_url = session_data.get("liveUrl")
     session_id = session_data.get("id")
-    if not live_url or not session_id:
-        raise RuntimeError("Browser Use created a session without a live URL")
+    cdp_url = session_data.get("cdpUrl")
+    if not live_url or not session_id or not cdp_url:
+        raise RuntimeError(
+            "Browser Use created a browser without its live-control URLs"
+        )
+
+    navigation_summary = await _open_landing_page(str(cdp_url), website_url)
 
     return {
         "session_id": str(session_id),
         "live_url": str(live_url),
-        "started_at": str(session_data.get("createdAt") or ""),
-        "status": str(session_data.get("status") or "created"),
-        "last_step_summary": str(session_data.get("lastStepSummary") or ""),
+        "started_at": str(session_data.get("startedAt") or ""),
+        "status": str(session_data.get("status") or "active"),
+        "last_step_summary": navigation_summary,
     }
 
 
@@ -99,7 +102,7 @@ async def get_guided_browser_session(session_id: str) -> dict[str, str]:
         )
 
     headers = {"X-Browser-Use-API-Key": settings.BROWSER_USE_API_KEY.get_secret_value()}
-    url = f"https://api.browser-use.com/api/v3/sessions/{session_id}"
+    url = f"https://api.browser-use.com/api/v4/browsers/{session_id}"
     async with httpx.AsyncClient(timeout=15) as client:
         response = await client.get(url, headers=headers)
         response.raise_for_status()
@@ -108,7 +111,55 @@ async def get_guided_browser_session(session_id: str) -> dict[str, str]:
     return {
         "session_id": str(session_data["id"]),
         "live_url": str(session_data.get("liveUrl") or ""),
-        "started_at": str(session_data.get("createdAt") or ""),
+        "started_at": str(session_data.get("startedAt") or ""),
         "status": str(session_data.get("status") or "unknown"),
-        "last_step_summary": str(session_data.get("lastStepSummary") or ""),
+        "last_step_summary": "",
     }
+
+
+async def stop_guided_browser(session_id: str) -> None:
+    """End a browser session when the user is done with its guided view."""
+    if settings.BROWSER_USE_API_KEY is None:
+        raise BrowserUseNotConfiguredError(
+            "BROWSER_USE_API_KEY is not configured on the backend"
+        )
+
+    headers = {
+        "Content-Type": "application/json",
+        "X-Browser-Use-API-Key": settings.BROWSER_USE_API_KEY.get_secret_value(),
+    }
+    url = f"https://api.browser-use.com/api/v4/browsers/{session_id}"
+    async with httpx.AsyncClient(timeout=15) as client:
+        response = await client.patch(url, headers=headers, json={"action": "stop"})
+        response.raise_for_status()
+
+
+async def _open_landing_page(cdp_url: str, website_url: str) -> str:
+    """Navigate through CDP without exposing the privileged CDP URL to the client."""
+    try:
+        async with async_playwright() as playwright:
+            browser = await playwright.chromium.connect_over_cdp(
+                cdp_url, timeout=15_000
+            )
+            try:
+                if not browser.contexts:
+                    raise RuntimeError(
+                        "The Browser Use browser has no available context"
+                    )
+
+                context = browser.contexts[0]
+                page = context.pages[0] if context.pages else await context.new_page()
+                try:
+                    await page.goto(
+                        website_url, wait_until="domcontentloaded", timeout=30_000
+                    )
+                    return f"Opened {website_url}. You can now control this browser."
+                except PlaywrightTimeoutError:
+                    return "Browser is loading the website. You can control it now."
+            finally:
+                await browser.close()
+    except (PlaywrightError, RuntimeError):
+        # The cloud browser is already live even when CDP navigation is unavailable.
+        return (
+            "Browser started. Open the website yourself using the browser address bar."
+        )

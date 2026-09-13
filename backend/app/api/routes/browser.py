@@ -7,6 +7,7 @@ from app.services.browser_use import (
     get_active_browser_live_view,
     get_guided_browser_session,
     start_guided_browser,
+    stop_guided_browser,
 )
 
 router = APIRouter(prefix="/browser", tags=["browser"])
@@ -42,6 +43,19 @@ async def guided_browser_session(session_id: str) -> BrowserLiveViewResponse:
         ) from error
 
     return BrowserLiveViewResponse(active=True, **session)
+
+
+@router.delete("/sessions/{session_id}", status_code=204)
+async def stop_browser_session(session_id: str) -> None:
+    """End a user-approved Browser Use browser session."""
+    try:
+        await stop_guided_browser(session_id)
+    except BrowserUseNotConfiguredError as error:
+        raise HTTPException(status_code=503, detail=str(error)) from error
+    except httpx.HTTPError as error:
+        raise HTTPException(
+            status_code=502, detail="Browser Use could not end the guided browser"
+        ) from error
 
 
 @router.post("/sessions", response_model=BrowserLiveViewResponse, status_code=201)

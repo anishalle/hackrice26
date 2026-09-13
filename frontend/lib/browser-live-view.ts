@@ -50,3 +50,15 @@ export async function getGuidedBrowserSession(sessionId: string): Promise<Browse
   }
   return payload;
 }
+
+export async function stopGuidedBrowser(sessionId: string): Promise<void> {
+  const backendUrl = (process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://127.0.0.1:8000").replace(/\/$/, "");
+  const response = await fetch(`${backendUrl}/api/v1/browser/sessions/${sessionId}`, {
+    method: "DELETE",
+  });
+
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => ({}))) as { detail?: string };
+    throw new Error(payload.detail ?? "The guided browser could not be ended.");
+  }
+}
