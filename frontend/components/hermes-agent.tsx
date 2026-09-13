@@ -158,7 +158,7 @@ export function HermesAgent() {
             loading={loading}
             onOpenWithHermes={(url) => {
               void submit(
-                `I confirm that you may open ${url} in the guided browser. Navigate there only, then describe the page and wait for my next instruction.`
+                `I confirm that you may open ${url} in the guided browser. Use the browser_navigate tool to navigate there only. Do not use execute_code, web_extract, web_search, or any terminal tool. After browser_navigate succeeds, describe the page and wait for my next instruction.`
               );
             }}
           />
