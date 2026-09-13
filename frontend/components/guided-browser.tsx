@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ChevronDown, ChevronUp, ExternalLink, Loader2, MonitorUp, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,6 +17,7 @@ interface GuidedBrowserProps {
 }
 
 export function GuidedBrowser({ websiteUrl, mode }: GuidedBrowserProps) {
+  const browserFrameRef = useRef<HTMLIFrameElement>(null);
   const [starting, setStarting] = useState(false);
   const [stopping, setStopping] = useState(false);
   const [scrolling, setScrolling] = useState(false);
@@ -107,6 +108,10 @@ export function GuidedBrowser({ websiteUrl, mode }: GuidedBrowserProps) {
     }
   }
 
+  function focusGuidedBrowser() {
+    browserFrameRef.current?.focus({ preventScroll: true });
+  }
+
   if (mode === "guide") {
     return (
       <div className="mt-3 rounded-lg border border-primary/20 bg-primary/5 p-3">
@@ -176,12 +181,20 @@ export function GuidedBrowser({ websiteUrl, mode }: GuidedBrowserProps) {
         </div>
       ) : (
         <div>
-          <iframe
-            title="Live guided browser"
-            src={liveView.live_url}
-            className="aspect-[4/3] w-full bg-muted"
-            allow="autoplay"
-          />
+          <div
+            className="overscroll-contain"
+            onPointerEnter={focusGuidedBrowser}
+            onWheelCapture={(event) => event.stopPropagation()}
+          >
+            <iframe
+              ref={browserFrameRef}
+              title="Live guided browser"
+              src={liveView.live_url}
+              className="aspect-[4/3] w-full overscroll-contain bg-muted"
+              allow="autoplay"
+              tabIndex={0}
+            />
+          </div>
           <div className="p-3 text-xs text-muted-foreground">
             <div className="mb-3 flex flex-wrap items-center gap-2">
               <span className="mr-1">Fine scroll</span>
