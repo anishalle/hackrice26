@@ -107,7 +107,33 @@ data/               Skills, day log, phrases, profile
 lib/                Appwrite and Persona
 theme.js            Four accents, two grounds, one type scale
 
-frontend/           Clinician view and landing, Next.js App Router
-backend/            FastAPI, plus the agent bridge
-deploy/             nginx and tunnel config for the hosted demo
+frontend/                           Clinician view and landing (Next.js)
+
+backend/
+  app/
+    main.py                        FastAPI app, middleware, and lifecycle
+    api/
+      main.py                      Registers feature routers
+      routes/
+        agents.py                  Hermes Responses proxy, SSE, sessions, approvals
+        browser.py                 Browser Use live-view and guided-session API
+        skills.py                  Marketplace browse, share, and remove endpoints
+        voice.py                   Encrypted recordings, cloning, and speech endpoints
+        home.py                    Health endpoint
+    services/
+      agent_browser.py             Per-chat browser ownership and mode safeguards
+      browser_use.py               Browser Use cloud sessions and private CDP control
+      marketplace.py               Skill catalogue and ownership operations
+      retrieval.py                 pgvector semantic skill retrieval
+      voice_preservation.py        Encryption and ElevenLabs integration
+    core/
+      auth.py                      API-key middleware
+      config.py                    Environment-backed settings
+      db.py                        PostgreSQL engine and session lifecycle
+    db_models.py                   SQLAlchemy persistence models
+  hermes_bridge/                   Server-side Axl browser-tool bridge for Hermes
+  tests/                           API, agent, browser, marketplace, and voice tests
+
+alembic/                            PostgreSQL, pgvector, and analytics migrations
+deploy/                             HTTPS proxy, Docker, and Hermes tunnel configuration
 ```
