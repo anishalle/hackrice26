@@ -1,0 +1,42 @@
+{
+  "expo": {
+    "name": "aide",
+    "slug": "hackrice26",
+    "scheme": "aide",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "bundleIdentifier": "com.anishalle.aide",
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSMotionUsageDescription": "Axl looks toward you as you tilt your phone."
+      }
+    },
+    "android": {
+      "package": "com.anishalle.aide",
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-font",
+      "expo-asset",
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Axl records your weekly check-in lines so it can follow your speech over time.",
+          "speechRecognitionPermission": "Axl follows along as you read each check-in line."
+        }
+      ],
+      "expo-audio"
+    ]
+  }
+}

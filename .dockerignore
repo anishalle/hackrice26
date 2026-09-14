@@ -1,0 +1,16 @@
+.git
+.venv
+.env
+.env.*
+deploy/private
+.gitignore
+__pycache__
+.pytest_cache
+.ruff_cache
+dist
+
+node_modules
+.expo
+.claude
+ios
+android
