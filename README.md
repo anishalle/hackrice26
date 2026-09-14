@@ -31,8 +31,8 @@ they go.
 
 <table>
 <tr>
-<td width="50%"><img src="docs/screenshots/home.png" alt="Aide home screen with the weekly check-in card and skill categories" /></td>
-<td width="50%"><img src="docs/screenshots/marketplace.png" alt="Marketplace of agent skills built by the community" /></td>
+<td width="50%"><img src="docs/screenshots/home.jpg" alt="Aide home screen with the weekly check-in card and skill categories" /></td>
+<td width="50%"><img src="docs/screenshots/marketplace.jpg" alt="Marketplace of agent skills built by the community" /></td>
 </tr>
 </table>
 
@@ -51,9 +51,9 @@ they go.
 
 ## The clinician view
 
-<img src="docs/screenshots/landing.png" alt="Aide landing page: ALS takes your velocity. Aide gives it back." />
+<img src="docs/screenshots/landing.jpg" alt="Aide landing page: ALS takes your velocity. Aide gives it back." />
 
-<img src="docs/screenshots/clinician.png" alt="Clinician record showing weekly speaking rate, mean pause, and recognition confidence" />
+<img src="docs/screenshots/clinician.jpg" alt="Clinician record showing weekly speaking rate, mean pause, and recognition confidence" />
 
 - **Weekly signals.** Speaking rate, mean pause, recognition confidence, each
   with the trend since week one and a plain sentence about what the shape
